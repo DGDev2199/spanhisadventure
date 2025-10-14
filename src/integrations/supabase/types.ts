@@ -14,16 +14,288 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      feedback: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          student_id: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          student_id: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
+      placement_tests: {
+        Row: {
+          correct_answer: string
+          created_at: string
+          id: string
+          level: Database["public"]["Enums"]["cefr_level"]
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          question: string
+          question_number: number
+        }
+        Insert: {
+          correct_answer: string
+          created_at?: string
+          id?: string
+          level: Database["public"]["Enums"]["cefr_level"]
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          question: string
+          question_number: number
+        }
+        Update: {
+          correct_answer?: string
+          created_at?: string
+          id?: string
+          level?: Database["public"]["Enums"]["cefr_level"]
+          option_a?: string
+          option_b?: string
+          option_c?: string
+          option_d?: string
+          question?: string
+          question_number?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          age: number | null
+          allergies: string | null
+          avatar_url: string | null
+          created_at: string
+          diet: string | null
+          email: string
+          full_name: string
+          id: string
+          nationality: string | null
+          updated_at: string
+        }
+        Insert: {
+          age?: number | null
+          allergies?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          diet?: string | null
+          email: string
+          full_name: string
+          id: string
+          nationality?: string | null
+          updated_at?: string
+        }
+        Update: {
+          age?: number | null
+          allergies?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          diet?: string | null
+          email?: string
+          full_name?: string
+          id?: string
+          nationality?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      schedules: {
+        Row: {
+          active: boolean | null
+          created_at: string
+          file_url: string
+          id: string
+          title: string
+          uploaded_by: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string
+          file_url: string
+          id?: string
+          title: string
+          uploaded_by: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string
+          file_url?: string
+          id?: string
+          title?: string
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
+      student_profiles: {
+        Row: {
+          created_at: string
+          id: string
+          level: Database["public"]["Enums"]["cefr_level"] | null
+          placement_test_oral_completed: boolean | null
+          placement_test_status: Database["public"]["Enums"]["test_status"]
+          placement_test_written_score: number | null
+          room: string | null
+          status: Database["public"]["Enums"]["student_status"]
+          teacher_id: string | null
+          tutor_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level?: Database["public"]["Enums"]["cefr_level"] | null
+          placement_test_oral_completed?: boolean | null
+          placement_test_status?: Database["public"]["Enums"]["test_status"]
+          placement_test_written_score?: number | null
+          room?: string | null
+          status?: Database["public"]["Enums"]["student_status"]
+          teacher_id?: string | null
+          tutor_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: Database["public"]["Enums"]["cefr_level"] | null
+          placement_test_oral_completed?: boolean | null
+          placement_test_status?: Database["public"]["Enums"]["test_status"]
+          placement_test_written_score?: number | null
+          room?: string | null
+          status?: Database["public"]["Enums"]["student_status"]
+          teacher_id?: string | null
+          tutor_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          completed: boolean | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          student_id: string
+          teacher_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          student_id: string
+          teacher_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          student_id?: string
+          teacher_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      tutor_sessions: {
+        Row: {
+          created_at: string
+          duration_minutes: number
+          id: string
+          notes: string | null
+          session_date: string
+          student_id: string
+          topic: string
+          tutor_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes: number
+          id?: string
+          notes?: string | null
+          session_date: string
+          student_id: string
+          topic: string
+          tutor_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          session_date?: string
+          student_id?: string
+          topic?: string
+          tutor_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "teacher" | "tutor" | "student"
+      cefr_level: "A1" | "A2" | "B1" | "B2" | "C1" | "C2"
+      student_status: "active" | "out_of_school"
+      test_status: "not_started" | "pending" | "completed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +422,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "teacher", "tutor", "student"],
+      cefr_level: ["A1", "A2", "B1", "B2", "C1", "C2"],
+      student_status: ["active", "out_of_school"],
+      test_status: ["not_started", "pending", "completed"],
+    },
   },
 } as const

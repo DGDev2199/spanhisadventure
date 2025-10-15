@@ -2,6 +2,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
 import Dashboard from '@/pages/Dashboard';
 import AdminDashboard from '@/pages/AdminDashboard';
+import TeacherDashboard from '@/pages/TeacherDashboard';
+import TutorDashboard from '@/pages/TutorDashboard';
 
 const DashboardRouter = () => {
   const { userRole, loading } = useAuth();
@@ -18,7 +20,15 @@ const DashboardRouter = () => {
     return <AdminDashboard />;
   }
 
-  if (userRole === 'student' || userRole === 'teacher' || userRole === 'tutor') {
+  if (userRole === 'teacher') {
+    return <TeacherDashboard />;
+  }
+
+  if (userRole === 'tutor') {
+    return <TutorDashboard />;
+  }
+
+  if (userRole === 'student') {
     return <Dashboard />;
   }
 

@@ -4,10 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { LogOut, User, BookOpen, Calendar, MessageSquare, Award } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 import logo from '@/assets/logo.png';
 
 const Dashboard = () => {
   const { user, userRole, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const { data: studentProfile, isLoading: profileLoading } = useQuery({
     queryKey: ['student-profile', user?.id],
@@ -201,7 +203,17 @@ const Dashboard = () => {
                 Take the automated test to get started. Your teacher will then conduct an oral assessment
                 to finalize your level.
               </p>
-              <Button className="w-full">Start Placement Test</Button>
+              <Button 
+                className="w-full"
+                onClick={() => navigate('/placement-test')}
+                disabled={studentProfile?.placement_test_status !== 'not_started'}
+              >
+                {studentProfile?.placement_test_status === 'not_started' 
+                  ? 'Start Placement Test' 
+                  : studentProfile?.placement_test_status === 'pending'
+                  ? 'Test Pending Review'
+                  : 'Test Completed'}
+              </Button>
             </CardContent>
           </Card>
 

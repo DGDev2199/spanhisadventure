@@ -2,10 +2,92 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogOut, User, BookOpen, Calendar, MessageSquare, Award } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import logo from '@/assets/logo.png';
 
 const Dashboard = () => {
   const { user, userRole, signOut } = useAuth();
+
+  const { data: studentProfile, isLoading: profileLoading } = useQuery({
+    queryKey: ['student-profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from('student_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id
+  });
+
+  const { data: tasks, isLoading: tasksLoading } = useQuery({
+    queryKey: ['student-tasks', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('student_id', user.id)
+        .eq('completed', false)
+        .order('due_date', { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id
+  });
+
+  const { data: feedback, isLoading: feedbackLoading } = useQuery({
+    queryKey: ['student-feedback', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from('feedback')
+        .select(`
+          *,
+          profiles!feedback_author_id_fkey(full_name)
+        `)
+        .eq('student_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(3);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id
+  });
+
+  const { data: teacherProfile } = useQuery({
+    queryKey: ['teacher-profile', studentProfile?.teacher_id],
+    queryFn: async () => {
+      if (!studentProfile?.teacher_id) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', studentProfile.teacher_id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!studentProfile?.teacher_id
+  });
+
+  const { data: tutorProfile } = useQuery({
+    queryKey: ['tutor-profile', studentProfile?.tutor_id],
+    queryFn: async () => {
+      if (!studentProfile?.tutor_id) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', studentProfile.tutor_id)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!studentProfile?.tutor_id
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -47,9 +129,11 @@ const Dashboard = () => {
               <Award className="h-4 w-4 text-accent" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">Not Set</div>
+              <div className="text-2xl font-bold text-primary">
+                {profileLoading ? '...' : studentProfile?.level || 'Not Set'}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Complete placement test
+                {studentProfile?.level ? 'Current level' : 'Complete placement test'}
               </p>
             </CardContent>
           </Card>
@@ -60,9 +144,11 @@ const Dashboard = () => {
               <User className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">Not Assigned</div>
+              <div className="text-2xl font-bold">
+                {profileLoading ? '...' : teacherProfile?.full_name || 'Not Assigned'}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Contact admin
+                {teacherProfile ? 'Your teacher' : 'Contact admin'}
               </p>
             </CardContent>
           </Card>
@@ -73,9 +159,11 @@ const Dashboard = () => {
               <User className="h-4 w-4 text-secondary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">Not Assigned</div>
+              <div className="text-2xl font-bold">
+                {profileLoading ? '...' : tutorProfile?.full_name || 'Not Assigned'}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Contact admin
+                {tutorProfile ? 'Your tutor' : 'Contact admin'}
               </p>
             </CardContent>
           </Card>
@@ -86,9 +174,11 @@ const Dashboard = () => {
               <BookOpen className="h-4 w-4 text-accent" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-bold">
+                {tasksLoading ? '...' : tasks?.length || 0}
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
-                No pending tasks
+                {tasks && tasks.length > 0 ? 'Pending tasks' : 'No pending tasks'}
               </p>
             </CardContent>
           </Card>
@@ -146,9 +236,27 @@ const Dashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">
-                No feedback yet. Keep up the good work!
-              </p>
+              {feedbackLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                </div>
+              ) : feedback && feedback.length > 0 ? (
+                <div className="space-y-4">
+                  {feedback.map((item: any) => (
+                    <div key={item.id} className="border-l-2 border-primary pl-3">
+                      <p className="text-sm font-medium">{item.profiles?.full_name}</p>
+                      <p className="text-sm text-muted-foreground">{item.content}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {new Date(item.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No feedback yet. Keep up the good work!
+                </p>
+              )}
             </CardContent>
           </Card>
 

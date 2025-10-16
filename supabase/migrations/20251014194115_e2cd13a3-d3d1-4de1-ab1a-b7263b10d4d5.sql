@@ -10,7 +10,7 @@ CREATE TYPE public.student_status AS ENUM ('active', 'out_of_school');
 -- Create placement test status enum
 CREATE TYPE public.test_status AS ENUM ('not_started', 'pending', 'completed');
 
--- User roles table (CRITICAL: roles stored separately for security)
+-- User roles table
 CREATE TABLE public.user_roles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -19,7 +19,6 @@ CREATE TABLE public.user_roles (
   UNIQUE(user_id, role)
 );
 
--- Enable RLS
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 
 -- Security definer function to check roles
@@ -53,7 +52,7 @@ CREATE TABLE public.profiles (
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
--- Student profiles table (additional student-specific data)
+-- Student profiles table
 CREATE TABLE public.student_profiles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL UNIQUE,
@@ -111,7 +110,7 @@ CREATE TABLE public.tutor_sessions (
 
 ALTER TABLE public.tutor_sessions ENABLE ROW LEVEL SECURITY;
 
--- Schedules table (weekly schedule uploads)
+-- Schedules table
 CREATE TABLE public.schedules (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
@@ -330,3 +329,33 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();
+
+-- ============================================================================
+-- AUTO-CREATE STUDENT PROFILE WHEN ROLE IS STUDENT
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION public.handle_new_student()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  _role public.app_role;
+BEGIN
+  -- Check if the user has the role 'student'
+  SELECT role INTO _role FROM public.user_roles WHERE user_id = NEW.id;
+
+  IF _role = 'student' THEN
+    INSERT INTO public.student_profiles (user_id, level, status, placement_test_status)
+    VALUES (NEW.id, 'A1', 'active', 'not_started');
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER on_profile_created
+  AFTER INSERT ON public.profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_student();

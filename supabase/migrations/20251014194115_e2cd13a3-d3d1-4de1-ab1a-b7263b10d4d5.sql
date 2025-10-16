@@ -344,3 +344,11 @@ CREATE TRIGGER on_profile_created
   AFTER INSERT ON public.profiles
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_student();
+
+-- ============================================
+-- 🔧 FIX: Asegurar que el Admin tenga su rol correcto
+-- ============================================
+
+INSERT INTO public.user_roles (user_id, role)
+VALUES ('27207db8-2b18-4d98-8c1b-c9dc201e6544', 'admin')
+ON CONFLICT (user_id, role) DO NOTHING;

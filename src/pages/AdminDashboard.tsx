@@ -25,31 +25,43 @@ const AdminDashboard = () => {
         supabase.from('user_roles').select('*', { count: 'exact', head: true }).eq('role', 'student'),
         supabase.from('user_roles').select('*', { count: 'exact', head: true }).eq('role', 'teacher'),
         supabase.from('user_roles').select('*', { count: 'exact', head: true }).eq('role', 'tutor'),
-        supabase.from('tasks').select('*', { count: 'exact', head: true })
+        supabase.from('tasks').select('*', { count: 'exact', head: true }),
       ]);
       return {
         students: students.count || 0,
         teachers: teachers.count || 0,
         tutors: tutors.count || 0,
-        tasks: tasks.count || 0
+        tasks: tasks.count || 0,
       };
-    }
+    },
   });
 
-  // 👩‍🎓 Students (JOIN corregido)
+  // 👩‍🎓 Students sin join (manual merge)
   const { data: students, isLoading: studentsLoading } = useQuery({
-    queryKey: ['students'],
+    queryKey: ['students-simple'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: studentProfiles, error: studentError } = await supabase
         .from('student_profiles')
-        .select(`
-          *,
-          profiles(full_name, email)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data;
-    }
+
+      if (studentError) throw studentError;
+      if (!studentProfiles || studentProfiles.length === 0) return [];
+
+      const userIds = studentProfiles.map((s) => s.user_id);
+      const { data: profiles, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds);
+
+      if (profileError) throw profileError;
+
+      // Unir manualmente
+      return studentProfiles.map((student) => ({
+        ...student,
+        profile: profiles.find((p) => p.id === student.user_id) || {},
+      }));
+    },
   });
 
   // 👥 Todos los usuarios
@@ -58,14 +70,11 @@ const AdminDashboard = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          user_roles(role)
-        `)
+        .select('*, user_roles(role)')
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
-    }
+    },
   });
 
   return (
@@ -91,68 +100,33 @@ const AdminDashboard = () => {
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Main */}
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h2 className="text-3xl font-bold mb-2">Admin Overview</h2>
-          <p className="text-muted-foreground">
-            Manage students, teachers, tutors, and all platform activities
-          </p>
+          <p className="text-muted-foreground">Manage students, teachers, tutors, and all platform activities</p>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Students</CardTitle>
-              <GraduationCap className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-primary">
-                {statsLoading ? '...' : stats?.students || 0}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Active learners</p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Teachers</CardTitle>
-              <Users className="h-4 w-4 text-secondary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-secondary">
-                {statsLoading ? '...' : stats?.teachers || 0}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Active teachers</p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Tutors</CardTitle>
-              <UserCheck className="h-4 w-4 text-accent" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-accent-foreground">
-                {statsLoading ? '...' : stats?.tutors || 0}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Active tutors</p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total Tasks</CardTitle>
-              <BookOpen className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {statsLoading ? '...' : stats?.tasks || 0}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">Assigned tasks</p>
-            </CardContent>
-          </Card>
+          {[
+            { title: 'Total Students', icon: GraduationCap, value: stats?.students || 0 },
+            { title: 'Teachers', icon: Users, value: stats?.teachers || 0 },
+            { title: 'Tutors', icon: UserCheck, value: stats?.tutors || 0 },
+            { title: 'Total Tasks', icon: BookOpen, value: stats?.tasks || 0 },
+          ].map((item, idx) => (
+            <Card key={idx} className="shadow-md hover:shadow-lg transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">{item.title}</CardTitle>
+                <item.icon className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-primary">
+                  {statsLoading ? '...' : item.value}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         {/* Students Table */}
@@ -180,36 +154,14 @@ const AdminDashboard = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {students.map((student: any) => (
+                  {students.map((student) => (
                     <TableRow key={student.id}>
-                      <TableCell className="font-medium">{student.profiles?.full_name}</TableCell>
-                      <TableCell>{student.profiles?.email}</TableCell>
+                      <TableCell>{student.profile.full_name || 'Unknown'}</TableCell>
+                      <TableCell>{student.profile.email || 'N/A'}</TableCell>
                       <TableCell>{student.level || 'Not Set'}</TableCell>
                       <TableCell>{student.room || 'Not Assigned'}</TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            student.status === 'active'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-gray-100 text-gray-700'
-                          }`}
-                        >
-                          {student.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            student.placement_test_status === 'completed'
-                              ? 'bg-blue-100 text-blue-700'
-                              : student.placement_test_status === 'pending'
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-gray-100 text-gray-700'
-                          }`}
-                        >
-                          {student.placement_test_status}
-                        </span>
-                      </TableCell>
+                      <TableCell>{student.status}</TableCell>
+                      <TableCell>{student.placement_test_status}</TableCell>
                       <TableCell>
                         <Button
                           size="sm"
@@ -257,9 +209,9 @@ const AdminDashboard = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {allUsers.map((user: any) => (
+                  {allUsers.map((user) => (
                     <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.full_name}</TableCell>
+                      <TableCell>{user.full_name}</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary capitalize">
@@ -298,7 +250,7 @@ const AdminDashboard = () => {
           open={assignDialogOpen}
           onOpenChange={setAssignDialogOpen}
           studentId={selectedStudent.user_id}
-          studentName={selectedStudent.profiles?.full_name}
+          studentName={selectedStudent.profile?.full_name}
           currentTeacherId={selectedStudent.teacher_id}
           currentTutorId={selectedStudent.tutor_id}
           currentRoom={selectedStudent.room}

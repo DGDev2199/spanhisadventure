@@ -17,6 +17,7 @@ const AdminDashboard = () => {
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
 
+  // 📊 Stats: contar estudiantes, profesores, tutores y tareas
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
@@ -35,6 +36,7 @@ const AdminDashboard = () => {
     }
   });
 
+  // 👩‍🎓 Students con join corregido
   const { data: students, isLoading: studentsLoading } = useQuery({
     queryKey: ['students'],
     queryFn: async () => {
@@ -42,7 +44,7 @@ const AdminDashboard = () => {
         .from('student_profiles')
         .select(`
           *,
-          profiles!student_profiles_user_id_fkey(full_name, email)
+          profiles!student_profiles_user_id_profiles_fkey(full_name, email)
         `)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -50,6 +52,7 @@ const AdminDashboard = () => {
     }
   });
 
+  // 👥 Todos los usuarios
   const { data: allUsers, isLoading: usersLoading } = useQuery({
     queryKey: ['all-users'],
     queryFn: async () => {

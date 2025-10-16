@@ -17,7 +17,7 @@ const AdminDashboard = () => {
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
 
-  // 📊 Stats: contar estudiantes, profesores, tutores y tareas
+  // 📊 Stats
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
@@ -36,7 +36,7 @@ const AdminDashboard = () => {
     }
   });
 
-  // 👩‍🎓 Students con join corregido
+  // 👩‍🎓 Students (JOIN corregido)
   const { data: students, isLoading: studentsLoading } = useQuery({
     queryKey: ['students'],
     queryFn: async () => {
@@ -44,7 +44,7 @@ const AdminDashboard = () => {
         .from('student_profiles')
         .select(`
           *,
-          profiles!student_profiles_user_id_profiles_fkey(full_name, email)
+          profiles(full_name, email)
         `)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -111,9 +111,7 @@ const AdminDashboard = () => {
               <div className="text-2xl font-bold text-primary">
                 {statsLoading ? '...' : stats?.students || 0}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Active learners
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Active learners</p>
             </CardContent>
           </Card>
 
@@ -126,9 +124,7 @@ const AdminDashboard = () => {
               <div className="text-2xl font-bold text-secondary">
                 {statsLoading ? '...' : stats?.teachers || 0}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Active teachers
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Active teachers</p>
             </CardContent>
           </Card>
 
@@ -141,9 +137,7 @@ const AdminDashboard = () => {
               <div className="text-2xl font-bold text-accent-foreground">
                 {statsLoading ? '...' : stats?.tutors || 0}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Active tutors
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Active tutors</p>
             </CardContent>
           </Card>
 
@@ -156,9 +150,7 @@ const AdminDashboard = () => {
               <div className="text-2xl font-bold">
                 {statsLoading ? '...' : stats?.tasks || 0}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Assigned tasks
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Assigned tasks</p>
             </CardContent>
           </Card>
         </div>
@@ -195,22 +187,26 @@ const AdminDashboard = () => {
                       <TableCell>{student.level || 'Not Set'}</TableCell>
                       <TableCell>{student.room || 'Not Assigned'}</TableCell>
                       <TableCell>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          student.status === 'active' 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-gray-100 text-gray-700'
-                        }`}>
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            student.status === 'active'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}
+                        >
                           {student.status}
                         </span>
                       </TableCell>
                       <TableCell>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          student.placement_test_status === 'completed' 
-                            ? 'bg-blue-100 text-blue-700' 
-                            : student.placement_test_status === 'pending'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}>
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            student.placement_test_status === 'completed'
+                              ? 'bg-blue-100 text-blue-700'
+                              : student.placement_test_status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}
+                        >
                           {student.placement_test_status}
                         </span>
                       </TableCell>

@@ -17,20 +17,23 @@ const Dashboard = () => {
   const queryClient = useQueryClient();
   const [editProfileOpen, setEditProfileOpen] = useState(false);
 
-  const { data: studentProfile, isLoading: profileLoading } = useQuery({
-    queryKey: ['student-profile', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const { data, error } = await supabase
-        .from('student_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id
-  });
+const { data: studentProfile, isLoading: profileLoading } = useQuery({
+  queryKey: ['student-profile', user?.id],
+  queryFn: async () => {
+    if (!user?.id) return null;
+    const { data, error } = await supabase
+      .from('student_profiles')
+      .select(`
+        *,
+        profiles!student_profiles_user_id_profiles_fkey(full_name, email)
+      `)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+  enabled: !!user?.id
+});
 
   const { data: tasks, isLoading: tasksLoading } = useQuery({
     queryKey: ['student-tasks', user?.id],

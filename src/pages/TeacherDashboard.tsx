@@ -2,11 +2,25 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { LogOut, GraduationCap, BookOpen, MessageSquare, Plus, Home } from 'lucide-react';
+import {
+  LogOut,
+  GraduationCap,
+  BookOpen,
+  MessageSquare,
+  Plus,
+  Home
+} from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -22,9 +36,18 @@ const TeacherDashboard = () => {
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
   const [isRoomDialogOpen, setIsRoomDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
-  const [taskForm, setTaskForm] = useState({ student_id: '', title: '', description: '', due_date: '' });
-  const [feedbackForm, setFeedbackForm] = useState({ student_id: '', content: '' });
+  const [taskForm, setTaskForm] = useState({
+    student_id: '',
+    title: '',
+    description: '',
+    due_date: ''
+  });
+  const [feedbackForm, setFeedbackForm] = useState({
+    student_id: '',
+    content: ''
+  });
 
+  // 🔹 Obtener los estudiantes asignados a este profesor
   const { data: myStudents } = useQuery({
     queryKey: ['teacher-students', user?.id],
     queryFn: async () => {
@@ -33,15 +56,20 @@ const TeacherDashboard = () => {
         .from('student_profiles')
         .select(`
           *,
-          profiles!student_profiles_user_id_fkey(full_name, email)
+          profiles!student_profiles_user_id_profiles_fkey(full_name, email)
         `)
         .eq('teacher_id', user.id)
         .order('created_at', { ascending: false });
-      if (error) throw error;
+
+      if (error) {
+        console.error('Error fetching students:', error);
+        throw error;
+      }
       return data;
     }
   });
 
+  // 🔹 Obtener tareas creadas por este profesor
   const { data: myTasks } = useQuery({
     queryKey: ['teacher-tasks', user?.id],
     queryFn: async () => {
@@ -54,11 +82,16 @@ const TeacherDashboard = () => {
         `)
         .eq('teacher_id', user.id)
         .order('due_date', { ascending: true });
-      if (error) throw error;
+
+      if (error) {
+        console.error('Error fetching tasks:', error);
+        throw error;
+      }
       return data;
     }
   });
 
+  // 🔹 Crear una nueva tarea
   const createTaskMutation = useMutation({
     mutationFn: async (task: typeof taskForm) => {
       const { error } = await supabase.from('tasks').insert({
@@ -78,6 +111,7 @@ const TeacherDashboard = () => {
     }
   });
 
+  // 🔹 Crear feedback
   const createFeedbackMutation = useMutation({
     mutationFn: async (feedback: typeof feedbackForm) => {
       const { error } = await supabase.from('feedback').insert({
@@ -136,8 +170,12 @@ const TeacherDashboard = () => {
               <GraduationCap className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">{myStudents?.length || 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">Assigned students</p>
+              <div className="text-2xl font-bold text-primary">
+                {myStudents?.length || 0}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Assigned students
+              </p>
             </CardContent>
           </Card>
 
@@ -150,7 +188,9 @@ const TeacherDashboard = () => {
               <div className="text-2xl font-bold text-secondary">
                 {myTasks?.filter((t: any) => !t.completed).length || 0}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Pending completion</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Pending completion
+              </p>
             </CardContent>
           </Card>
 
@@ -194,7 +234,12 @@ const TeacherDashboard = () => {
                       <select
                         className="w-full mt-1 p-2 border rounded-md"
                         value={feedbackForm.student_id}
-                        onChange={(e) => setFeedbackForm({ ...feedbackForm, student_id: e.target.value })}
+                        onChange={(e) =>
+                          setFeedbackForm({
+                            ...feedbackForm,
+                            student_id: e.target.value
+                          })
+                        }
                       >
                         <option value="">Select student</option>
                         {myStudents?.map((student: any) => (
@@ -208,11 +253,19 @@ const TeacherDashboard = () => {
                       <Label>Feedback</Label>
                       <Textarea
                         value={feedbackForm.content}
-                        onChange={(e) => setFeedbackForm({ ...feedbackForm, content: e.target.value })}
+                        onChange={(e) =>
+                          setFeedbackForm({
+                            ...feedbackForm,
+                            content: e.target.value
+                          })
+                        }
                         placeholder="Write your feedback..."
                       />
                     </div>
-                    <Button onClick={() => createFeedbackMutation.mutate(feedbackForm)} className="w-full">
+                    <Button
+                      onClick={() => createFeedbackMutation.mutate(feedbackForm)}
+                      className="w-full"
+                    >
                       Send Feedback
                     </Button>
                   </div>
@@ -236,17 +289,21 @@ const TeacherDashboard = () => {
                 <TableBody>
                   {myStudents.map((student: any) => (
                     <TableRow key={student.id}>
-                      <TableCell className="font-medium">{student.profiles?.full_name}</TableCell>
+                      <TableCell className="font-medium">
+                        {student.profiles?.full_name}
+                      </TableCell>
                       <TableCell>{student.profiles?.email}</TableCell>
                       <TableCell>{student.level || 'Not Set'}</TableCell>
                       <TableCell>{student.room || 'Not Assigned'}</TableCell>
                       <TableCell>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          student.placement_test_status === 'completed' 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {student.placement_test_status}
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            student.placement_test_status === 'completed'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}
+                        >
+                          {student.placement_test_status || 'not_started'}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -267,7 +324,9 @@ const TeacherDashboard = () => {
                 </TableBody>
               </Table>
             ) : (
-              <p className="text-center text-muted-foreground py-8">No students assigned yet</p>
+              <p className="text-center text-muted-foreground py-8">
+                No students assigned yet
+              </p>
             )}
           </CardContent>
         </Card>
@@ -278,7 +337,9 @@ const TeacherDashboard = () => {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle>Tasks</CardTitle>
-                <CardDescription>Tasks assigned to your students</CardDescription>
+                <CardDescription>
+                  Tasks assigned to your students
+                </CardDescription>
               </div>
               <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
                 <DialogTrigger asChild>
@@ -290,7 +351,9 @@ const TeacherDashboard = () => {
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Create New Task</DialogTitle>
-                    <DialogDescription>Assign a task to your students</DialogDescription>
+                    <DialogDescription>
+                      Assign a task to your students
+                    </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
@@ -298,7 +361,12 @@ const TeacherDashboard = () => {
                       <select
                         className="w-full mt-1 p-2 border rounded-md"
                         value={taskForm.student_id}
-                        onChange={(e) => setTaskForm({ ...taskForm, student_id: e.target.value })}
+                        onChange={(e) =>
+                          setTaskForm({
+                            ...taskForm,
+                            student_id: e.target.value
+                          })
+                        }
                       >
                         <option value="">Select student</option>
                         {myStudents?.map((student: any) => (
@@ -312,7 +380,9 @@ const TeacherDashboard = () => {
                       <Label>Title</Label>
                       <Input
                         value={taskForm.title}
-                        onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+                        onChange={(e) =>
+                          setTaskForm({ ...taskForm, title: e.target.value })
+                        }
                         placeholder="Task title"
                       />
                     </div>
@@ -320,7 +390,12 @@ const TeacherDashboard = () => {
                       <Label>Description</Label>
                       <Textarea
                         value={taskForm.description}
-                        onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
+                        onChange={(e) =>
+                          setTaskForm({
+                            ...taskForm,
+                            description: e.target.value
+                          })
+                        }
                         placeholder="Task description"
                       />
                     </div>
@@ -329,10 +404,18 @@ const TeacherDashboard = () => {
                       <Input
                         type="date"
                         value={taskForm.due_date}
-                        onChange={(e) => setTaskForm({ ...taskForm, due_date: e.target.value })}
+                        onChange={(e) =>
+                          setTaskForm({
+                            ...taskForm,
+                            due_date: e.target.value
+                          })
+                        }
                       />
                     </div>
-                    <Button onClick={() => createTaskMutation.mutate(taskForm)} className="w-full">
+                    <Button
+                      onClick={() => createTaskMutation.mutate(taskForm)}
+                      className="w-full"
+                    >
                       Create Task
                     </Button>
                   </div>
@@ -354,15 +437,23 @@ const TeacherDashboard = () => {
                 <TableBody>
                   {myTasks.map((task: any) => (
                     <TableRow key={task.id}>
-                      <TableCell className="font-medium">{task.title}</TableCell>
+                      <TableCell className="font-medium">
+                        {task.title}
+                      </TableCell>
                       <TableCell>{task.profiles?.full_name}</TableCell>
-                      <TableCell>{task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No due date'}</TableCell>
                       <TableCell>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          task.completed 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-yellow-100 text-yellow-700'
-                        }`}>
+                        {task.due_date
+                          ? new Date(task.due_date).toLocaleDateString()
+                          : 'No due date'}
+                      </TableCell>
+                      <TableCell>
+                        <span
+                          className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            task.completed
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}
+                        >
                           {task.completed ? 'Completed' : 'Pending'}
                         </span>
                       </TableCell>
@@ -371,7 +462,9 @@ const TeacherDashboard = () => {
                 </TableBody>
               </Table>
             ) : (
-              <p className="text-center text-muted-foreground py-8">No tasks created yet</p>
+              <p className="text-center text-muted-foreground py-8">
+                No tasks created yet
+              </p>
             )}
           </CardContent>
         </Card>

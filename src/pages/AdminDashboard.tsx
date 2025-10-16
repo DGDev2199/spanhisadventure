@@ -302,6 +302,7 @@ const AdminDashboard = () => {
           studentName={selectedStudent.profiles?.full_name}
           currentTeacherId={selectedStudent.teacher_id}
           currentTutorId={selectedStudent.tutor_id}
+          currentRoom={selectedStudent.room}
         />
       )}
 

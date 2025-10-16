@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -14,6 +15,7 @@ interface AssignTeacherTutorDialogProps {
   studentName: string;
   currentTeacherId?: string;
   currentTutorId?: string;
+  currentRoom?: string;
 }
 
 export const AssignTeacherTutorDialog = ({
@@ -22,10 +24,12 @@ export const AssignTeacherTutorDialog = ({
   studentId,
   studentName,
   currentTeacherId,
-  currentTutorId
+  currentTutorId,
+  currentRoom
 }: AssignTeacherTutorDialogProps) => {
   const [teacherId, setTeacherId] = useState(currentTeacherId || '');
   const [tutorId, setTutorId] = useState(currentTutorId || '');
+  const [room, setRoom] = useState(currentRoom || '');
   const queryClient = useQueryClient();
 
   const { data: teachers } = useQuery({
@@ -74,7 +78,8 @@ export const AssignTeacherTutorDialog = ({
         .from('student_profiles')
         .update({
           teacher_id: teacherId || null,
-          tutor_id: tutorId || null
+          tutor_id: tutorId || null,
+          room: room || null
         })
         .eq('user_id', studentId);
       
@@ -82,11 +87,11 @@ export const AssignTeacherTutorDialog = ({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
-      toast.success('Teacher and tutor assigned successfully');
+      toast.success('Student information updated successfully');
       onOpenChange(false);
     },
     onError: (error) => {
-      toast.error('Failed to assign teacher/tutor');
+      toast.error('Failed to update student information');
       console.error(error);
     }
   });
@@ -95,9 +100,9 @@ export const AssignTeacherTutorDialog = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Assign Teacher & Tutor</DialogTitle>
+          <DialogTitle>Manage Student</DialogTitle>
           <DialogDescription>
-            Assign a teacher and tutor to {studentName}
+            Assign teacher, tutor, and room to {studentName}
           </DialogDescription>
         </DialogHeader>
         
@@ -135,6 +140,15 @@ export const AssignTeacherTutorDialog = ({
               </SelectContent>
             </Select>
           </div>
+
+          <div className="space-y-2">
+            <Label>Room</Label>
+            <Input
+              value={room}
+              onChange={(e) => setRoom(e.target.value)}
+              placeholder="Enter room number (e.g., 101, A-205)"
+            />
+          </div>
         </div>
 
         <DialogFooter>
@@ -142,7 +156,7 @@ export const AssignTeacherTutorDialog = ({
             Cancel
           </Button>
           <Button onClick={() => assignMutation.mutate()} disabled={assignMutation.isPending}>
-            {assignMutation.isPending ? 'Assigning...' : 'Assign'}
+            {assignMutation.isPending ? 'Saving...' : 'Save Changes'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -151,11 +151,26 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card className="shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Current Level</CardTitle>
+              <CardTitle className="text-sm font-medium">My Room</CardTitle>
               <Award className="h-4 w-4 text-accent" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-primary">
+                {profileLoading ? '...' : studentProfile?.room || 'Not Assigned'}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {studentProfile?.room ? 'Your assigned room' : 'Contact your teacher'}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-md hover:shadow-lg transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Current Level</CardTitle>
+              <Award className="h-4 w-4 text-secondary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-secondary">
                 {profileLoading ? '...' : studentProfile?.level || 'Not Set'}
               </div>
               <p className="text-xs text-muted-foreground mt-1">

@@ -6,12 +6,13 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { LogOut, GraduationCap, BookOpen, MessageSquare, Plus } from 'lucide-react';
+import { LogOut, GraduationCap, BookOpen, MessageSquare, Plus, Home } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import logo from '@/assets/logo.png';
+import { AssignRoomDialog } from '@/components/AssignRoomDialog';
 
 const TeacherDashboard = () => {
   const { user, signOut } = useAuth();
@@ -19,6 +20,8 @@ const TeacherDashboard = () => {
   const queryClient = useQueryClient();
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
+  const [isRoomDialogOpen, setIsRoomDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [taskForm, setTaskForm] = useState({ student_id: '', title: '', description: '', due_date: '' });
   const [feedbackForm, setFeedbackForm] = useState({ student_id: '', content: '' });
 
@@ -227,6 +230,7 @@ const TeacherDashboard = () => {
                     <TableHead>Level</TableHead>
                     <TableHead>Room</TableHead>
                     <TableHead>Test Status</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -244,6 +248,19 @@ const TeacherDashboard = () => {
                         }`}>
                           {student.placement_test_status}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedStudent(student);
+                            setIsRoomDialogOpen(true);
+                          }}
+                        >
+                          <Home className="h-4 w-4 mr-1" />
+                          {student.room ? 'Change Room' : 'Assign Room'}
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -359,6 +376,17 @@ const TeacherDashboard = () => {
           </CardContent>
         </Card>
       </main>
+
+      {/* Assign Room Dialog */}
+      {selectedStudent && (
+        <AssignRoomDialog
+          open={isRoomDialogOpen}
+          onOpenChange={setIsRoomDialogOpen}
+          studentId={selectedStudent.user_id}
+          studentName={selectedStudent.profiles?.full_name}
+          currentRoom={selectedStudent.room}
+        />
+      )}
     </div>
   );
 };

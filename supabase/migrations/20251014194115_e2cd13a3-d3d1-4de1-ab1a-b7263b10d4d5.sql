@@ -352,3 +352,9 @@ CREATE TRIGGER on_profile_created
 INSERT INTO public.user_roles (user_id, role)
 VALUES ('27207db8-2b18-4d98-8c1b-c9dc201e6544', 'admin')
 ON CONFLICT (user_id, role) DO NOTHING;
+
+-- Añadir rol student a los usuarios estudiantes si falta
+INSERT INTO public.user_roles (user_id, role)
+VALUES 
+  ('84922a19-555e-4b9a-b063-6877f2ac0652', 'student')
+ON CONFLICT (user_id, role) DO NOTHING;

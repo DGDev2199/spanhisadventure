@@ -358,3 +358,10 @@ INSERT INTO public.user_roles (user_id, role)
 VALUES 
   ('84922a19-555e-4b9a-b063-6877f2ac0652', 'student')
 ON CONFLICT (user_id, role) DO NOTHING;
+
+-- 🔓 Permitir al admin ver todos los student_profiles
+CREATE POLICY "Admin can view all student profiles"
+  ON public.student_profiles
+  FOR SELECT
+  USING (public.has_role(auth.uid(), 'admin'));
+

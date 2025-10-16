@@ -1,15 +1,21 @@
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, User, BookOpen, Calendar, MessageSquare, Award } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { LogOut, User, BookOpen, Calendar, MessageSquare, Award, CheckCircle } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import logo from '@/assets/logo.png';
+import { EditProfileDialog } from '@/components/EditProfileDialog';
+import { toast } from 'sonner';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const Dashboard = () => {
   const { user, userRole, signOut } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
 
   const { data: studentProfile, isLoading: profileLoading } = useQuery({
     queryKey: ['student-profile', user?.id],
@@ -89,6 +95,24 @@ const Dashboard = () => {
       return data;
     },
     enabled: !!studentProfile?.tutor_id
+  });
+
+  const completeTaskMutation = useMutation({
+    mutationFn: async (taskId: string) => {
+      const { error } = await supabase
+        .from('tasks')
+        .update({ completed: true })
+        .eq('id', taskId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student-tasks'] });
+      toast.success('Task completed!');
+    },
+    onError: () => {
+      toast.error('Failed to complete task');
+    }
   });
 
   return (
@@ -292,13 +316,54 @@ const Dashboard = () => {
                   <span className="text-green-600 font-medium">Active</span>
                 </div>
               </div>
-              <Button variant="outline" className="w-full mt-4">
+              <Button variant="outline" className="w-full mt-4" onClick={() => setEditProfileOpen(true)}>
                 Edit Profile
               </Button>
             </CardContent>
           </Card>
         </div>
+
+        {/* Tasks Section */}
+        {tasks && tasks.length > 0 && (
+          <Card className="shadow-md mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-primary" />
+                My Tasks
+              </CardTitle>
+              <CardDescription>
+                Complete your assigned tasks
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {tasks.map((task: any) => (
+                  <div key={task.id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-accent/5 transition-colors">
+                    <Checkbox
+                      checked={task.completed}
+                      onCheckedChange={() => completeTaskMutation.mutate(task.id)}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <h4 className="font-medium">{task.title}</h4>
+                      {task.description && (
+                        <p className="text-sm text-muted-foreground mt-1">{task.description}</p>
+                      )}
+                      {task.due_date && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Due: {new Date(task.due_date).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </main>
+
+      <EditProfileDialog open={editProfileOpen} onOpenChange={setEditProfileOpen} />
     </div>
   );
 };

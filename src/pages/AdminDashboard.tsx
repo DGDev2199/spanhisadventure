@@ -1,14 +1,21 @@
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { LogOut, Users, GraduationCap, UserCheck, BookOpen } from 'lucide-react';
+import { LogOut, Users, GraduationCap, UserCheck, BookOpen, Settings } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import logo from '@/assets/logo.png';
+import { AssignTeacherTutorDialog } from '@/components/AssignTeacherTutorDialog';
+import { ChangeRoleDialog } from '@/components/ChangeRoleDialog';
 
 const AdminDashboard = () => {
   const { signOut } = useAuth();
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
@@ -174,6 +181,7 @@ const AdminDashboard = () => {
                     <TableHead>Room</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Test Status</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -202,6 +210,19 @@ const AdminDashboard = () => {
                         }`}>
                           {student.placement_test_status}
                         </span>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedStudent(student);
+                            setAssignDialogOpen(true);
+                          }}
+                        >
+                          <Settings className="h-4 w-4 mr-1" />
+                          Assign
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -233,6 +254,7 @@ const AdminDashboard = () => {
                     <TableHead>Role</TableHead>
                     <TableHead>Nationality</TableHead>
                     <TableHead>Age</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -247,6 +269,19 @@ const AdminDashboard = () => {
                       </TableCell>
                       <TableCell>{user.nationality || 'N/A'}</TableCell>
                       <TableCell>{user.age || 'N/A'}</TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setRoleDialogOpen(true);
+                          }}
+                        >
+                          <Settings className="h-4 w-4 mr-1" />
+                          Change Role
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -257,6 +292,28 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
       </main>
+
+      {/* Dialogs */}
+      {selectedStudent && (
+        <AssignTeacherTutorDialog
+          open={assignDialogOpen}
+          onOpenChange={setAssignDialogOpen}
+          studentId={selectedStudent.user_id}
+          studentName={selectedStudent.profiles?.full_name}
+          currentTeacherId={selectedStudent.teacher_id}
+          currentTutorId={selectedStudent.tutor_id}
+        />
+      )}
+
+      {selectedUser && (
+        <ChangeRoleDialog
+          open={roleDialogOpen}
+          onOpenChange={setRoleDialogOpen}
+          userId={selectedUser.id}
+          userName={selectedUser.full_name}
+          currentRole={selectedUser.user_roles?.[0]?.role}
+        />
+      )}
     </div>
   );
 };

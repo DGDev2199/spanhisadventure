@@ -364,15 +364,5 @@ CREATE POLICY "Admin can view all student profiles"
   ON public.student_profiles
   FOR SELECT
   USING (public.has_role(auth.uid(), 'admin'));
-  
-  -- Asegurar relación entre student_profiles y profiles
-alter table if exists public.student_profiles
-drop constraint if exists student_profiles_user_id_fkey;
-
-alter table public.student_profiles
-add constraint student_profiles_user_id_fkey
-foreign key (user_id)
-references public.profiles (id)
-on delete cascade;
 
 

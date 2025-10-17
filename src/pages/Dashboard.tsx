@@ -17,20 +17,32 @@ const Dashboard = () => {
   const queryClient = useQueryClient();
   const [editProfileOpen, setEditProfileOpen] = useState(false);
 
-  const { data: studentProfile, isLoading: profileLoading } = useQuery({
-    queryKey: ['student-profile', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const { data, error } = await supabase
-        .from('student_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id
-  });
+
+const { data: studentProfile, isLoading: profileLoading } = useQuery({
+  queryKey: ['student-profile', user?.id],
+  queryFn: async () => {
+    if (!user?.id) return null;
+    const { data, error } = await supabase
+      .from('student_profiles')
+      .select(`
+        id,
+        user_id,
+        teacher_id,
+        tutor_id,
+        room,
+        level,
+        status,
+        placement_test_status,
+        profiles!student_profiles_user_id_profiles_fkey(full_name, email)
+      `)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data;
+  },
+  enabled: !!user?.id,
+});
 
   const { data: tasks, isLoading: tasksLoading } = useQuery({
     queryKey: ['student-tasks', user?.id],
@@ -67,35 +79,36 @@ const Dashboard = () => {
     enabled: !!user?.id
   });
 
-  const { data: teacherProfile } = useQuery({
-    queryKey: ['teacher-profile', studentProfile?.teacher_id],
-    queryFn: async () => {
-      if (!studentProfile?.teacher_id) return null;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', studentProfile.teacher_id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!studentProfile?.teacher_id
-  });
+const { data: teacherProfile } = useQuery({
+  queryKey: ['teacher-profile', studentProfile?.teacher_id],
+  queryFn: async () => {
+    if (!studentProfile?.teacher_id) return null;
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', studentProfile.teacher_id)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+  enabled: !!studentProfile?.teacher_id,
+});
 
-  const { data: tutorProfile } = useQuery({
-    queryKey: ['tutor-profile', studentProfile?.tutor_id],
-    queryFn: async () => {
-      if (!studentProfile?.tutor_id) return null;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', studentProfile.tutor_id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!studentProfile?.tutor_id
-  });
+
+const { data: tutorProfile } = useQuery({
+  queryKey: ['tutor-profile', studentProfile?.tutor_id],
+  queryFn: async () => {
+    if (!studentProfile?.tutor_id) return null;
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', studentProfile.tutor_id)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+  enabled: !!studentProfile?.tutor_id,
+});
 
   const completeTaskMutation = useMutation({
     mutationFn: async (taskId: string) => {

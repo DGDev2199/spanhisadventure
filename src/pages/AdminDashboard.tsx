@@ -38,38 +38,72 @@ const AdminDashboard = () => {
   const { data: students, isLoading: studentsLoading, error: studentsError } = useQuery({
     queryKey: ['students'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Get student profiles
+      const { data: studentData, error: studentError } = await supabase
         .from('student_profiles')
-        .select(`
-          *,
-          profiles!inner(full_name, email)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
-      if (error) {
-        console.error('Error loading students:', error);
-        throw error;
+      
+      if (studentError) {
+        console.error('Error loading students:', studentError);
+        throw studentError;
       }
-      console.log('Students loaded:', data);
-      return data;
+
+      // Get profiles for these students
+      const userIds = studentData?.map(s => s.user_id) || [];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error loading profiles:', profilesError);
+        throw profilesError;
+      }
+
+      // Merge the data
+      const studentsWithProfiles = studentData?.map(student => ({
+        ...student,
+        profiles: profilesData?.find(p => p.id === student.user_id)
+      }));
+
+      console.log('Students loaded:', studentsWithProfiles);
+      return studentsWithProfiles;
     }
   });
 
   const { data: allUsers, isLoading: usersLoading, error: usersError } = useQuery({
     queryKey: ['all-users'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Get all profiles
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          user_roles!left(role)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
-      if (error) {
-        console.error('Error loading users:', error);
-        throw error;
+      
+      if (profilesError) {
+        console.error('Error loading users:', profilesError);
+        throw profilesError;
       }
-      console.log('Users loaded:', data);
-      return data;
+
+      // Get all user roles
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
+      if (rolesError) {
+        console.error('Error loading roles:', rolesError);
+        throw rolesError;
+      }
+
+      // Merge the data
+      const usersWithRoles = profilesData?.map(profile => ({
+        ...profile,
+        user_roles: rolesData?.filter(r => r.user_id === profile.id) || []
+      }));
+
+      console.log('Users loaded:', usersWithRoles);
+      return usersWithRoles;
     }
   });
 

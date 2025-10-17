@@ -35,32 +35,40 @@ const AdminDashboard = () => {
     }
   });
 
-  const { data: students, isLoading: studentsLoading } = useQuery({
+  const { data: students, isLoading: studentsLoading, error: studentsError } = useQuery({
     queryKey: ['students'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('student_profiles')
         .select(`
           *,
-          profiles!student_profiles_user_id_fkey(full_name, email)
+          profiles!inner(full_name, email)
         `)
         .order('created_at', { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading students:', error);
+        throw error;
+      }
+      console.log('Students loaded:', data);
       return data;
     }
   });
 
-  const { data: allUsers, isLoading: usersLoading } = useQuery({
+  const { data: allUsers, isLoading: usersLoading, error: usersError } = useQuery({
     queryKey: ['all-users'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
         .select(`
           *,
-          user_roles(role)
+          user_roles!left(role)
         `)
         .order('created_at', { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading users:', error);
+        throw error;
+      }
+      console.log('Users loaded:', data);
       return data;
     }
   });
@@ -171,6 +179,10 @@ const AdminDashboard = () => {
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
+            ) : studentsError ? (
+              <div className="text-center text-destructive py-8">
+                Error loading students. Please check console for details.
+              </div>
             ) : students && students.length > 0 ? (
               <Table>
                 <TableHeader>
@@ -244,6 +256,10 @@ const AdminDashboard = () => {
             {usersLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : usersError ? (
+              <div className="text-center text-destructive py-8">
+                Error loading users. Please check console for details.
               </div>
             ) : allUsers && allUsers.length > 0 ? (
               <Table>

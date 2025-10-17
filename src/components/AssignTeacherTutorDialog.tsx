@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -68,6 +67,19 @@ export const AssignTeacherTutorDialog = ({
         .select('id, full_name')
         .in('id', tutorIds);
       
+      return data || [];
+    }
+  });
+
+  const { data: rooms } = useQuery({
+    queryKey: ['rooms'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('active', true)
+        .order('name', { ascending: true });
+      if (error) throw error;
       return data || [];
     }
   });
@@ -143,11 +155,19 @@ export const AssignTeacherTutorDialog = ({
 
           <div className="space-y-2">
             <Label>Room</Label>
-            <Input
-              value={room}
-              onChange={(e) => setRoom(e.target.value)}
-              placeholder="Enter room number (e.g., 101, A-205)"
-            />
+            <Select value={room} onValueChange={setRoom}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a room" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {rooms?.map((r) => (
+                  <SelectItem key={r.id} value={r.name}>
+                    {r.name} (Capacity: {r.capacity})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

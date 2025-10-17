@@ -3,17 +3,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { LogOut, Users, GraduationCap, UserCheck, BookOpen, Settings } from 'lucide-react';
+import { LogOut, Users, GraduationCap, UserCheck, BookOpen, Settings, Home } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import logo from '@/assets/logo.png';
 import { AssignTeacherTutorDialog } from '@/components/AssignTeacherTutorDialog';
 import { ChangeRoleDialog } from '@/components/ChangeRoleDialog';
+import { ManageRoomsDialog } from '@/components/ManageRoomsDialog';
 
 const AdminDashboard = () => {
   const { signOut } = useAuth();
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
+  const [roomsDialogOpen, setRoomsDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
 
@@ -132,11 +134,17 @@ const AdminDashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Admin Overview</h2>
-          <p className="text-muted-foreground">
-            Manage students, teachers, tutors, and all platform activities
-          </p>
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h2 className="text-3xl font-bold mb-2">Admin Overview</h2>
+            <p className="text-muted-foreground">
+              Manage students, teachers, tutors, and all platform activities
+            </p>
+          </div>
+          <Button onClick={() => setRoomsDialogOpen(true)}>
+            <Home className="h-4 w-4 mr-2" />
+            Gestionar Habitaciones
+          </Button>
         </div>
 
         {/* Stats Grid */}
@@ -365,6 +373,11 @@ const AdminDashboard = () => {
           currentRole={selectedUser.user_roles?.[0]?.role}
         />
       )}
+
+      <ManageRoomsDialog
+        open={roomsDialogOpen}
+        onOpenChange={setRoomsDialogOpen}
+      />
     </div>
   );
 };

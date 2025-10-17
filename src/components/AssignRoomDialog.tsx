@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
 interface AssignRoomDialogProps {
@@ -24,6 +24,19 @@ export const AssignRoomDialog = ({
 }: AssignRoomDialogProps) => {
   const [room, setRoom] = useState(currentRoom || '');
   const queryClient = useQueryClient();
+
+  const { data: rooms } = useQuery({
+    queryKey: ['rooms'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('rooms')
+        .select('*')
+        .eq('active', true)
+        .order('name', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    }
+  });
 
   const assignRoomMutation = useMutation({
     mutationFn: async () => {
@@ -58,12 +71,20 @@ export const AssignRoomDialog = ({
         
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label>Room Number</Label>
-            <Input
-              value={room}
-              onChange={(e) => setRoom(e.target.value)}
-              placeholder="Enter room number (e.g., 101, A-205)"
-            />
+            <Label>Room</Label>
+            <Select value={room} onValueChange={setRoom}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a room" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None</SelectItem>
+                {rooms?.map((r) => (
+                  <SelectItem key={r.id} value={r.name}>
+                    {r.name} (Capacity: {r.capacity})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 

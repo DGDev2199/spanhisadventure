@@ -26,7 +26,10 @@ const Dashboard = () => {
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading student profile:', error);
+        throw error;
+      }
       return data;
     },
     enabled: !!user?.id
@@ -67,31 +70,37 @@ const Dashboard = () => {
     enabled: !!user?.id
   });
 
-  const { data: teacherProfile } = useQuery({
+  const { data: teacherProfile, isLoading: teacherLoading } = useQuery({
     queryKey: ['teacher-profile', studentProfile?.teacher_id],
     queryFn: async () => {
       if (!studentProfile?.teacher_id) return null;
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name')
+        .select('id, full_name, email')
         .eq('id', studentProfile.teacher_id)
         .maybeSingle();
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading teacher profile:', error);
+        return null;
+      }
       return data;
     },
     enabled: !!studentProfile?.teacher_id
   });
 
-  const { data: tutorProfile } = useQuery({
+  const { data: tutorProfile, isLoading: tutorLoading } = useQuery({
     queryKey: ['tutor-profile', studentProfile?.tutor_id],
     queryFn: async () => {
       if (!studentProfile?.tutor_id) return null;
       const { data, error } = await supabase
         .from('profiles')
-        .select('full_name')
+        .select('id, full_name, email')
         .eq('id', studentProfile.tutor_id)
         .maybeSingle();
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading tutor profile:', error);
+        return null;
+      }
       return data;
     },
     enabled: !!studentProfile?.tutor_id
@@ -181,30 +190,48 @@ const Dashboard = () => {
 
           <Card className="shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">My Teacher</CardTitle>
+              <CardTitle className="text-sm font-medium">Mi Profesor</CardTitle>
               <User className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {profileLoading ? '...' : teacherProfile?.full_name || 'Not Assigned'}
+              <div className="text-lg font-bold">
+                {profileLoading || teacherLoading ? (
+                  '...'
+                ) : teacherProfile?.full_name || (
+                  <span className="text-muted-foreground text-base">No asignado</span>
+                )}
               </div>
+              {teacherProfile && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {teacherProfile.email}
+                </p>
+              )}
               <p className="text-xs text-muted-foreground mt-1">
-                {teacherProfile ? 'Your teacher' : 'Contact admin'}
+                {teacherProfile ? 'Tu profesor' : 'Contacta al admin'}
               </p>
             </CardContent>
           </Card>
 
           <Card className="shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">My Tutor</CardTitle>
+              <CardTitle className="text-sm font-medium">Mi Tutor</CardTitle>
               <User className="h-4 w-4 text-secondary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {profileLoading ? '...' : tutorProfile?.full_name || 'Not Assigned'}
+              <div className="text-lg font-bold">
+                {profileLoading || tutorLoading ? (
+                  '...'
+                ) : tutorProfile?.full_name || (
+                  <span className="text-muted-foreground text-base">No asignado</span>
+                )}
               </div>
+              {tutorProfile && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  {tutorProfile.email}
+                </p>
+              )}
               <p className="text-xs text-muted-foreground mt-1">
-                {tutorProfile ? 'Your tutor' : 'Contact admin'}
+                {tutorProfile ? 'Tu tutor' : 'Contacta al admin'}
               </p>
             </CardContent>
           </Card>

@@ -25,20 +25,44 @@ const TeacherDashboard = () => {
   const [taskForm, setTaskForm] = useState({ student_id: '', title: '', description: '', due_date: '' });
   const [feedbackForm, setFeedbackForm] = useState({ student_id: '', content: '' });
 
-  const { data: myStudents } = useQuery({
+  const { data: myStudents, isLoading: studentsLoading } = useQuery({
     queryKey: ['teacher-students', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await supabase
+      
+      // Get student profiles for this teacher
+      const { data: studentData, error: studentError } = await supabase
         .from('student_profiles')
-        .select(`
-          *,
-          profiles!student_profiles_user_id_fkey(full_name, email)
-        `)
+        .select('*')
         .eq('teacher_id', user.id)
         .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data;
+      
+      if (studentError) {
+        console.error('Error loading students:', studentError);
+        throw studentError;
+      }
+
+      // Get profiles for these students
+      const userIds = studentData?.map(s => s.user_id) || [];
+      if (userIds.length === 0) return [];
+
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error loading profiles:', profilesError);
+        throw profilesError;
+      }
+
+      // Merge the data
+      const studentsWithProfiles = studentData?.map(student => ({
+        ...student,
+        profiles: profilesData?.find(p => p.id === student.user_id)
+      }));
+
+      return studentsWithProfiles;
     }
   });
 
@@ -122,9 +146,9 @@ const TeacherDashboard = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Teacher Overview</h2>
+          <h2 className="text-3xl font-bold mb-2">Panel del Profesor</h2>
           <p className="text-muted-foreground">
-            Manage your students, assign tasks, and provide feedback
+            Gestiona tus estudiantes, asigna tareas y proporciona retroalimentación
           </p>
         </div>
 
@@ -132,38 +156,40 @@ const TeacherDashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">My Students</CardTitle>
+              <CardTitle className="text-sm font-medium">Mis Estudiantes</CardTitle>
               <GraduationCap className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-primary">{myStudents?.length || 0}</div>
-              <p className="text-xs text-muted-foreground mt-1">Assigned students</p>
+              <div className="text-2xl font-bold text-primary">
+                {studentsLoading ? '...' : myStudents?.length || 0}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Estudiantes asignados</p>
             </CardContent>
           </Card>
 
           <Card className="shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Active Tasks</CardTitle>
+              <CardTitle className="text-sm font-medium">Tareas Activas</CardTitle>
               <BookOpen className="h-4 w-4 text-secondary" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-secondary">
                 {myTasks?.filter((t: any) => !t.completed).length || 0}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Pending completion</p>
+              <p className="text-xs text-muted-foreground mt-1">Pendientes</p>
             </CardContent>
           </Card>
 
           <Card className="shadow-md hover:shadow-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Completed Tasks</CardTitle>
+              <CardTitle className="text-sm font-medium">Tareas Completadas</CardTitle>
               <MessageSquare className="h-4 w-4 text-accent" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-accent-foreground">
                 {myTasks?.filter((t: any) => t.completed).length || 0}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Tasks done</p>
+              <p className="text-xs text-muted-foreground mt-1">Completadas</p>
             </CardContent>
           </Card>
         </div>
@@ -173,8 +199,8 @@ const TeacherDashboard = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>My Students</CardTitle>
-                <CardDescription>Students assigned to you</CardDescription>
+                <CardTitle>Mis Estudiantes</CardTitle>
+                <CardDescription>Estudiantes asignados a ti</CardDescription>
               </div>
               <Dialog open={isFeedbackDialogOpen} onOpenChange={setIsFeedbackDialogOpen}>
                 <DialogTrigger asChild>
@@ -221,32 +247,54 @@ const TeacherDashboard = () => {
             </div>
           </CardHeader>
           <CardContent>
-            {myStudents && myStudents.length > 0 ? (
+            {studentsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : myStudents && myStudents.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
+                    <TableHead>Nombre</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Level</TableHead>
-                    <TableHead>Room</TableHead>
+                    <TableHead>Nivel</TableHead>
+                    <TableHead>Habitación</TableHead>
                     <TableHead>Test Status</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {myStudents.map((student: any) => (
                     <TableRow key={student.id}>
-                      <TableCell className="font-medium">{student.profiles?.full_name}</TableCell>
-                      <TableCell>{student.profiles?.email}</TableCell>
-                      <TableCell>{student.level || 'Not Set'}</TableCell>
-                      <TableCell>{student.room || 'Not Assigned'}</TableCell>
+                      <TableCell className="font-medium">
+                        {student.profiles?.full_name || (
+                          <span className="text-muted-foreground">Sin nombre</span>
+                        )}
+                      </TableCell>
+                      <TableCell>{student.profiles?.email || '-'}</TableCell>
+                      <TableCell>
+                        {student.level || (
+                          <span className="text-muted-foreground">No establecido</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {student.room || (
+                          <span className="text-muted-foreground">No asignado</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                           student.placement_test_status === 'completed' 
                             ? 'bg-green-100 text-green-700' 
-                            : 'bg-yellow-100 text-yellow-700'
+                            : student.placement_test_status === 'pending'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-gray-100 text-gray-700'
                         }`}>
-                          {student.placement_test_status}
+                          {student.placement_test_status === 'completed' 
+                            ? 'Completado' 
+                            : student.placement_test_status === 'pending'
+                            ? 'Pendiente'
+                            : 'No iniciado'}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -259,7 +307,7 @@ const TeacherDashboard = () => {
                           }}
                         >
                           <Home className="h-4 w-4 mr-1" />
-                          {student.room ? 'Change Room' : 'Assign Room'}
+                          {student.room ? 'Cambiar' : 'Asignar'}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -267,7 +315,9 @@ const TeacherDashboard = () => {
                 </TableBody>
               </Table>
             ) : (
-              <p className="text-center text-muted-foreground py-8">No students assigned yet</p>
+              <p className="text-center text-muted-foreground py-8">
+                No tienes estudiantes asignados aún
+              </p>
             )}
           </CardContent>
         </Card>
@@ -277,8 +327,8 @@ const TeacherDashboard = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Tasks</CardTitle>
-                <CardDescription>Tasks assigned to your students</CardDescription>
+                <CardTitle>Tareas</CardTitle>
+                <CardDescription>Tareas asignadas a tus estudiantes</CardDescription>
               </div>
               <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
                 <DialogTrigger asChild>

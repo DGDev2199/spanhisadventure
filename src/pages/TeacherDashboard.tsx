@@ -6,13 +6,14 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { LogOut, GraduationCap, BookOpen, MessageSquare, Plus, Home } from 'lucide-react';
+import { LogOut, GraduationCap, BookOpen, MessageSquare, Plus, Home, FileCheck } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import logo from '@/assets/logo.png';
 import { AssignRoomDialog } from '@/components/AssignRoomDialog';
+import { ReviewPlacementTestDialog } from '@/components/ReviewPlacementTestDialog';
 
 const TeacherDashboard = () => {
   const { user, signOut } = useAuth();
@@ -21,6 +22,7 @@ const TeacherDashboard = () => {
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
   const [isRoomDialogOpen, setIsRoomDialogOpen] = useState(false);
+  const [isReviewTestDialogOpen, setIsReviewTestDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [taskForm, setTaskForm] = useState({ student_id: '', title: '', description: '', due_date: '' });
   const [feedbackForm, setFeedbackForm] = useState({ student_id: '', content: '' });
@@ -298,17 +300,32 @@ const TeacherDashboard = () => {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedStudent(student);
-                            setIsRoomDialogOpen(true);
-                          }}
-                        >
-                          <Home className="h-4 w-4 mr-1" />
-                          {student.room ? 'Cambiar' : 'Asignar'}
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedStudent(student);
+                              setIsRoomDialogOpen(true);
+                            }}
+                          >
+                            <Home className="h-4 w-4 mr-1" />
+                            {student.room ? 'Cambiar' : 'Asignar'}
+                          </Button>
+                          {student.placement_test_status === 'pending' && (
+                            <Button
+                              size="sm"
+                              variant="default"
+                              onClick={() => {
+                                setSelectedStudent(student);
+                                setIsReviewTestDialogOpen(true);
+                              }}
+                            >
+                              <FileCheck className="h-4 w-4 mr-1" />
+                              Revisar Test
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -435,6 +452,18 @@ const TeacherDashboard = () => {
           studentId={selectedStudent.user_id}
           studentName={selectedStudent.profiles?.full_name}
           currentRoom={selectedStudent.room}
+        />
+      )}
+
+      {/* Review Placement Test Dialog */}
+      {selectedStudent && (
+        <ReviewPlacementTestDialog
+          open={isReviewTestDialogOpen}
+          onOpenChange={setIsReviewTestDialogOpen}
+          studentId={selectedStudent.user_id}
+          studentName={selectedStudent.profiles?.full_name}
+          writtenScore={selectedStudent.placement_test_written_score}
+          currentLevel={selectedStudent.level}
         />
       )}
     </div>

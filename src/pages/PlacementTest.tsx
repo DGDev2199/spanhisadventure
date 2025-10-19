@@ -4,17 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import logo from '@/assets/logo.png';
 
 const PlacementTest = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [testComplete, setTestComplete] = useState(false);
@@ -25,6 +25,7 @@ const PlacementTest = () => {
       const { data, error } = await supabase
         .from('placement_tests')
         .select('*')
+        .order('level', { ascending: true })
         .order('question_number', { ascending: true });
       if (error) throw error;
       return data;
@@ -34,38 +35,24 @@ const PlacementTest = () => {
   const submitTestMutation = useMutation({
     mutationFn: async (score: number) => {
       if (!user?.id) throw new Error('No user');
-      
-      // Calculate level based on score
-      let level = 'A1';
-      if (score >= 90) level = 'C2';
-      else if (score >= 80) level = 'C1';
-      else if (score >= 70) level = 'B2';
-      else if (score >= 60) level = 'B1';
-      else if (score >= 50) level = 'A2';
 
       const { error } = await supabase
         .from('student_profiles')
         .update({
           placement_test_status: 'pending',
-          placement_test_written_score: score,
-          level: level as any
+          placement_test_written_score: score
         })
         .eq('user_id', user.id);
       
       if (error) throw error;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student-profile'] });
       setTestComplete(true);
-      toast({ 
-        title: 'Test submitted successfully!',
-        description: 'Your teacher will review your results and conduct an oral assessment.'
-      });
+      toast.success('¡Examen enviado exitosamente! Tu profesor lo revisará pronto.');
     },
     onError: () => {
-      toast({ 
-        title: 'Error submitting test', 
-        variant: 'destructive' 
-      });
+      toast.error('Error al enviar el examen. Por favor intenta de nuevo.');
     }
   });
 
@@ -115,17 +102,17 @@ const PlacementTest = () => {
             <div className="flex justify-center mb-4">
               <CheckCircle className="h-16 w-16 text-green-600" />
             </div>
-            <CardTitle className="text-2xl">Test Completed!</CardTitle>
+            <CardTitle className="text-2xl">¡Examen Completado!</CardTitle>
             <CardDescription>
-              Your written test has been submitted successfully.
+              Tu examen escrito ha sido enviado exitosamente.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-center text-muted-foreground">
-              Your teacher will review your results and schedule an oral assessment to determine your final level.
+              Tu profesor revisará los resultados y programará una evaluación oral para determinar tu nivel final.
             </p>
             <Button onClick={() => navigate('/dashboard')} className="w-full">
-              Return to Dashboard
+              Volver al Dashboard
             </Button>
           </CardContent>
         </Card>
@@ -138,14 +125,14 @@ const PlacementTest = () => {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full shadow-lg">
           <CardHeader>
-            <CardTitle>No Questions Available</CardTitle>
+            <CardTitle>Preguntas No Disponibles</CardTitle>
             <CardDescription>
-              The placement test is not available at this time. Please contact your administrator.
+              El examen de nivelación no está disponible en este momento. Por favor contacta a tu administrador.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => navigate('/dashboard')} className="w-full">
-              Return to Dashboard
+              Volver al Dashboard
             </Button>
           </CardContent>
         </Card>
@@ -168,10 +155,10 @@ const PlacementTest = () => {
             className="text-white hover:bg-white/10"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            Atrás
           </Button>
           <img src={logo} alt="Spanish Adventure" className="h-10" />
-          <h1 className="text-lg font-bold">Placement Test</h1>
+          <h1 className="text-lg font-bold">Examen de Nivelación</h1>
         </div>
       </header>
 
@@ -189,10 +176,10 @@ const PlacementTest = () => {
           <CardHeader>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-muted-foreground">
-                Question {currentQuestion + 1} of {questions.length}
+                Pregunta {currentQuestion + 1} de {questions.length}
               </span>
               <span className="text-sm font-medium text-primary">
-                Level: {question.level}
+                Nivel: {question.level}
               </span>
             </div>
             <CardTitle className="text-xl">{question.question}</CardTitle>
@@ -237,7 +224,7 @@ const PlacementTest = () => {
                 onClick={handlePrevious}
                 disabled={currentQuestion === 0}
               >
-                Previous
+                Anterior
               </Button>
               
               {currentQuestion === questions.length - 1 ? (
@@ -245,11 +232,11 @@ const PlacementTest = () => {
                   onClick={handleSubmit}
                   disabled={Object.keys(answers).length !== questions.length}
                 >
-                  Submit Test
+                  Enviar Examen
                 </Button>
               ) : (
                 <Button onClick={handleNext}>
-                  Next
+                  Siguiente
                 </Button>
               )}
             </div>

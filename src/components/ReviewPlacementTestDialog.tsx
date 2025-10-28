@@ -140,15 +140,20 @@ export function ReviewPlacementTestDialog({
               </div>
             ) : questions && questions.length > 0 ? (
               <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Respuestas de Opción Múltiple ({questions.length} preguntas)</h3>
-                {!studentAnswers && (
+                {!studentAnswers || Object.keys(studentAnswers).length === 0 ? (
                   <Alert>
                     <AlertDescription>
                       El estudiante aún no ha completado el test o las respuestas no están disponibles.
                     </AlertDescription>
                   </Alert>
-                )}
-                {questions.map((question, index) => {
+                ) : (
+                  <>
+                    <h3 className="font-semibold text-lg">
+                      Respuestas de Opción Múltiple ({Object.keys(studentAnswers).length} preguntas respondidas)
+                    </h3>
+                    {questions
+                      .filter(question => studentAnswers[question.id] !== undefined) // Solo preguntas respondidas
+                      .map((question, index) => {
                   const studentAnswer = studentAnswers?.[question.id];
                   const isCorrect = studentAnswer?.toLowerCase() === question.correct_answer?.toLowerCase();
                   
@@ -232,8 +237,10 @@ export function ReviewPlacementTestDialog({
                         </div>
                       </CardContent>
                     </Card>
-                  );
-                })}
+                      );
+                    })}
+                  </>
+                )}
               </div>
             ) : (
               <Alert>

@@ -550,11 +550,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_teacher_id_from_assignment: {
+        Args: { _assignment_id: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_teacher_of_test: {
+        Args: { _test_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_test_assigned_to_student: {
+        Args: { _test_id: string; _user_id: string }
         Returns: boolean
       }
     }

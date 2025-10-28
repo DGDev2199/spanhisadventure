@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import DashboardRouter from "./components/DashboardRouter";
 import PlacementTest from "./pages/PlacementTest";
+import TakeCustomTest from "./pages/TakeCustomTest";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,6 +38,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole={['student']}>
                   <PlacementTest />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/test/:assignmentId"
+              element={
+                <ProtectedRoute requiredRole={['student']}>
+                  <TakeCustomTest />
                 </ProtectedRoute>
               }
             />

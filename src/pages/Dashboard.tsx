@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, User, BookOpen, Calendar, MessageSquare, Award, CheckCircle } from 'lucide-react';
+import { LogOut, User, BookOpen, Calendar, MessageSquare, Award, CheckCircle, ClipboardList } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -64,6 +64,30 @@ const Dashboard = () => {
         .eq('student_id', user.id)
         .order('created_at', { ascending: false })
         .limit(3);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id
+  });
+
+  const { data: assignedTests, isLoading: testsLoading } = useQuery({
+    queryKey: ['student-assignments', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from('test_assignments')
+        .select(`
+          *,
+          custom_tests (
+            id,
+            title,
+            description,
+            due_date,
+            time_limit_minutes
+          )
+        `)
+        .eq('student_id', user.id)
+        .order('assigned_at', { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -451,6 +475,75 @@ const Dashboard = () => {
                           Due: {new Date(task.due_date).toLocaleDateString()}
                         </p>
                       )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Assigned Tests Section */}
+        {assignedTests && assignedTests.length > 0 && (
+          <Card className="shadow-md mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ClipboardList className="h-5 w-5 text-secondary" />
+                Tests Asignados
+              </CardTitle>
+              <CardDescription>
+                Tests creados por tu profesor
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {assignedTests.map((assignment: any) => (
+                  <div key={assignment.id} className="p-4 border rounded-lg hover:bg-accent/5 transition-colors">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-lg">{assignment.custom_tests?.title}</h4>
+                        {assignment.custom_tests?.description && (
+                          <p className="text-sm text-muted-foreground mt-1">{assignment.custom_tests.description}</p>
+                        )}
+                        <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
+                          {assignment.custom_tests?.due_date && (
+                            <span>Entrega: {new Date(assignment.custom_tests.due_date).toLocaleDateString()}</span>
+                          )}
+                          {assignment.custom_tests?.time_limit_minutes && (
+                            <span>Tiempo: {assignment.custom_tests.time_limit_minutes} min</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        {assignment.status === 'assigned' && (
+                          <Button size="sm" onClick={() => navigate(`/test/${assignment.id}`)}>
+                            Empezar Test
+                          </Button>
+                        )}
+                        {assignment.status === 'in_progress' && (
+                          <Button size="sm" variant="secondary" onClick={() => navigate(`/test/${assignment.id}`)}>
+                            Continuar
+                          </Button>
+                        )}
+                        {assignment.status === 'submitted' && (
+                          <div className="text-center">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                              Pendiente revisión
+                            </span>
+                            {assignment.score !== null && (
+                              <p className="text-sm font-medium mt-1">{assignment.score}%</p>
+                            )}
+                          </div>
+                        )}
+                        {assignment.status === 'graded' && (
+                          <div className="text-center">
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                              Calificado
+                            </span>
+                            <p className="text-lg font-bold text-primary mt-1">{assignment.score}%</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

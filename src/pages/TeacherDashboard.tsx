@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { LogOut, GraduationCap, BookOpen, MessageSquare, Plus, Home, FileCheck } from 'lucide-react';
+import { LogOut, GraduationCap, BookOpen, MessageSquare, Plus, Home, FileCheck, ClipboardList } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -15,6 +15,7 @@ import { useState } from 'react';
 import logo from '@/assets/logo.png';
 import { AssignRoomDialog } from '@/components/AssignRoomDialog';
 import { ReviewPlacementTestDialog } from '@/components/ReviewPlacementTestDialog';
+import { CreateTestDialog } from '@/components/CreateTestDialog';
 
 const TeacherDashboard = () => {
   const { user, signOut } = useAuth();
@@ -24,6 +25,7 @@ const TeacherDashboard = () => {
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
   const [isRoomDialogOpen, setIsRoomDialogOpen] = useState(false);
   const [isReviewTestDialogOpen, setIsReviewTestDialogOpen] = useState(false);
+  const [isCreateTestDialogOpen, setIsCreateTestDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [taskForm, setTaskForm] = useState({ student_id: '', title: '', description: '', due_date: '' });
   const [feedbackForm, setFeedbackForm] = useState({ student_id: '', content: '' });
@@ -81,6 +83,29 @@ const TeacherDashboard = () => {
         `)
         .eq('teacher_id', user.id)
         .order('due_date', { ascending: true });
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: myTests } = useQuery({
+    queryKey: ['teacher-tests', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from('custom_tests')
+        .select(`
+          *,
+          test_assignments (
+            id,
+            student_id,
+            status,
+            score,
+            profiles (full_name)
+          )
+        `)
+        .eq('teacher_id', user.id)
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
     }
@@ -444,6 +469,69 @@ const TeacherDashboard = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Custom Tests Table */}
+        <Card className="shadow-md mt-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Tests Personalizados</CardTitle>
+                <CardDescription>Tests creados y asignados a tus estudiantes</CardDescription>
+              </div>
+              <Button size="sm" onClick={() => setIsCreateTestDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Crear Test
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {myTests && myTests.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Título</TableHead>
+                    <TableHead>Fecha Entrega</TableHead>
+                    <TableHead>Asignado a</TableHead>
+                    <TableHead>Enviados</TableHead>
+                    <TableHead>Promedio</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {myTests.map((test: any) => {
+                    const totalAssigned = test.test_assignments?.length || 0;
+                    const submitted = test.test_assignments?.filter((a: any) => a.status === 'submitted' || a.status === 'graded').length || 0;
+                    const scores = test.test_assignments?.filter((a: any) => a.score !== null).map((a: any) => a.score) || [];
+                    const avgScore = scores.length > 0 ? Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length) : 0;
+
+                    return (
+                      <TableRow key={test.id}>
+                        <TableCell className="font-medium">{test.title}</TableCell>
+                        <TableCell>{test.due_date ? new Date(test.due_date).toLocaleDateString() : 'Sin fecha'}</TableCell>
+                        <TableCell>{totalAssigned} estudiante(s)</TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            submitted === totalAssigned 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {submitted}/{totalAssigned}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {scores.length > 0 ? `${avgScore}%` : '-'}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-center text-muted-foreground py-8">
+                No has creado tests aún. Haz clic en "Crear Test" para comenzar.
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </main>
 
       {/* Assign Room Dialog */}
@@ -469,6 +557,13 @@ const TeacherDashboard = () => {
           studentAnswers={selectedStudent.placement_test_answers}
         />
       )}
+
+      {/* Create Test Dialog */}
+      <CreateTestDialog
+        open={isCreateTestDialogOpen}
+        onOpenChange={setIsCreateTestDialogOpen}
+        students={myStudents || []}
+      />
     </div>
   );
 };

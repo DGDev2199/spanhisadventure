@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -42,7 +43,7 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [eventType, setEventType] = useState('class');
-  const [dayOfWeek, setDayOfWeek] = useState('0');
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
   const [level, setLevel] = useState('none');
@@ -113,12 +114,14 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
     mutationFn: async () => {
       if (!user?.id) throw new Error('No user');
       if (!title || !eventType) throw new Error('Fill required fields');
+      if (selectedDays.length === 0) throw new Error('Selecciona al menos un día');
 
-      const { error } = await supabase.from('schedule_events').insert({
+      // Create one event for each selected day
+      const eventsToCreate = selectedDays.map(day => ({
         title,
         description: description || null,
         event_type: eventType,
-        day_of_week: parseInt(dayOfWeek),
+        day_of_week: parseInt(day),
         start_time: startTime,
         end_time: endTime,
         level: level === 'none' ? null : level,
@@ -126,13 +129,15 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
         teacher_id: teacherId === 'none' ? null : teacherId,
         tutor_id: tutorId === 'none' ? null : tutorId,
         created_by: user.id,
-      });
+      }));
+
+      const { error } = await supabase.from('schedule_events').insert(eventsToCreate);
 
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['schedule-events'] });
-      toast.success('Evento creado exitosamente');
+      toast.success(`Evento${selectedDays.length > 1 ? 's' : ''} creado${selectedDays.length > 1 ? 's' : ''} exitosamente`);
       resetForm();
       onOpenChange(false);
     },
@@ -145,13 +150,21 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
     setTitle('');
     setDescription('');
     setEventType('class');
-    setDayOfWeek('0');
+    setSelectedDays([]);
     setStartTime('09:00');
     setEndTime('10:00');
     setLevel('none');
     setRoomId('none');
     setTeacherId('none');
     setTutorId('none');
+  };
+
+  const toggleDay = (dayValue: string) => {
+    setSelectedDays(prev => 
+      prev.includes(dayValue)
+        ? prev.filter(d => d !== dayValue)
+        : [...prev, dayValue]
+    );
   };
 
   return (
@@ -199,22 +212,32 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
                 </SelectContent>
               </Select>
             </div>
+          </div>
 
-            <div>
-              <Label>Día de la Semana *</Label>
-              <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {DAYS.map((day) => (
-                    <SelectItem key={day.value} value={day.value}>
-                      {day.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div>
+            <Label className="mb-3 block">Días de la Semana * (selecciona uno o varios)</Label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 border rounded-lg p-3">
+              {DAYS.map((day) => (
+                <div key={day.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`day-${day.value}`}
+                    checked={selectedDays.includes(day.value)}
+                    onCheckedChange={() => toggleDay(day.value)}
+                  />
+                  <label
+                    htmlFor={`day-${day.value}`}
+                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                  >
+                    {day.label}
+                  </label>
+                </div>
+              ))}
             </div>
+            {selectedDays.length > 0 && (
+              <p className="text-xs text-muted-foreground mt-2">
+                {selectedDays.length} día{selectedDays.length > 1 ? 's' : ''} seleccionado{selectedDays.length > 1 ? 's' : ''}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -317,10 +340,10 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
             </Button>
             <Button
               onClick={() => createEventMutation.mutate()}
-              disabled={!title || createEventMutation.isPending}
+              disabled={!title || selectedDays.length === 0 || createEventMutation.isPending}
               className="w-full sm:flex-1"
             >
-              {createEventMutation.isPending ? 'Creando...' : 'Crear Evento'}
+              {createEventMutation.isPending ? 'Creando...' : `Crear Evento${selectedDays.length > 1 ? 's' : ''}`}
             </Button>
           </div>
         </div>

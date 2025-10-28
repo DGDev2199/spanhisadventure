@@ -62,24 +62,46 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
   const { data: teachers } = useQuery({
     queryKey: ['teachers'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
-        .select('user_id, profiles:user_id(full_name)')
+        .select('user_id')
         .eq('role', 'teacher');
-      if (error) throw error;
-      return data;
+      
+      if (rolesError) throw rolesError;
+      
+      const userIds = rolesData.map(r => r.user_id);
+      if (userIds.length === 0) return [];
+      
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+      
+      if (profilesError) throw profilesError;
+      return profilesData;
     }
   });
 
   const { data: tutors } = useQuery({
     queryKey: ['tutors'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
-        .select('user_id, profiles:user_id(full_name)')
+        .select('user_id')
         .eq('role', 'tutor');
-      if (error) throw error;
-      return data;
+      
+      if (rolesError) throw rolesError;
+      
+      const userIds = rolesData.map(r => r.user_id);
+      if (userIds.length === 0) return [];
+      
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+      
+      if (profilesError) throw profilesError;
+      return profilesData;
     }
   });
 
@@ -235,8 +257,8 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
                 <SelectContent>
                   <SelectItem value="none">Sin profesor</SelectItem>
                   {teachers?.map((teacher: any) => (
-                    <SelectItem key={teacher.user_id} value={teacher.user_id}>
-                      {teacher.profiles?.full_name}
+                    <SelectItem key={teacher.id} value={teacher.id}>
+                      {teacher.full_name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -251,8 +273,8 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
                 <SelectContent>
                   <SelectItem value="none">Sin tutor</SelectItem>
                   {tutors?.map((tutor: any) => (
-                    <SelectItem key={tutor.user_id} value={tutor.user_id}>
-                      {tutor.profiles?.full_name}
+                    <SelectItem key={tutor.id} value={tutor.id}>
+                      {tutor.full_name}
                     </SelectItem>
                   ))}
                 </SelectContent>

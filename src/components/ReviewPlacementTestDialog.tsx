@@ -56,24 +56,36 @@ export function ReviewPlacementTestDialog({
 
   const assignLevelMutation = useMutation({
     mutationFn: async (level: string) => {
-      const { error } = await supabase
+      console.log('Assigning level:', { level, studentId });
+      
+      const { data, error } = await supabase
         .from('student_profiles')
         .update({
           level: level as any,
           placement_test_status: 'completed',
           placement_test_oral_completed: true
         })
-        .eq('user_id', studentId);
+        .eq('user_id', studentId)
+        .select()
+        .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error assigning level:', error);
+        throw error;
+      }
+      
+      console.log('Level assigned successfully:', data);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teacher-students'] });
+      queryClient.invalidateQueries({ queryKey: ['student-profile'] });
       toast.success('Nivel asignado exitosamente');
       onOpenChange(false);
     },
-    onError: () => {
-      toast.error('Error al asignar nivel');
+    onError: (error: any) => {
+      console.error('Assignment mutation error:', error);
+      toast.error(`Error al asignar nivel: ${error.message || 'Error desconocido'}`);
     }
   });
 

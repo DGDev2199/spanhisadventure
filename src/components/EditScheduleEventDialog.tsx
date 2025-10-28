@@ -38,10 +38,10 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
       setDayOfWeek(event.day_of_week?.toString() || '');
       setStartTime(event.start_time || '');
       setEndTime(event.end_time || '');
-      setRoomId(event.room_id || '');
-      setTeacherId(event.teacher_id || '');
-      setTutorId(event.tutor_id || '');
-      setLevel(event.level || '');
+      setRoomId(event.room_id || 'none');
+      setTeacherId(event.teacher_id || 'none');
+      setTutorId(event.tutor_id || 'none');
+      setLevel(event.level || 'none');
       setColor(event.color || '#3b82f6');
     }
   }, [event]);
@@ -94,10 +94,10 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
           day_of_week: parseInt(dayOfWeek),
           start_time: startTime,
           end_time: endTime,
-          room_id: roomId || null,
-          teacher_id: teacherId || null,
-          tutor_id: tutorId || null,
-          level: level || null,
+          room_id: roomId === 'none' ? null : roomId,
+          teacher_id: teacherId === 'none' ? null : teacherId,
+          tutor_id: tutorId === 'none' ? null : tutorId,
+          level: level === 'none' ? null : level,
           color
         })
         .eq('id', event.id);
@@ -190,7 +190,7 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
                   <SelectValue placeholder="Seleccionar nivel" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin nivel específico</SelectItem>
+                  <SelectItem value="none">Sin nivel específico</SelectItem>
                   {levels.map(l => (
                     <SelectItem key={l} value={l}>{l}</SelectItem>
                   ))}
@@ -217,7 +217,7 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
                 <SelectValue placeholder="Seleccionar sala" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sin sala</SelectItem>
+                <SelectItem value="none">Sin sala</SelectItem>
                 {rooms?.map((room: any) => (
                   <SelectItem key={room.id} value={room.id}>{room.name}</SelectItem>
                 ))}
@@ -233,7 +233,7 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
                   <SelectValue placeholder="Seleccionar profesor" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin profesor</SelectItem>
+                  <SelectItem value="none">Sin profesor</SelectItem>
                   {teachers?.map((teacher: any) => (
                     <SelectItem key={teacher.user_id} value={teacher.user_id}>
                       {teacher.profiles?.full_name}
@@ -249,7 +249,7 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
                   <SelectValue placeholder="Seleccionar tutor" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin tutor</SelectItem>
+                  <SelectItem value="none">Sin tutor</SelectItem>
                   {tutors?.map((tutor: any) => (
                     <SelectItem key={tutor.user_id} value={tutor.user_id}>
                       {tutor.profiles?.full_name}

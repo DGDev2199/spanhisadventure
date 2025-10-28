@@ -221,35 +221,14 @@ export function ReviewPlacementTestDialog({
               </div>
             ) : null}
 
-            {/* Oral Test Guide */}
-            <Alert>
-              <FileText className="h-4 w-4" />
-              <AlertDescription className="ml-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">
-                    Descarga la guía del examen oral para completar la evaluación
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open('/Examen_de_nivelación.pdf', '_blank')}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Descargar Guía
-                  </Button>
-                </div>
-              </AlertDescription>
-            </Alert>
-
             {/* Instructions */}
-            <div className="border rounded-lg p-4">
-              <h3 className="font-semibold mb-2">Instrucciones para la Evaluación Oral</h3>
+            <div className="border rounded-lg p-4 bg-accent/5">
+              <h3 className="font-semibold mb-2">Instrucciones para Asignar Nivel</h3>
               <ul className="text-sm space-y-2 text-muted-foreground list-disc list-inside">
-                <li>Descarga y revisa el protocolo del examen oral</li>
-                <li>Realiza el examen oral siguiendo las instrucciones del PDF</li>
-                <li>Evalúa al estudiante en diferentes áreas: gramática, fluidez, comprensión</li>
-                <li>Combina el resultado del test escrito con tu evaluación oral</li>
-                <li>Asigna el nivel apropiado basado en ambas evaluaciones</li>
+                <li>Revisa cuidadosamente todas las respuestas del estudiante arriba</li>
+                <li>Evalúa la precisión gramatical y comprensión demostrada</li>
+                <li>Considera tanto respuestas escritas como de audio si las hay</li>
+                <li>Asigna el nivel apropiado basado en el rendimiento general</li>
               </ul>
             </div>
 

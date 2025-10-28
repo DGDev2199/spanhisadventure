@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft, CheckCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Mic, Square, Volume2 } from 'lucide-react';
 import logo from '@/assets/logo.png';
 
 const PlacementTest = () => {
@@ -17,7 +19,12 @@ const PlacementTest = () => {
   const queryClient = useQueryClient();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [audioAnswers, setAudioAnswers] = useState<Record<string, string>>({});
   const [testComplete, setTestComplete] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   const { data: questions, isLoading } = useQuery({
     queryKey: ['placement-test-questions'],
@@ -71,8 +78,74 @@ const PlacementTest = () => {
     setAnswers({ ...answers, [questionId]: answer });
   };
 
-  const handleNext = () => {
-    if (questions && currentQuestion < questions.length - 1) {
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setAudioBlob(audioBlob);
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      toast.error('No se pudo acceder al micrófono');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const uploadAudioAnswer = async (questionId: string) => {
+    if (!audioBlob || !user?.id) return null;
+
+    const fileName = `${user.id}/${questionId}_${Date.now()}.webm`;
+    const { error: uploadError } = await supabase.storage
+      .from('student-audio-responses')
+      .upload(fileName, audioBlob);
+
+    if (uploadError) {
+      toast.error('Error al subir audio');
+      return null;
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('student-audio-responses')
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  };
+
+  const handleNext = async () => {
+    if (!questions) return;
+    
+    const currentQ = questions[currentQuestion];
+    
+    // Handle audio response upload if needed
+    if (currentQ.question_type === 'audio_response' && audioBlob) {
+      const audioUrl = await uploadAudioAnswer(currentQ.id);
+      if (audioUrl) {
+        setAudioAnswers({ ...audioAnswers, [currentQ.id]: audioUrl });
+        setAudioBlob(null);
+      }
+    }
+    
+    if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     }
   };
@@ -83,25 +156,37 @@ const PlacementTest = () => {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!questions) return;
     
-    // Calculate score only from answered questions
-    const answeredQuestions = questions.filter(q => answers[q.id]);
+    // Upload any pending audio answer
+    const currentQ = questions[currentQuestion];
+    if (currentQ.question_type === 'audio_response' && audioBlob) {
+      const audioUrl = await uploadAudioAnswer(currentQ.id);
+      if (audioUrl) {
+        setAudioAnswers({ ...audioAnswers, [currentQ.id]: audioUrl });
+      }
+    }
+    
+    // Merge text and audio answers
+    const allAnswers = { ...answers, ...audioAnswers };
+    
+    // Calculate score only from text questions
+    const textQuestions = questions.filter(q => q.question_type === 'text');
+    const answeredTextQuestions = textQuestions.filter(q => answers[q.id]);
     let correctCount = 0;
     
-    answeredQuestions.forEach((q) => {
-      if (answers[q.id] === q.correct_answer) {
+    answeredTextQuestions.forEach((q) => {
+      if (answers[q.id]?.toLowerCase() === q.correct_answer?.toLowerCase()) {
         correctCount++;
       }
     });
     
-    // Calculate score based on answered questions only
-    const score = answeredQuestions.length > 0 
-      ? Math.round((correctCount / answeredQuestions.length) * 100)
+    const score = answeredTextQuestions.length > 0 
+      ? Math.round((correctCount / answeredTextQuestions.length) * 100)
       : 0;
     
-    submitTestMutation.mutate({ score, answers });
+    submitTestMutation.mutate({ score, answers: allAnswers });
   };
 
   if (isLoading) {
@@ -203,37 +288,105 @@ const PlacementTest = () => {
             <CardTitle className="text-xl">{question.question}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <RadioGroup
-              value={answers[question.id] || ''}
-              onValueChange={(value) => handleAnswer(question.id, value)}
-            >
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                  <RadioGroupItem value="A" id="option-a" />
-                  <Label htmlFor="option-a" className="flex-1 cursor-pointer">
-                    A) {question.option_a}
-                  </Label>
+            {/* Text Question */}
+            {question.question_type === 'text' && (
+              <RadioGroup
+                value={answers[question.id] || ''}
+                onValueChange={(value) => handleAnswer(question.id, value)}
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
+                    <RadioGroupItem value="A" id="option-a" />
+                    <Label htmlFor="option-a" className="flex-1 cursor-pointer">
+                      A) {question.option_a}
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
+                    <RadioGroupItem value="B" id="option-b" />
+                    <Label htmlFor="option-b" className="flex-1 cursor-pointer">
+                      B) {question.option_b}
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
+                    <RadioGroupItem value="C" id="option-c" />
+                    <Label htmlFor="option-c" className="flex-1 cursor-pointer">
+                      C) {question.option_c}
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
+                    <RadioGroupItem value="D" id="option-d" />
+                    <Label htmlFor="option-d" className="flex-1 cursor-pointer">
+                      D) {question.option_d}
+                    </Label>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                  <RadioGroupItem value="B" id="option-b" />
-                  <Label htmlFor="option-b" className="flex-1 cursor-pointer">
-                    B) {question.option_b}
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                  <RadioGroupItem value="C" id="option-c" />
-                  <Label htmlFor="option-c" className="flex-1 cursor-pointer">
-                    C) {question.option_c}
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                  <RadioGroupItem value="D" id="option-d" />
-                  <Label htmlFor="option-d" className="flex-1 cursor-pointer">
-                    D) {question.option_d}
-                  </Label>
+              </RadioGroup>
+            )}
+
+            {/* Audio Response Question */}
+            {question.question_type === 'audio_response' && (
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Graba tu respuesta en audio haciendo clic en el botón del micrófono
+                </p>
+                <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed rounded-lg">
+                  <Button
+                    size="lg"
+                    variant={isRecording ? "destructive" : "default"}
+                    onClick={isRecording ? stopRecording : startRecording}
+                    className="w-48"
+                  >
+                    {isRecording ? (
+                      <>
+                        <Square className="h-5 w-5 mr-2" />
+                        Detener Grabación
+                      </>
+                    ) : (
+                      <>
+                        <Mic className="h-5 w-5 mr-2" />
+                        Grabar Respuesta
+                      </>
+                    )}
+                  </Button>
+                  {isRecording && (
+                    <div className="flex items-center gap-2 text-destructive">
+                      <div className="h-3 w-3 rounded-full bg-destructive animate-pulse" />
+                      <span className="text-sm font-medium">Grabando...</span>
+                    </div>
+                  )}
+                  {audioBlob && !isRecording && (
+                    <div className="flex flex-col items-center gap-2">
+                      <audio controls src={URL.createObjectURL(audioBlob)} />
+                      <p className="text-sm text-green-600 font-medium">✓ Audio grabado</p>
+                    </div>
+                  )}
                 </div>
               </div>
-            </RadioGroup>
+            )}
+
+            {/* Audio Listen Question */}
+            {question.question_type === 'audio_listen' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-center p-6 bg-accent/10 rounded-lg">
+                  <div className="flex flex-col items-center gap-3">
+                    <Volume2 className="h-8 w-8 text-primary" />
+                    {question.audio_url && (
+                      <audio controls src={question.audio_url} className="w-full" />
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <Label>Escribe lo que escuchaste:</Label>
+                  <Textarea
+                    value={answers[question.id] || ''}
+                    onChange={(e) => handleAnswer(question.id, e.target.value)}
+                    placeholder="Escribe aquí tu respuesta..."
+                    rows={4}
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+            )}
 
             {/* Navigation Buttons */}
             <div className="flex flex-col gap-4 pt-4">

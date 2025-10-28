@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { LogOut, Users, GraduationCap, UserCheck, BookOpen, Settings, Home, Calendar, Plus } from 'lucide-react';
+import { LogOut, Users, GraduationCap, UserCheck, BookOpen, Settings, Home, Calendar, Plus, FileCheck } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import logo from '@/assets/logo.png';
@@ -12,6 +12,7 @@ import { ChangeRoleDialog } from '@/components/ChangeRoleDialog';
 import { ManageRoomsDialog } from '@/components/ManageRoomsDialog';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 import { CreateScheduleEventDialog } from '@/components/CreateScheduleEventDialog';
+import { ManagePlacementTestDialog } from '@/components/ManagePlacementTestDialog';
 
 const AdminDashboard = () => {
   const { signOut } = useAuth();
@@ -19,6 +20,7 @@ const AdminDashboard = () => {
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [roomsDialogOpen, setRoomsDialogOpen] = useState(false);
   const [createEventDialogOpen, setCreateEventDialogOpen] = useState(false);
+  const [placementTestDialogOpen, setPlacementTestDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
 
@@ -144,7 +146,11 @@ const AdminDashboard = () => {
               Manage students, teachers, tutors, and all platform activities
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Button onClick={() => setPlacementTestDialogOpen(true)} variant="outline">
+              <FileCheck className="h-4 w-4 mr-2" />
+              Gestionar Test de Nivelación
+            </Button>
             <Button onClick={() => setRoomsDialogOpen(true)} variant="outline">
               <Home className="h-4 w-4 mr-2" />
               Gestionar Habitaciones
@@ -396,6 +402,11 @@ const AdminDashboard = () => {
       <CreateScheduleEventDialog
         open={createEventDialogOpen}
         onOpenChange={setCreateEventDialogOpen}
+      />
+
+      <ManagePlacementTestDialog
+        open={placementTestDialogOpen}
+        onOpenChange={setPlacementTestDialogOpen}
       />
     </div>
   );

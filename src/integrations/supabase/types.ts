@@ -76,6 +76,7 @@ export type Database = {
       }
       placement_tests: {
         Row: {
+          audio_url: string | null
           correct_answer: string
           created_at: string
           id: string
@@ -86,8 +87,10 @@ export type Database = {
           option_d: string
           question: string
           question_number: number
+          question_type: string
         }
         Insert: {
+          audio_url?: string | null
           correct_answer: string
           created_at?: string
           id?: string
@@ -98,8 +101,10 @@ export type Database = {
           option_d: string
           question: string
           question_number: number
+          question_type?: string
         }
         Update: {
+          audio_url?: string | null
           correct_answer?: string
           created_at?: string
           id?: string
@@ -110,6 +115,7 @@ export type Database = {
           option_d?: string
           question?: string
           question_number?: number
+          question_type?: string
         }
         Relationships: []
       }

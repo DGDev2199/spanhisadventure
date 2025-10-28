@@ -102,7 +102,7 @@ export function ReviewPlacementTestDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-sm mx-auto max-h-[90vh] flex flex-col">"
+      <DialogContent className="w-full max-w-sm mx-auto max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Revisar Examen de Nivelación</DialogTitle>
           <DialogDescription>

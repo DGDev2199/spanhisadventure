@@ -524,6 +524,51 @@ export type Database = {
           },
         ]
       }
+      test_answers: {
+        Row: {
+          answer_text: string | null
+          assignment_id: string
+          created_at: string
+          id: string
+          is_correct: boolean | null
+          points_earned: number | null
+          question_id: string
+        }
+        Insert: {
+          answer_text?: string | null
+          assignment_id: string
+          created_at?: string
+          id?: string
+          is_correct?: boolean | null
+          points_earned?: number | null
+          question_id: string
+        }
+        Update: {
+          answer_text?: string | null
+          assignment_id?: string
+          created_at?: string
+          id?: string
+          is_correct?: boolean | null
+          points_earned?: number | null
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_answers_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "test_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "test_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       test_assignments: {
         Row: {
           answers: Json | null

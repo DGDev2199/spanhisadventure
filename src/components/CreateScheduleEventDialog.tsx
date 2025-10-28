@@ -45,10 +45,10 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
   const [dayOfWeek, setDayOfWeek] = useState('0');
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('10:00');
-  const [level, setLevel] = useState('');
-  const [roomId, setRoomId] = useState('');
-  const [teacherId, setTeacherId] = useState('');
-  const [tutorId, setTutorId] = useState('');
+  const [level, setLevel] = useState('none');
+  const [roomId, setRoomId] = useState('none');
+  const [teacherId, setTeacherId] = useState('none');
+  const [tutorId, setTutorId] = useState('none');
 
   const { data: rooms } = useQuery({
     queryKey: ['rooms'],
@@ -121,10 +121,10 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
         day_of_week: parseInt(dayOfWeek),
         start_time: startTime,
         end_time: endTime,
-        level: level || null,
-        room_id: roomId || null,
-        teacher_id: teacherId || null,
-        tutor_id: tutorId || null,
+        level: level === 'none' ? null : level,
+        room_id: roomId === 'none' ? null : roomId,
+        teacher_id: teacherId === 'none' ? null : teacherId,
+        tutor_id: tutorId === 'none' ? null : tutorId,
         created_by: user.id,
       });
 
@@ -148,10 +148,10 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
     setDayOfWeek('0');
     setStartTime('09:00');
     setEndTime('10:00');
-    setLevel('');
-    setRoomId('');
-    setTeacherId('');
-    setTutorId('');
+    setLevel('none');
+    setRoomId('none');
+    setTeacherId('none');
+    setTutorId('none');
   };
 
   return (
@@ -245,7 +245,7 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
                   <SelectValue placeholder="Selecciona nivel..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos los niveles</SelectItem>
+                  <SelectItem value="none">Todos los niveles</SelectItem>
                   {LEVELS.map((lvl) => (
                     <SelectItem key={lvl} value={lvl}>
                       {lvl}
@@ -262,7 +262,7 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
                   <SelectValue placeholder="Selecciona habitación..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin habitación</SelectItem>
+                  <SelectItem value="none">Sin habitación</SelectItem>
                   {rooms?.map((room) => (
                     <SelectItem key={room.id} value={room.id}>
                       {room.name}
@@ -281,7 +281,7 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
                   <SelectValue placeholder="Selecciona profesor..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin profesor asignado</SelectItem>
+                  <SelectItem value="none">Sin profesor asignado</SelectItem>
                   {teachers?.map((teacher) => (
                     <SelectItem key={teacher.id} value={teacher.id}>
                       {teacher.full_name}
@@ -300,7 +300,7 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
                   <SelectValue placeholder="Selecciona tutor..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin tutor asignado</SelectItem>
+                  <SelectItem value="none">Sin tutor asignado</SelectItem>
                   {tutors?.map((tutor) => (
                     <SelectItem key={tutor.id} value={tutor.id}>
                       {tutor.full_name}

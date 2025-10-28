@@ -317,6 +317,7 @@ const TeacherDashboard = () => {
                               size="sm"
                               variant="default"
                               onClick={() => {
+                                console.log('Student data:', student);
                                 setSelectedStudent(student);
                                 setIsReviewTestDialogOpen(true);
                               }}

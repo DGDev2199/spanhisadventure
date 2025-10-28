@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { FileText, Download, CheckCircle, XCircle } from 'lucide-react';
+import { FileText, Download, CheckCircle2, XCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ReviewPlacementTestDialogProps {
@@ -34,8 +35,12 @@ export function ReviewPlacementTestDialog({
   const [selectedLevel, setSelectedLevel] = useState<string>(currentLevel || '');
   const queryClient = useQueryClient();
 
+  useEffect(() => {
+    setSelectedLevel(currentLevel || '');
+  }, [currentLevel]);
+
   // Fetch placement test questions
-  const { data: questions } = useQuery({
+  const { data: questions, isLoading: questionsLoading } = useQuery({
     queryKey: ['placement-test-questions'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -63,7 +68,7 @@ export function ReviewPlacementTestDialog({
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-students'] });
+      queryClient.invalidateQueries({ queryKey: ['teacher-students'] });
       toast.success('Nivel asignado exitosamente');
       onOpenChange(false);
     },
@@ -80,9 +85,13 @@ export function ReviewPlacementTestDialog({
     assignLevelMutation.mutate(selectedLevel);
   };
 
+  const getOptionLabel = (option: string) => {
+    return option.toUpperCase();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh]">
+      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Revisar Examen de Nivelación</DialogTitle>
           <DialogDescription>
@@ -90,7 +99,7 @@ export function ReviewPlacementTestDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="h-[calc(90vh-200px)] pr-4">
+        <ScrollArea className="flex-1 pr-4">
           <div className="space-y-6">
             {/* Written Test Score */}
             <div className="bg-muted p-4 rounded-lg">
@@ -103,105 +112,102 @@ export function ReviewPlacementTestDialog({
               </p>
             </div>
 
-            {/* Student Answers Review */}
-            {questions && studentAnswers && (
-              <div className="border rounded-lg p-4">
-                <h3 className="font-semibold mb-4">Respuestas del Estudiante</h3>
-                <div className="space-y-4">
-                  {questions.map((question, index) => {
-                    const studentAnswer = studentAnswers[question.id];
-                    const isCorrect = studentAnswer === question.correct_answer;
-                    const getOptionText = (letter: string) => {
-                      switch(letter) {
-                        case 'A': return question.option_a;
-                        case 'B': return question.option_b;
-                        case 'C': return question.option_c;
-                        case 'D': return question.option_d;
-                        default: return '';
-                      }
-                    };
-
-                    return (
-                      <div key={question.id} className="border rounded-lg p-4 space-y-2">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
+            {/* Questions and Answers Review */}
+            {questionsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : questions && studentAnswers ? (
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Respuestas del Estudiante</h3>
+                {questions.map((question, index) => {
+                  const studentAnswer = studentAnswers[question.id];
+                  const isCorrect = studentAnswer?.toLowerCase() === question.correct_answer?.toLowerCase();
+                  
+                  return (
+                    <Card key={question.id} className={`border-l-4 ${isCorrect ? 'border-l-green-500' : 'border-l-red-500'}`}>
+                      <CardContent className="pt-6">
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 mt-1">
+                            {isCorrect ? (
+                              <CheckCircle2 className="h-5 w-5 text-green-600" />
+                            ) : (
+                              <XCircle className="h-5 w-5 text-red-600" />
+                            )}
+                          </div>
+                          <div className="flex-1 space-y-3">
+                            <div className="flex items-center gap-2">
                               <span className="text-sm font-medium text-muted-foreground">
-                                Pregunta {index + 1} - Nivel {question.level}
+                                Pregunta {index + 1}
                               </span>
-                              {isCorrect ? (
-                                <CheckCircle className="h-5 w-5 text-green-600" />
-                              ) : (
-                                <XCircle className="h-5 w-5 text-red-600" />
-                              )}
+                              <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
+                                Nivel {question.level}
+                              </span>
                             </div>
-                            <p className="font-medium mb-3">{question.question}</p>
                             
-                            <div className="space-y-2 text-sm">
+                            <p className="font-medium">{question.question}</p>
+                            
+                            <div className="grid grid-cols-1 gap-2 text-sm">
                               <div className={`p-2 rounded ${
-                                studentAnswer === 'A' 
-                                  ? isCorrect 
-                                    ? 'bg-green-100 dark:bg-green-900/30 border border-green-600' 
-                                    : 'bg-red-100 dark:bg-red-900/30 border border-red-600'
-                                  : question.correct_answer === 'A'
-                                  ? 'bg-green-50 dark:bg-green-900/10 border border-green-400'
-                                  : ''
+                                getOptionLabel(question.correct_answer) === 'A' 
+                                  ? 'bg-green-50 border border-green-200' 
+                                  : studentAnswer?.toUpperCase() === 'A'
+                                  ? 'bg-red-50 border border-red-200'
+                                  : 'bg-muted/50'
                               }`}>
                                 <span className="font-medium">A)</span> {question.option_a}
-                                {studentAnswer === 'A' && !isCorrect && <span className="ml-2 text-red-600 font-semibold">(Seleccionada)</span>}
-                                {question.correct_answer === 'A' && <span className="ml-2 text-green-600 font-semibold">(Correcta)</span>}
                               </div>
-                              
                               <div className={`p-2 rounded ${
-                                studentAnswer === 'B' 
-                                  ? isCorrect 
-                                    ? 'bg-green-100 dark:bg-green-900/30 border border-green-600' 
-                                    : 'bg-red-100 dark:bg-red-900/30 border border-red-600'
-                                  : question.correct_answer === 'B'
-                                  ? 'bg-green-50 dark:bg-green-900/10 border border-green-400'
-                                  : ''
+                                getOptionLabel(question.correct_answer) === 'B' 
+                                  ? 'bg-green-50 border border-green-200' 
+                                  : studentAnswer?.toUpperCase() === 'B'
+                                  ? 'bg-red-50 border border-red-200'
+                                  : 'bg-muted/50'
                               }`}>
                                 <span className="font-medium">B)</span> {question.option_b}
-                                {studentAnswer === 'B' && !isCorrect && <span className="ml-2 text-red-600 font-semibold">(Seleccionada)</span>}
-                                {question.correct_answer === 'B' && <span className="ml-2 text-green-600 font-semibold">(Correcta)</span>}
                               </div>
-                              
                               <div className={`p-2 rounded ${
-                                studentAnswer === 'C' 
-                                  ? isCorrect 
-                                    ? 'bg-green-100 dark:bg-green-900/30 border border-green-600' 
-                                    : 'bg-red-100 dark:bg-red-900/30 border border-red-600'
-                                  : question.correct_answer === 'C'
-                                  ? 'bg-green-50 dark:bg-green-900/10 border border-green-400'
-                                  : ''
+                                getOptionLabel(question.correct_answer) === 'C' 
+                                  ? 'bg-green-50 border border-green-200' 
+                                  : studentAnswer?.toUpperCase() === 'C'
+                                  ? 'bg-red-50 border border-red-200'
+                                  : 'bg-muted/50'
                               }`}>
                                 <span className="font-medium">C)</span> {question.option_c}
-                                {studentAnswer === 'C' && !isCorrect && <span className="ml-2 text-red-600 font-semibold">(Seleccionada)</span>}
-                                {question.correct_answer === 'C' && <span className="ml-2 text-green-600 font-semibold">(Correcta)</span>}
                               </div>
-                              
                               <div className={`p-2 rounded ${
-                                studentAnswer === 'D' 
-                                  ? isCorrect 
-                                    ? 'bg-green-100 dark:bg-green-900/30 border border-green-600' 
-                                    : 'bg-red-100 dark:bg-red-900/30 border border-red-600'
-                                  : question.correct_answer === 'D'
-                                  ? 'bg-green-50 dark:bg-green-900/10 border border-green-400'
-                                  : ''
+                                getOptionLabel(question.correct_answer) === 'D' 
+                                  ? 'bg-green-50 border border-green-200' 
+                                  : studentAnswer?.toUpperCase() === 'D'
+                                  ? 'bg-red-50 border border-red-200'
+                                  : 'bg-muted/50'
                               }`}>
                                 <span className="font-medium">D)</span> {question.option_d}
-                                {studentAnswer === 'D' && !isCorrect && <span className="ml-2 text-red-600 font-semibold">(Seleccionada)</span>}
-                                {question.correct_answer === 'D' && <span className="ml-2 text-green-600 font-semibold">(Correcta)</span>}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-4 text-sm pt-2">
+                              <div>
+                                <span className="text-muted-foreground">Respuesta del estudiante: </span>
+                                <span className={`font-semibold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                                  {studentAnswer ? getOptionLabel(studentAnswer) : 'No respondió'}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Respuesta correcta: </span>
+                                <span className="font-semibold text-green-600">
+                                  {getOptionLabel(question.correct_answer)}
+                                </span>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
-            )}
+            ) : null}
 
             {/* Oral Test Guide */}
             <Alert>
@@ -254,21 +260,21 @@ export function ReviewPlacementTestDialog({
                 Selecciona el nivel final después de revisar tanto el examen escrito como el oral
               </p>
             </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3 pt-4 sticky bottom-0 bg-background border-t mt-4">
+              <Button variant="outline" onClick={() => onOpenChange(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleAssignLevel}
+                disabled={!selectedLevel || assignLevelMutation.isPending}
+              >
+                {assignLevelMutation.isPending ? 'Asignando...' : 'Asignar Nivel'}
+              </Button>
+            </div>
           </div>
         </ScrollArea>
-
-        {/* Actions */}
-        <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleAssignLevel}
-            disabled={!selectedLevel || assignLevelMutation.isPending}
-          >
-            {assignLevelMutation.isPending ? 'Asignando...' : 'Asignar Nivel'}
-          </Button>
-        </div>
       </DialogContent>
     </Dialog>
   );

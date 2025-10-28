@@ -33,14 +33,15 @@ const PlacementTest = () => {
   });
 
   const submitTestMutation = useMutation({
-    mutationFn: async (score: number) => {
+    mutationFn: async ({ score, answers }: { score: number; answers: Record<string, string> }) => {
       if (!user?.id) throw new Error('No user');
 
       const { error } = await supabase
         .from('student_profiles')
         .update({
           placement_test_status: 'pending',
-          placement_test_written_score: score
+          placement_test_written_score: score,
+          placement_test_answers: answers
         })
         .eq('user_id', user.id);
       
@@ -83,7 +84,7 @@ const PlacementTest = () => {
     });
     
     const score = Math.round((correctCount / questions.length) * 100);
-    submitTestMutation.mutate(score);
+    submitTestMutation.mutate({ score, answers });
   };
 
   if (isLoading) {

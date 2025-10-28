@@ -178,6 +178,7 @@ export type Database = {
           created_at: string
           id: string
           level: Database["public"]["Enums"]["cefr_level"] | null
+          placement_test_answers: Json | null
           placement_test_oral_completed: boolean | null
           placement_test_status: Database["public"]["Enums"]["test_status"]
           placement_test_written_score: number | null
@@ -192,6 +193,7 @@ export type Database = {
           created_at?: string
           id?: string
           level?: Database["public"]["Enums"]["cefr_level"] | null
+          placement_test_answers?: Json | null
           placement_test_oral_completed?: boolean | null
           placement_test_status?: Database["public"]["Enums"]["test_status"]
           placement_test_written_score?: number | null
@@ -206,6 +208,7 @@ export type Database = {
           created_at?: string
           id?: string
           level?: Database["public"]["Enums"]["cefr_level"] | null
+          placement_test_answers?: Json | null
           placement_test_oral_completed?: boolean | null
           placement_test_status?: Database["public"]["Enums"]["test_status"]
           placement_test_written_score?: number | null

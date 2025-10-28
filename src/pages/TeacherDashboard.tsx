@@ -464,6 +464,7 @@ const TeacherDashboard = () => {
           studentName={selectedStudent.profiles?.full_name}
           writtenScore={selectedStudent.placement_test_written_score}
           currentLevel={selectedStudent.level}
+          studentAnswers={selectedStudent.placement_test_answers}
         />
       )}
     </div>

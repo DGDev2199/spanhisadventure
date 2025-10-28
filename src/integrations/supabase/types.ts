@@ -187,6 +187,85 @@ export type Database = {
         }
         Relationships: []
       }
+      schedule_events: {
+        Row: {
+          color: string | null
+          created_at: string
+          created_by: string
+          day_of_week: number
+          description: string | null
+          end_time: string
+          event_type: string
+          id: string
+          is_active: boolean
+          level: Database["public"]["Enums"]["cefr_level"] | null
+          room_id: string | null
+          start_time: string
+          teacher_id: string | null
+          title: string
+          tutor_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          created_by: string
+          day_of_week: number
+          description?: string | null
+          end_time: string
+          event_type: string
+          id?: string
+          is_active?: boolean
+          level?: Database["public"]["Enums"]["cefr_level"] | null
+          room_id?: string | null
+          start_time: string
+          teacher_id?: string | null
+          title: string
+          tutor_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          day_of_week?: number
+          description?: string | null
+          end_time?: string
+          event_type?: string
+          id?: string
+          is_active?: boolean
+          level?: Database["public"]["Enums"]["cefr_level"] | null
+          room_id?: string | null
+          start_time?: string
+          teacher_id?: string | null
+          title?: string
+          tutor_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_events_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_events_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_events_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schedules: {
         Row: {
           active: boolean | null

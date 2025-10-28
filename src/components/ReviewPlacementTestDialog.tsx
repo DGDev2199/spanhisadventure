@@ -61,13 +61,12 @@ export function ReviewPlacementTestDialog({
       const { data, error } = await supabase
         .from('student_profiles')
         .update({
-          level: level as any,
-          placement_test_status: 'completed',
+          level: level as 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2',
+          placement_test_status: 'completed' as const,
           placement_test_oral_completed: true
         })
         .eq('user_id', studentId)
-        .select()
-        .single();
+        .select();
 
       if (error) {
         console.error('Error assigning level:', error);
@@ -129,11 +128,18 @@ export function ReviewPlacementTestDialog({
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
-            ) : questions && studentAnswers ? (
+            ) : questions && questions.length > 0 ? (
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg">Respuestas del Estudiante</h3>
+                {!studentAnswers && (
+                  <Alert>
+                    <AlertDescription>
+                      El estudiante aún no ha completado el test o las respuestas no están disponibles.
+                    </AlertDescription>
+                  </Alert>
+                )}
                 {questions.map((question, index) => {
-                  const studentAnswer = studentAnswers[question.id];
+                  const studentAnswer = studentAnswers?.[question.id];
                   const isCorrect = studentAnswer?.toLowerCase() === question.correct_answer?.toLowerCase();
                   
                   return (
@@ -219,7 +225,13 @@ export function ReviewPlacementTestDialog({
                   );
                 })}
               </div>
-            ) : null}
+            ) : (
+              <Alert>
+                <AlertDescription>
+                  No hay preguntas disponibles en el test de nivelación.
+                </AlertDescription>
+              </Alert>
+            )}
 
             {/* Instructions */}
             <div className="border rounded-lg p-4 bg-accent/5">
@@ -253,7 +265,7 @@ export function ReviewPlacementTestDialog({
             </div>
 
             {/* Actions */}
-            <div className="flex justify-end gap-3 pt-4 sticky bottom-0 bg-background border-t mt-4">
+            <div className="flex justify-end gap-3 pt-4 border-t mt-4 pb-4">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>

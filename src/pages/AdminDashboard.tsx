@@ -382,7 +382,7 @@ const AdminDashboard = () => {
 
         {/* Weekly Calendar */}
         <div className="mt-6">
-          <WeeklyCalendar />
+          <WeeklyCalendar canEdit={true} />
         </div>
       </main>
 

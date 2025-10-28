@@ -34,15 +34,17 @@ const EVENT_TYPE_COLORS = {
   break: 'bg-gray-100 border-gray-500 text-gray-900',
 };
 
-export const WeeklyCalendar = () => {
-  const { user, userRole } = useAuth();
+interface WeeklyCalendarProps {
+  canEdit?: boolean;
+}
+
+export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
+  const { user } = useAuth();
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  
-  const isAdmin = userRole === 'admin';
 
   const { data: events, isLoading } = useQuery({
-    queryKey: ['schedule-events', user?.id, userRole],
+    queryKey: ['schedule-events', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
 
@@ -164,19 +166,19 @@ export const WeeklyCalendar = () => {
                             key={event.id}
                             className={`absolute left-1 right-1 border-l-4 rounded px-2 py-1 text-xs group ${
                               EVENT_TYPE_COLORS[event.event_type as keyof typeof EVENT_TYPE_COLORS] || EVENT_TYPE_COLORS.class
-                            } ${isAdmin ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
+                            } ${canEdit ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
                             style={{
                               minHeight: `${Math.max(height - 8, 40)}px`,
                               zIndex: 10,
                             }}
                             onClick={() => {
-                              if (isAdmin) {
+                              if (canEdit) {
                                 setSelectedEvent(event);
                                 setIsEditDialogOpen(true);
                               }
                             }}
                           >
-                            {isAdmin && (
+                            {canEdit && (
                               <Button
                                 size="sm"
                                 variant="ghost"

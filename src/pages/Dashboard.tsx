@@ -258,28 +258,83 @@ const Dashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" />
-                Placement Test
+                Examen de Nivelación
               </CardTitle>
               <CardDescription>
-                Complete your placement test to determine your level
+                {studentProfile?.placement_test_status === 'not_started' 
+                  ? 'Completa tu examen de nivelación para determinar tu nivel'
+                  : studentProfile?.placement_test_status === 'pending'
+                  ? 'Tu examen está siendo revisado por el profesor'
+                  : 'Examen completado y nivel asignado'}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Take the automated test to get started. Your teacher will then conduct an oral assessment
-                to finalize your level.
-              </p>
-              <Button 
-                className="w-full"
-                onClick={() => navigate('/placement-test')}
-                disabled={studentProfile?.placement_test_status !== 'not_started'}
-              >
-                {studentProfile?.placement_test_status === 'not_started' 
-                  ? 'Start Placement Test' 
-                  : studentProfile?.placement_test_status === 'pending'
-                  ? 'Test Pending Review'
-                  : 'Test Completed'}
-              </Button>
+              {studentProfile?.placement_test_status === 'not_started' ? (
+                <>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Realiza el examen automatizado para comenzar. Tu profesor luego realizará una evaluación oral
+                    para finalizar tu nivel.
+                  </p>
+                  <Button 
+                    className="w-full"
+                    onClick={() => navigate('/placement-test')}
+                  >
+                    Iniciar Examen de Nivelación
+                  </Button>
+                </>
+              ) : studentProfile?.placement_test_status === 'pending' ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-yellow-600 bg-yellow-50 p-3 rounded-md">
+                    <CheckCircle className="h-5 w-5" />
+                    <span className="text-sm font-medium">Examen enviado exitosamente</span>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Puntuación Escrita:</span>
+                      <span className="font-bold text-lg">{studentProfile?.placement_test_written_score || 0}%</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Tu profesor revisará tus respuestas y programará una evaluación oral pronto.
+                    </p>
+                  </div>
+                  <Button 
+                    className="w-full"
+                    disabled
+                    variant="outline"
+                  >
+                    Esperando Revisión del Profesor
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-md">
+                    <CheckCircle className="h-5 w-5" />
+                    <span className="text-sm font-medium">Examen completado</span>
+                  </div>
+                  <div className="space-y-2 bg-accent/10 p-4 rounded-md">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Puntuación Escrita:</span>
+                      <span className="font-bold text-lg">{studentProfile?.placement_test_written_score || 0}%</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Nivel Asignado:</span>
+                      <span className="font-bold text-2xl text-primary">{studentProfile?.level || 'N/A'}</span>
+                    </div>
+                    {studentProfile?.placement_test_oral_completed && (
+                      <p className="text-xs text-muted-foreground pt-2 border-t">
+                        ✓ Evaluación oral completada
+                      </p>
+                    )}
+                  </div>
+                  <Button 
+                    className="w-full"
+                    disabled
+                    variant="secondary"
+                  >
+                    Test Finalizado
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
 

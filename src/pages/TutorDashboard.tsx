@@ -20,18 +20,45 @@ const TutorDashboard = () => {
     queryKey: ['tutor-students', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await supabase
+      
+      // Get student profiles
+      const { data: studentData, error: studentError } = await supabase
         .from('student_profiles')
-        .select(`
-          *,
-          profiles!student_profiles_user_id_fkey(full_name, email),
-          teacher:profiles!student_profiles_teacher_id_fkey(full_name),
-          tutor:profiles!student_profiles_tutor_id_fkey(full_name)
-        `)
+        .select('*')
         .eq('tutor_id', user.id)
         .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data;
+      
+      if (studentError) {
+        console.error('Error loading student profiles:', studentError);
+        throw studentError;
+      }
+      
+      if (!studentData || studentData.length === 0) return [];
+      
+      // Get all user IDs (students, teachers, tutors)
+      const userIds = studentData.map(s => s.user_id);
+      const teacherIds = studentData.map(s => s.teacher_id).filter(Boolean);
+      const tutorIds = studentData.map(s => s.tutor_id).filter(Boolean);
+      const allIds = [...new Set([...userIds, ...teacherIds, ...tutorIds])];
+      
+      // Get all profiles
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', allIds);
+      
+      if (profilesError) {
+        console.error('Error loading profiles:', profilesError);
+        throw profilesError;
+      }
+      
+      // Merge data
+      return studentData.map(student => ({
+        ...student,
+        profiles: profilesData?.find(p => p.id === student.user_id),
+        teacher: profilesData?.find(p => p.id === student.teacher_id),
+        tutor: profilesData?.find(p => p.id === student.tutor_id)
+      }));
     }
   });
 

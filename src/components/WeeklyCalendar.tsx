@@ -1,9 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { Clock } from 'lucide-react';
+import { Clock, Edit } from 'lucide-react';
+import { EditScheduleEventDialog } from '@/components/EditScheduleEventDialog';
+import { Button } from '@/components/ui/button';
 
 interface ScheduleEvent {
   id: string;
@@ -34,6 +36,10 @@ const EVENT_TYPE_COLORS = {
 
 export const WeeklyCalendar = () => {
   const { user, userRole } = useAuth();
+  const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  
+  const isAdmin = userRole === 'admin';
 
   const { data: events, isLoading } = useQuery({
     queryKey: ['schedule-events', user?.id, userRole],
@@ -156,14 +162,34 @@ export const WeeklyCalendar = () => {
                         return (
                           <div
                             key={event.id}
-                            className={`absolute left-1 right-1 border-l-4 rounded px-2 py-1 text-xs ${
+                            className={`absolute left-1 right-1 border-l-4 rounded px-2 py-1 text-xs group ${
                               EVENT_TYPE_COLORS[event.event_type as keyof typeof EVENT_TYPE_COLORS] || EVENT_TYPE_COLORS.class
-                            }`}
+                            } ${isAdmin ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
                             style={{
                               minHeight: `${Math.max(height - 8, 40)}px`,
                               zIndex: 10,
                             }}
+                            onClick={() => {
+                              if (isAdmin) {
+                                setSelectedEvent(event);
+                                setIsEditDialogOpen(true);
+                              }
+                            }}
                           >
+                            {isAdmin && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="absolute top-1 right-1 h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedEvent(event);
+                                  setIsEditDialogOpen(true);
+                                }}
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                            )}
                             <div className="font-semibold text-xs truncate">{event.title}</div>
                             <div className="text-xs opacity-75 truncate">
                               {formatTime(event.start_time)} - {formatTime(event.end_time)}
@@ -219,6 +245,14 @@ export const WeeklyCalendar = () => {
           </div>
         )}
       </CardContent>
+
+      {selectedEvent && (
+        <EditScheduleEventDialog
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          event={selectedEvent}
+        />
+      )}
     </Card>
   );
 };

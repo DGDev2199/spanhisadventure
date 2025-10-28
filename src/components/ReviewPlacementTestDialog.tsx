@@ -39,13 +39,14 @@ export function ReviewPlacementTestDialog({
     setSelectedLevel(currentLevel || '');
   }, [currentLevel]);
 
-  // Fetch placement test questions
+  // Fetch placement test questions - ONLY text-based multiple choice questions
   const { data: questions, isLoading: questionsLoading } = useQuery({
-    queryKey: ['placement-test-questions'],
+    queryKey: ['placement-test-questions-text-only'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('placement_tests')
         .select('*')
+        .eq('question_type', 'text') // Only get multiple choice questions
         .order('level', { ascending: true })
         .order('question_number', { ascending: true });
       if (error) throw error;
@@ -124,6 +125,14 @@ export function ReviewPlacementTestDialog({
               </p>
             </div>
 
+            {/* Info Alert */}
+            <Alert className="bg-blue-50 border-blue-200">
+              <AlertDescription className="text-sm">
+                📝 Este modal muestra solo las <strong>preguntas de opción múltiple</strong> del test escrito. 
+                Las preguntas de audio y respuestas grabadas se revisan durante la entrevista oral.
+              </AlertDescription>
+            </Alert>
+
             {/* Questions and Answers Review */}
             {questionsLoading ? (
               <div className="flex items-center justify-center py-8">
@@ -131,7 +140,7 @@ export function ReviewPlacementTestDialog({
               </div>
             ) : questions && questions.length > 0 ? (
               <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Respuestas del Estudiante</h3>
+                <h3 className="font-semibold text-lg">Respuestas de Opción Múltiple ({questions.length} preguntas)</h3>
                 {!studentAnswers && (
                   <Alert>
                     <AlertDescription>

@@ -101,8 +101,7 @@ const TeacherDashboard = () => {
             id,
             student_id,
             status,
-            score,
-            profiles (full_name)
+            score
           )
         `)
         .eq('teacher_id', user.id)

@@ -119,7 +119,7 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
           room_id: roomId === 'none' ? null : roomId,
           teacher_id: teacherId === 'none' ? null : teacherId,
           tutor_id: tutorId === 'none' ? null : tutorId,
-          level: level === 'none' ? null : level,
+          level: (level === 'none' ? null : level) as any,
           color
         })
         .eq('id', event.id);

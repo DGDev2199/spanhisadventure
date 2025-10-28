@@ -124,7 +124,7 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
         day_of_week: parseInt(day),
         start_time: startTime,
         end_time: endTime,
-        level: level === 'none' ? null : level,
+        level: (level === 'none' ? null : level) as any,
         room_id: roomId === 'none' ? null : roomId,
         teacher_id: teacherId === 'none' ? null : teacherId,
         tutor_id: tutorId === 'none' ? null : tutorId,

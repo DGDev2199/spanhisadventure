@@ -30,6 +30,8 @@ const TeacherDashboard = () => {
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [taskForm, setTaskForm] = useState({ student_id: '', title: '', description: '', due_date: '' });
   const [feedbackForm, setFeedbackForm] = useState({ student_id: '', content: '' });
+  const [taskAttachment, setTaskAttachment] = useState<File | null>(null);
+  const [isUploadingTask, setIsUploadingTask] = useState(false);
 
   const { data: myStudents, isLoading: studentsLoading } = useQuery({
     queryKey: ['teacher-students', user?.id],
@@ -113,9 +115,31 @@ const TeacherDashboard = () => {
 
   const createTaskMutation = useMutation({
     mutationFn: async (task: typeof taskForm) => {
+      let attachmentUrl = null;
+
+      // Upload attachment if present
+      if (taskAttachment && user?.id) {
+        setIsUploadingTask(true);
+        const fileExt = taskAttachment.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('task-attachments')
+          .upload(fileName, taskAttachment);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('task-attachments')
+          .getPublicUrl(fileName);
+
+        attachmentUrl = publicUrl;
+      }
+
       const { error } = await supabase.from('tasks').insert({
         ...task,
-        teacher_id: user?.id
+        teacher_id: user?.id,
+        attachment_url: attachmentUrl
       });
       if (error) throw error;
     },
@@ -123,10 +147,13 @@ const TeacherDashboard = () => {
       queryClient.invalidateQueries({ queryKey: ['teacher-tasks'] });
       setIsTaskDialogOpen(false);
       setTaskForm({ student_id: '', title: '', description: '', due_date: '' });
-      toast({ title: 'Task created successfully' });
+      setTaskAttachment(null);
+      setIsUploadingTask(false);
+      toast({ title: 'Tarea creada exitosamente' });
     },
     onError: () => {
-      toast({ title: 'Error creating task', variant: 'destructive' });
+      setIsUploadingTask(false);
+      toast({ title: 'Error al crear la tarea', variant: 'destructive' });
     }
   });
 
@@ -426,8 +453,25 @@ const TeacherDashboard = () => {
                         onChange={(e) => setTaskForm({ ...taskForm, due_date: e.target.value })}
                       />
                     </div>
-                    <Button onClick={() => createTaskMutation.mutate(taskForm)} className="w-full">
-                      Create Task
+                    <div>
+                      <Label>Archivo Adjunto (Opcional)</Label>
+                      <Input
+                        type="file"
+                        onChange={(e) => setTaskAttachment(e.target.files?.[0] || null)}
+                        accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
+                      />
+                      {taskAttachment && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Archivo seleccionado: {taskAttachment.name}
+                        </p>
+                      )}
+                    </div>
+                    <Button 
+                      onClick={() => createTaskMutation.mutate(taskForm)} 
+                      className="w-full"
+                      disabled={isUploadingTask || createTaskMutation.isPending}
+                    >
+                      {isUploadingTask ? 'Subiendo archivo...' : 'Create Task'}
                     </Button>
                   </div>
                 </DialogContent>

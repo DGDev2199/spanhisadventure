@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, User, BookOpen, Calendar, MessageSquare, Award, CheckCircle, ClipboardList } from 'lucide-react';
+import { LogOut, User, BookOpen, Calendar, MessageSquare, Award, CheckCircle, ClipboardList, Download } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -478,6 +478,17 @@ const Dashboard = () => {
                         <p className="text-xs text-muted-foreground mt-1">
                           Due: {new Date(task.due_date).toLocaleDateString()}
                         </p>
+                      )}
+                      {task.attachment_url && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => window.open(task.attachment_url, '_blank')}
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Descargar Archivo Adjunto
+                        </Button>
                       )}
                     </div>
                   </div>

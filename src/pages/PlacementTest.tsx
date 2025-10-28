@@ -114,21 +114,27 @@ const PlacementTest = () => {
   const uploadAudioAnswer = async (questionId: string) => {
     if (!audioBlob || !user?.id) return null;
 
-    const fileName = `${user.id}/${questionId}_${Date.now()}.webm`;
-    const { error: uploadError } = await supabase.storage
-      .from('student-audio-responses')
-      .upload(fileName, audioBlob);
+    try {
+      const fileName = `${user.id}/${questionId}_${Date.now()}.webm`;
+      const { error: uploadError } = await supabase.storage
+        .from('student-audio-responses')
+        .upload(fileName, audioBlob);
 
-    if (uploadError) {
-      toast.error('Error al subir audio');
+      if (uploadError) {
+        console.error('Audio upload error:', uploadError);
+        // Don't show error toast - just skip audio upload
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('student-audio-responses')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Audio upload exception:', error);
       return null;
     }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('student-audio-responses')
-      .getPublicUrl(fileName);
-
-    return publicUrl;
   };
 
   const handleNext = async () => {

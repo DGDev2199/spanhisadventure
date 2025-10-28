@@ -21,6 +21,7 @@ export type Database = {
           due_date: string | null
           id: string
           teacher_id: string
+          test_type: string
           time_limit_minutes: number | null
           title: string
           updated_at: string
@@ -31,6 +32,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           teacher_id: string
+          test_type?: string
           time_limit_minutes?: number | null
           title: string
           updated_at?: string
@@ -41,6 +43,7 @@ export type Database = {
           due_date?: string | null
           id?: string
           teacher_id?: string
+          test_type?: string
           time_limit_minutes?: number | null
           title?: string
           updated_at?: string

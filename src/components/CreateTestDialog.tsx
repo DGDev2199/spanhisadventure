@@ -11,6 +11,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface Question {
   question_type: 'multiple_choice' | 'true_false' | 'free_text';
@@ -35,6 +36,7 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
   const [timeLimit, setTimeLimit] = useState('');
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
+  const [testType, setTestType] = useState<'regular' | 'final'>('regular');
 
   const createTestMutation = useMutation({
     mutationFn: async () => {
@@ -51,6 +53,7 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
           description,
           due_date: dueDate || null,
           time_limit_minutes: timeLimit ? parseInt(timeLimit) : null,
+          test_type: testType,
         })
         .select()
         .single();
@@ -104,6 +107,7 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
     setTimeLimit('');
     setSelectedStudents([]);
     setQuestions([]);
+    setTestType('regular');
   };
 
   const addQuestion = () => {
@@ -150,6 +154,24 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
         <div className="space-y-6">
           {/* Basic Info */}
           <div className="space-y-4">
+            <div>
+              <Label>Tipo de Test *</Label>
+              <RadioGroup value={testType} onValueChange={(value: 'regular' | 'final') => setTestType(value)}>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="regular" id="regular" />
+                  <Label htmlFor="regular" className="font-normal cursor-pointer">
+                    Test Regular - Evaluación estándar
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="final" id="final" />
+                  <Label htmlFor="final" className="font-normal cursor-pointer">
+                    Test Final - Permite reasignar nivel después de completarlo
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
             <div>
               <Label>Título del Test *</Label>
               <Input

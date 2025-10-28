@@ -546,7 +546,7 @@ const Dashboard = () => {
                               Pendiente revisión
                             </span>
                             {assignment.score !== null && (
-                              <p className="text-sm font-medium mt-1">{assignment.score}%</p>
+                              <p className="text-2xl font-bold text-primary mt-2">{assignment.score}%</p>
                             )}
                           </div>
                         )}
@@ -555,7 +555,8 @@ const Dashboard = () => {
                             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
                               Calificado
                             </span>
-                            <p className="text-lg font-bold text-primary mt-1">{assignment.score}%</p>
+                            <p className="text-3xl font-bold text-primary mt-2">{assignment.score}%</p>
+                            <p className="text-xs text-muted-foreground mt-1">Puntos obtenidos</p>
                           </div>
                         )}
                       </div>

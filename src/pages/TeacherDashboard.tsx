@@ -17,6 +17,8 @@ import { AssignRoomDialog } from '@/components/AssignRoomDialog';
 import { ReviewPlacementTestDialog } from '@/components/ReviewPlacementTestDialog';
 import { CreateTestDialog } from '@/components/CreateTestDialog';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
+import { TestDetailsDialog } from '@/components/TestDetailsDialog';
+import { FinalTestReviewDialog } from '@/components/FinalTestReviewDialog';
 
 const TeacherDashboard = () => {
   const { user, signOut } = useAuth();
@@ -27,7 +29,11 @@ const TeacherDashboard = () => {
   const [isRoomDialogOpen, setIsRoomDialogOpen] = useState(false);
   const [isReviewTestDialogOpen, setIsReviewTestDialogOpen] = useState(false);
   const [isCreateTestDialogOpen, setIsCreateTestDialogOpen] = useState(false);
+  const [isTestDetailsOpen, setIsTestDetailsOpen] = useState(false);
+  const [isFinalReviewOpen, setIsFinalReviewOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [selectedTest, setSelectedTest] = useState<any>(null);
+  const [finalReviewData, setFinalReviewData] = useState<{ studentId: string; studentName: string; score: number } | null>(null);
   const [taskForm, setTaskForm] = useState({ student_id: '', title: '', description: '', due_date: '' });
   const [feedbackForm, setFeedbackForm] = useState({ student_id: '', content: '' });
   const [taskAttachment, setTaskAttachment] = useState<File | null>(null);
@@ -534,10 +540,12 @@ const TeacherDashboard = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Título</TableHead>
+                    <TableHead>Tipo</TableHead>
                     <TableHead>Fecha Entrega</TableHead>
                     <TableHead>Asignado a</TableHead>
                     <TableHead>Enviados</TableHead>
                     <TableHead>Promedio</TableHead>
+                    <TableHead>Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -550,6 +558,17 @@ const TeacherDashboard = () => {
                     return (
                       <TableRow key={test.id}>
                         <TableCell className="font-medium">{test.title}</TableCell>
+                        <TableCell>
+                          {test.test_type === 'final' ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                              Final
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                              Regular
+                            </span>
+                          )}
+                        </TableCell>
                         <TableCell>{test.due_date ? new Date(test.due_date).toLocaleDateString() : 'Sin fecha'}</TableCell>
                         <TableCell>{totalAssigned} estudiante(s)</TableCell>
                         <TableCell>
@@ -563,6 +582,18 @@ const TeacherDashboard = () => {
                         </TableCell>
                         <TableCell>
                           {scores.length > 0 ? `${avgScore}%` : '-'}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedTest(test);
+                              setIsTestDetailsOpen(true);
+                            }}
+                          >
+                            Ver Detalles
+                          </Button>
                         </TableCell>
                       </TableRow>
                     );
@@ -613,6 +644,33 @@ const TeacherDashboard = () => {
         onOpenChange={setIsCreateTestDialogOpen}
         students={myStudents || []}
       />
+
+      {/* Test Details Dialog */}
+      {selectedTest && (
+        <TestDetailsDialog
+          open={isTestDetailsOpen}
+          onOpenChange={setIsTestDetailsOpen}
+          testId={selectedTest.id}
+          testTitle={selectedTest.title}
+          testType={selectedTest.test_type}
+          onOpenFinalReview={(studentId, studentName, score) => {
+            setFinalReviewData({ studentId, studentName, score });
+            setIsTestDetailsOpen(false);
+            setIsFinalReviewOpen(true);
+          }}
+        />
+      )}
+
+      {/* Final Test Review Dialog */}
+      {finalReviewData && (
+        <FinalTestReviewDialog
+          open={isFinalReviewOpen}
+          onOpenChange={setIsFinalReviewOpen}
+          studentId={finalReviewData.studentId}
+          studentName={finalReviewData.studentName}
+          testScore={finalReviewData.score}
+        />
+      )}
     </div>
   );
 };

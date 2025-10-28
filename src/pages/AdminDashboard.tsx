@@ -118,46 +118,50 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-primary text-white">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <img src={logo} alt="Spanish Adventure" className="h-12" />
+        <div className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <img src={logo} alt="Spanish Adventure" className="h-10 sm:h-12" />
             <div>
-              <h1 className="text-xl font-bold">Spanish Adventure</h1>
-              <p className="text-sm text-white/80">Admin Dashboard</p>
+              <h1 className="text-base sm:text-xl font-bold">Spanish Adventure</h1>
+              <p className="text-xs sm:text-sm text-white/80">Admin Dashboard</p>
             </div>
           </div>
           <Button
             onClick={signOut}
             variant="outline"
+            size="sm"
             className="bg-white/10 border-white/20 text-white hover:bg-white/20"
           >
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
+            <LogOut className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Sign Out</span>
           </Button>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex justify-between items-center flex-wrap gap-4">
+      <main className="container mx-auto px-4 py-4 sm:py-8">
+        <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-3xl font-bold mb-2">Admin Overview</h2>
-            <p className="text-muted-foreground">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2">Admin Overview</h2>
+            <p className="text-sm sm:text-base text-muted-foreground">
               Manage students, teachers, tutors, and all platform activities
             </p>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <Button onClick={() => setPlacementTestDialogOpen(true)} variant="outline">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button onClick={() => setPlacementTestDialogOpen(true)} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
               <FileCheck className="h-4 w-4 mr-2" />
-              Gestionar Test de Nivelación
+              <span className="hidden sm:inline">Gestionar Test</span>
+              <span className="sm:hidden">Test</span>
             </Button>
-            <Button onClick={() => setRoomsDialogOpen(true)} variant="outline">
+            <Button onClick={() => setRoomsDialogOpen(true)} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
               <Home className="h-4 w-4 mr-2" />
-              Gestionar Habitaciones
+              <span className="hidden sm:inline">Gestionar Habitaciones</span>
+              <span className="sm:hidden">Habitaciones</span>
             </Button>
-            <Button onClick={() => setCreateEventDialogOpen(true)}>
+            <Button onClick={() => setCreateEventDialogOpen(true)} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
               <Calendar className="h-4 w-4 mr-2" />
-              Crear Evento Horario
+              <span className="hidden sm:inline">Crear Evento</span>
+              <span className="sm:hidden">Evento</span>
             </Button>
           </div>
         </div>
@@ -228,10 +232,10 @@ const AdminDashboard = () => {
         {/* Students Table */}
         <Card className="shadow-md mb-6">
           <CardHeader>
-            <CardTitle>Students</CardTitle>
-            <CardDescription>Manage student profiles and assignments</CardDescription>
+            <CardTitle className="text-lg sm:text-xl">Students</CardTitle>
+            <CardDescription className="text-sm">Manage student profiles and assignments</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-0 sm:px-6">
             {studentsLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -241,62 +245,64 @@ const AdminDashboard = () => {
                 Error loading students. Please check console for details.
               </div>
             ) : students && students.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Level</TableHead>
-                    <TableHead>Room</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Test Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {students.map((student: any) => (
-                    <TableRow key={student.id}>
-                      <TableCell className="font-medium">{student.profiles?.full_name}</TableCell>
-                      <TableCell>{student.profiles?.email}</TableCell>
-                      <TableCell>{student.level || 'Not Set'}</TableCell>
-                      <TableCell>{student.room || 'Not Assigned'}</TableCell>
-                      <TableCell>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          student.status === 'active' 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          {student.status}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          student.placement_test_status === 'completed' 
-                            ? 'bg-blue-100 text-blue-700' 
-                            : student.placement_test_status === 'pending'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-gray-100 text-gray-700'
-                        }`}>
-                          {student.placement_test_status}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedStudent(student);
-                            setAssignDialogOpen(true);
-                          }}
-                        >
-                          <Settings className="h-4 w-4 mr-1" />
-                          Assign
-                        </Button>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Name</TableHead>
+                      <TableHead className="whitespace-nowrap hidden sm:table-cell">Email</TableHead>
+                      <TableHead className="whitespace-nowrap">Level</TableHead>
+                      <TableHead className="whitespace-nowrap hidden md:table-cell">Room</TableHead>
+                      <TableHead className="whitespace-nowrap hidden lg:table-cell">Status</TableHead>
+                      <TableHead className="whitespace-nowrap hidden lg:table-cell">Test Status</TableHead>
+                      <TableHead className="whitespace-nowrap">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {students.map((student: any) => (
+                      <TableRow key={student.id}>
+                        <TableCell className="font-medium text-sm">{student.profiles?.full_name}</TableCell>
+                        <TableCell className="text-sm hidden sm:table-cell">{student.profiles?.email}</TableCell>
+                        <TableCell className="text-sm">{student.level || 'Not Set'}</TableCell>
+                        <TableCell className="text-sm hidden md:table-cell">{student.room || 'Not Assigned'}</TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            student.status === 'active' 
+                              ? 'bg-green-100 text-green-700' 
+                              : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {student.status}
+                          </span>
+                        </TableCell>
+                        <TableCell className="hidden lg:table-cell">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            student.placement_test_status === 'completed' 
+                              ? 'bg-blue-100 text-blue-700' 
+                              : student.placement_test_status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {student.placement_test_status}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedStudent(student);
+                              setAssignDialogOpen(true);
+                            }}
+                          >
+                            <Settings className="h-4 w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">Assign</span>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             ) : (
               <p className="text-center text-muted-foreground py-8">No students found</p>
             )}
@@ -306,10 +312,10 @@ const AdminDashboard = () => {
         {/* All Users Table */}
         <Card className="shadow-md">
           <CardHeader>
-            <CardTitle>All Users</CardTitle>
-            <CardDescription>View all platform users and their roles</CardDescription>
+            <CardTitle className="text-lg sm:text-xl">All Users</CardTitle>
+            <CardDescription className="text-sm">View all platform users and their roles</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-0 sm:px-6">
             {usersLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -319,46 +325,48 @@ const AdminDashboard = () => {
                 Error loading users. Please check console for details.
               </div>
             ) : allUsers && allUsers.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Nationality</TableHead>
-                    <TableHead>Age</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {allUsers.map((user: any) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.full_name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary capitalize">
-                          {user.user_roles?.[0]?.role || 'No Role'}
-                        </span>
-                      </TableCell>
-                      <TableCell>{user.nationality || 'N/A'}</TableCell>
-                      <TableCell>{user.age || 'N/A'}</TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setRoleDialogOpen(true);
-                          }}
-                        >
-                          <Settings className="h-4 w-4 mr-1" />
-                          Change Role
-                        </Button>
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="whitespace-nowrap">Name</TableHead>
+                      <TableHead className="whitespace-nowrap hidden sm:table-cell">Email</TableHead>
+                      <TableHead className="whitespace-nowrap">Role</TableHead>
+                      <TableHead className="whitespace-nowrap hidden md:table-cell">Nationality</TableHead>
+                      <TableHead className="whitespace-nowrap hidden lg:table-cell">Age</TableHead>
+                      <TableHead className="whitespace-nowrap">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {allUsers.map((user: any) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium text-sm">{user.full_name}</TableCell>
+                        <TableCell className="text-sm hidden sm:table-cell">{user.email}</TableCell>
+                        <TableCell>
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary capitalize">
+                            {user.user_roles?.[0]?.role || 'No Role'}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-sm hidden md:table-cell">{user.nationality || 'N/A'}</TableCell>
+                        <TableCell className="text-sm hidden lg:table-cell">{user.age || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setRoleDialogOpen(true);
+                            }}
+                          >
+                            <Settings className="h-4 w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">Change</span>
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             ) : (
               <p className="text-center text-muted-foreground py-8">No users found</p>
             )}

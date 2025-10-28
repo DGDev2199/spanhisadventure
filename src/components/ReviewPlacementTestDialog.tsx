@@ -102,7 +102,7 @@ export function ReviewPlacementTestDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="w-full max-w-sm mx-auto max-h-[90vh] flex flex-col">"
         <DialogHeader>
           <DialogTitle>Revisar Examen de Nivelación</DialogTitle>
           <DialogDescription>
@@ -244,37 +244,38 @@ export function ReviewPlacementTestDialog({
               </ul>
             </div>
 
-            {/* Level Assignment */}
-            <div className="space-y-3">
-              <Label htmlFor="level-select">Asignar Nivel Final</Label>
+            {/* Level Assignment - Mobile Optimized */}
+            <div className="space-y-4 p-4 bg-accent/10 rounded-lg">
+              <h3 className="font-semibold text-lg">Asignar Nivel Final</h3>
               <Select value={selectedLevel} onValueChange={setSelectedLevel}>
-                <SelectTrigger id="level-select">
+                <SelectTrigger className="w-full h-12">
                   <SelectValue placeholder="Selecciona un nivel" />
                 </SelectTrigger>
                 <SelectContent>
                   {LEVELS.map((level) => (
-                    <SelectItem key={level} value={level}>
+                    <SelectItem key={level} value={level} className="h-12 text-lg">
                       {level}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                Selecciona el nivel final después de revisar tanto el examen escrito como el oral
+              <p className="text-sm text-muted-foreground">
+                Selecciona el nivel final después de revisar el examen
               </p>
-            </div>
-
-            {/* Actions */}
-            <div className="flex justify-end gap-3 pt-4 border-t mt-4 pb-4">
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleAssignLevel}
-                disabled={!selectedLevel || assignLevelMutation.isPending}
-              >
-                {assignLevelMutation.isPending ? 'Asignando...' : 'Asignar Nivel'}
-              </Button>
+              
+              {/* Mobile Actions */}
+              <div className="flex flex-col gap-3 w-full">
+                <Button
+                  onClick={handleAssignLevel}
+                  disabled={!selectedLevel || assignLevelMutation.isPending}
+                  className="w-full h-12 text-lg"
+                >
+                  {assignLevelMutation.isPending ? 'Asignando...' : 'Asignar Nivel'}
+                </Button>
+                <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full h-12 text-lg">
+                  Cancelar
+                </Button>
+              </div>
             </div>
           </div>
         </ScrollArea>

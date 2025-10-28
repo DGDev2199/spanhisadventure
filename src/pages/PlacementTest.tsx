@@ -76,14 +76,21 @@ const PlacementTest = () => {
   const handleSubmit = () => {
     if (!questions) return;
     
+    // Calculate score only from answered questions
+    const answeredQuestions = questions.filter(q => answers[q.id]);
     let correctCount = 0;
-    questions.forEach((q) => {
+    
+    answeredQuestions.forEach((q) => {
       if (answers[q.id] === q.correct_answer) {
         correctCount++;
       }
     });
     
-    const score = Math.round((correctCount / questions.length) * 100);
+    // Calculate score based on answered questions only
+    const score = answeredQuestions.length > 0 
+      ? Math.round((correctCount / answeredQuestions.length) * 100)
+      : 0;
+    
     submitTestMutation.mutate({ score, answers });
   };
 

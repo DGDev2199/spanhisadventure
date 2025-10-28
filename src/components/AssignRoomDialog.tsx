@@ -61,15 +61,15 @@ export const AssignRoomDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Assign Room</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg sm:text-xl">Assign Room</DialogTitle>
+          <DialogDescription className="text-sm">
             Assign a room to {studentName}
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto px-1">
           <div className="space-y-2">
             <Label>Room</Label>
             <Select value={room} onValueChange={setRoom}>
@@ -88,11 +88,11 @@ export const AssignRoomDialog = ({
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button onClick={() => assignRoomMutation.mutate()} disabled={assignRoomMutation.isPending || !room}>
+          <Button onClick={() => assignRoomMutation.mutate()} disabled={assignRoomMutation.isPending || !room} className="w-full sm:w-auto">
             {assignRoomMutation.isPending ? 'Assigning...' : 'Assign Room'}
           </Button>
         </DialogFooter>

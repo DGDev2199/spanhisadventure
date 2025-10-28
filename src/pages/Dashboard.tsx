@@ -154,30 +154,31 @@ const Dashboard = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-primary text-white">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <img src={logo} alt="Spanish Adventure" className="h-12" />
+        <div className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <img src={logo} alt="Spanish Adventure" className="h-10 sm:h-12" />
             <div>
-              <h1 className="text-xl font-bold">Spanish Adventure</h1>
-              <p className="text-sm text-white/80 capitalize">{userRole || 'Student'} Dashboard</p>
+              <h1 className="text-base sm:text-xl font-bold">Spanish Adventure</h1>
+              <p className="text-xs sm:text-sm text-white/80 capitalize">{userRole || 'Student'} Dashboard</p>
             </div>
           </div>
           <Button
             onClick={signOut}
             variant="outline"
+            size="sm"
             className="bg-white/10 border-white/20 text-white hover:bg-white/20"
           >
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
+            <LogOut className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Sign Out</span>
           </Button>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Welcome back!</h2>
-          <p className="text-muted-foreground">
+      <main className="container mx-auto px-4 py-4 sm:py-8">
+        <div className="mb-6 sm:mb-8">
+          <h2 className="text-2xl sm:text-3xl font-bold mb-2">Welcome back!</h2>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Here's what's happening with your Spanish learning journey.
           </p>
         </div>

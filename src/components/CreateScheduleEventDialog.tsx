@@ -156,15 +156,15 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl sm:max-w-md md:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Crear Evento de Horario</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg sm:text-xl">Crear Evento de Horario</DialogTitle>
+          <DialogDescription className="text-sm">
             Agrega un nuevo evento al horario semanal
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
           <div>
             <Label>Título *</Label>
             <Input
@@ -311,16 +311,16 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
             </div>
           )}
 
-          <div className="flex gap-2 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row gap-2 pt-4">
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
+              Cancelar
+            </Button>
             <Button
               onClick={() => createEventMutation.mutate()}
               disabled={!title || createEventMutation.isPending}
-              className="flex-1"
+              className="w-full sm:flex-1"
             >
               {createEventMutation.isPending ? 'Creando...' : 'Crear Evento'}
-            </Button>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
             </Button>
           </div>
         </div>

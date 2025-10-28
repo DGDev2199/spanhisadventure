@@ -81,15 +81,15 @@ export const EditProfileDialog = ({ open, onOpenChange }: EditProfileDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit Profile</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg sm:text-xl">Edit Profile</DialogTitle>
+          <DialogDescription className="text-sm">
             Update your personal information
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto px-1">
           <div className="space-y-2">
             <Label>Full Name</Label>
             <Input
@@ -139,11 +139,11 @@ export const EditProfileDialog = ({ open, onOpenChange }: EditProfileDialogProps
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button onClick={() => updateProfileMutation.mutate()} disabled={updateProfileMutation.isPending}>
+          <Button onClick={() => updateProfileMutation.mutate()} disabled={updateProfileMutation.isPending} className="w-full sm:w-auto">
             {updateProfileMutation.isPending ? 'Updating...' : 'Update Profile'}
           </Button>
         </DialogFooter>

@@ -110,15 +110,15 @@ export const AssignTeacherTutorDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Manage Student</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg sm:text-xl">Manage Student</DialogTitle>
+          <DialogDescription className="text-sm">
             Assign teacher, tutor, and room to {studentName}
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto px-1">
           <div className="space-y-2">
             <Label>Teacher</Label>
             <Select value={teacherId} onValueChange={setTeacherId}>
@@ -171,11 +171,11 @@ export const AssignTeacherTutorDialog = ({
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button onClick={() => assignMutation.mutate()} disabled={assignMutation.isPending}>
+          <Button onClick={() => assignMutation.mutate()} disabled={assignMutation.isPending} className="w-full sm:w-auto">
             {assignMutation.isPending ? 'Saving...' : 'Save Changes'}
           </Button>
         </DialogFooter>

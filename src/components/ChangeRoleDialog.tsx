@@ -70,15 +70,15 @@ export const ChangeRoleDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Change User Role</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg sm:text-xl">Change User Role</DialogTitle>
+          <DialogDescription className="text-sm">
             Change the role for {userName}
           </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4 py-4">
+        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto px-1">
           <div className="space-y-2">
             <Label>Role</Label>
             <Select value={role} onValueChange={setRole}>
@@ -95,11 +95,11 @@ export const ChangeRoleDialog = ({
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button onClick={() => changeRoleMutation.mutate()} disabled={changeRoleMutation.isPending || !role}>
+          <Button onClick={() => changeRoleMutation.mutate()} disabled={changeRoleMutation.isPending || !role} className="w-full sm:w-auto">
             {changeRoleMutation.isPending ? 'Updating...' : 'Update Role'}
           </Button>
         </DialogFooter>

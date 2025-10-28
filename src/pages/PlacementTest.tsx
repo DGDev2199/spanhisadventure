@@ -243,12 +243,12 @@ const PlacementTest = () => {
                 )}
               </div>
               
-              {/* Early finish button - only show if not on last question and has some answers */}
-              {currentQuestion < questions.length - 1 && Object.keys(answers).length > 0 && (
+              {/* Early finish button - always show if not on last question */}
+              {currentQuestion < questions.length - 1 && (
                 <Button
                   variant="secondary"
                   onClick={handleSubmit}
-                  disabled={submitTestMutation.isPending}
+                  disabled={Object.keys(answers).length === 0 || submitTestMutation.isPending}
                   className="w-full"
                 >
                   {submitTestMutation.isPending ? 'Enviando…' : 'No entiendo más - Finalizar Test'}

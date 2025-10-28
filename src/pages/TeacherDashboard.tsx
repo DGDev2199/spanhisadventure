@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { LogOut, GraduationCap, BookOpen, MessageSquare, Plus, Home, FileCheck, ClipboardList } from 'lucide-react';
+import { LogOut, GraduationCap, BookOpen, MessageSquare, Plus, Home, FileCheck, ClipboardList, Calendar, Clock } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -16,6 +16,7 @@ import logo from '@/assets/logo.png';
 import { AssignRoomDialog } from '@/components/AssignRoomDialog';
 import { ReviewPlacementTestDialog } from '@/components/ReviewPlacementTestDialog';
 import { CreateTestDialog } from '@/components/CreateTestDialog';
+import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 
 const TeacherDashboard = () => {
   const { user, signOut } = useAuth();
@@ -532,6 +533,11 @@ const TeacherDashboard = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Weekly Calendar */}
+        <div className="mt-6">
+          <WeeklyCalendar />
+        </div>
       </main>
 
       {/* Assign Room Dialog */}

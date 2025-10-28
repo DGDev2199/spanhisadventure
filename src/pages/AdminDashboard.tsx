@@ -3,19 +3,22 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { LogOut, Users, GraduationCap, UserCheck, BookOpen, Settings, Home } from 'lucide-react';
+import { LogOut, Users, GraduationCap, UserCheck, BookOpen, Settings, Home, Calendar, Plus } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import logo from '@/assets/logo.png';
 import { AssignTeacherTutorDialog } from '@/components/AssignTeacherTutorDialog';
 import { ChangeRoleDialog } from '@/components/ChangeRoleDialog';
 import { ManageRoomsDialog } from '@/components/ManageRoomsDialog';
+import { WeeklyCalendar } from '@/components/WeeklyCalendar';
+import { CreateScheduleEventDialog } from '@/components/CreateScheduleEventDialog';
 
 const AdminDashboard = () => {
   const { signOut } = useAuth();
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [roomsDialogOpen, setRoomsDialogOpen] = useState(false);
+  const [createEventDialogOpen, setCreateEventDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
 
@@ -134,17 +137,23 @@ const AdminDashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8 flex justify-between items-center">
+        <div className="mb-8 flex justify-between items-center flex-wrap gap-4">
           <div>
             <h2 className="text-3xl font-bold mb-2">Admin Overview</h2>
             <p className="text-muted-foreground">
               Manage students, teachers, tutors, and all platform activities
             </p>
           </div>
-          <Button onClick={() => setRoomsDialogOpen(true)}>
-            <Home className="h-4 w-4 mr-2" />
-            Gestionar Habitaciones
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setRoomsDialogOpen(true)} variant="outline">
+              <Home className="h-4 w-4 mr-2" />
+              Gestionar Habitaciones
+            </Button>
+            <Button onClick={() => setCreateEventDialogOpen(true)}>
+              <Calendar className="h-4 w-4 mr-2" />
+              Crear Evento Horario
+            </Button>
+          </div>
         </div>
 
         {/* Stats Grid */}
@@ -349,6 +358,11 @@ const AdminDashboard = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Weekly Calendar */}
+        <div className="mt-6">
+          <WeeklyCalendar />
+        </div>
       </main>
 
       {/* Dialogs */}
@@ -377,6 +391,11 @@ const AdminDashboard = () => {
       <ManageRoomsDialog
         open={roomsDialogOpen}
         onOpenChange={setRoomsDialogOpen}
+      />
+
+      <CreateScheduleEventDialog
+        open={createEventDialogOpen}
+        onOpenChange={setCreateEventDialogOpen}
       />
     </div>
   );

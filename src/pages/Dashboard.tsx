@@ -10,6 +10,7 @@ import logo from '@/assets/logo.png';
 import { EditProfileDialog } from '@/components/EditProfileDialog';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
+import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 
 const Dashboard = () => {
   const { user, userRole, signOut } = useAuth();
@@ -366,18 +367,20 @@ const Dashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-secondary" />
-                Weekly Schedule
+                Horario Semanal
               </CardTitle>
               <CardDescription>
-                View your class schedule and events
+                Ve tu horario de clases y actividades
               </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-muted-foreground mb-4">
-                No schedule available yet. Check back later or contact your administrator.
+                Consulta el horario completo más abajo o en la sección de horarios.
               </p>
-              <Button variant="outline" disabled className="w-full">
-                No Schedule Available
+              <Button variant="outline" className="w-full" onClick={() => {
+                document.getElementById('weekly-calendar')?.scrollIntoView({ behavior: 'smooth' });
+              }}>
+                Ver Horario Completo
               </Button>
             </CardContent>
           </Card>
@@ -551,6 +554,11 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Weekly Calendar */}
+        <div id="weekly-calendar" className="mt-6">
+          <WeeklyCalendar />
+        </div>
       </main>
 
       <EditProfileDialog open={editProfileOpen} onOpenChange={setEditProfileOpen} />

@@ -6,12 +6,13 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { LogOut, GraduationCap, Clock, MessageSquare, Plus } from 'lucide-react';
+import { LogOut, GraduationCap, Clock, MessageSquare, Plus, Calendar } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import logo from '@/assets/logo.png';
+import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 
 const TutorDashboard = () => {
   const { user, signOut } = useAuth();
@@ -356,6 +357,11 @@ const TutorDashboard = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Weekly Calendar */}
+        <div className="mt-6">
+          <WeeklyCalendar />
+        </div>
       </main>
     </div>
   );

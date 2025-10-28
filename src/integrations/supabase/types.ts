@@ -179,6 +179,71 @@ export type Database = {
         }
         Relationships: []
       }
+      schedule_events: {
+        Row: {
+          color: string | null
+          created_at: string
+          created_by: string
+          day_of_week: number
+          description: string | null
+          end_time: string
+          event_type: string
+          id: string
+          is_active: boolean
+          level: string | null
+          room_id: string | null
+          start_time: string
+          teacher_id: string | null
+          title: string
+          tutor_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          created_by: string
+          day_of_week: number
+          description?: string | null
+          end_time: string
+          event_type: string
+          id?: string
+          is_active?: boolean
+          level?: string | null
+          room_id?: string | null
+          start_time: string
+          teacher_id?: string | null
+          title: string
+          tutor_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          day_of_week?: number
+          description?: string | null
+          end_time?: string
+          event_type?: string
+          id?: string
+          is_active?: boolean
+          level?: string | null
+          room_id?: string | null
+          start_time?: string
+          teacher_id?: string | null
+          title?: string
+          tutor_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_events_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schedules: {
         Row: {
           active: boolean | null

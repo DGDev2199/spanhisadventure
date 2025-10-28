@@ -126,7 +126,7 @@ export function FinalTestReviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-4xl sm:max-w-2xl md:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Revisar Test Final y Asignar Nivel</DialogTitle>
           <DialogDescription>
@@ -134,8 +134,9 @@ export function FinalTestReviewDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
-          <div className="space-y-6">
+        <ScrollArea className="flex-1 max-h-[60vh] px-6">
+          <div className="pr-4">
+            <div className="space-y-6">
             {/* Current Level */}
             <div className="bg-muted p-4 rounded-lg">
               <h3 className="font-semibold mb-2">Nivel Actual</h3>
@@ -249,16 +250,18 @@ export function FinalTestReviewDialog({
                 </div>
               </CardContent>
             </Card>
+            </div>
           </div>
         </ScrollArea>
 
-        <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 px-6 pb-6 border-t pt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="sm:w-auto">
             Cancelar
           </Button>
           <Button
             onClick={handleAssignLevel}
             disabled={!selectedLevel || assignLevelMutation.isPending}
+            className="sm:w-auto"
           >
             {assignLevelMutation.isPending ? 'Asignando...' : 'Asignar Nivel'}
           </Button>

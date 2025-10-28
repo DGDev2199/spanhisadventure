@@ -85,7 +85,7 @@ export function TestDetailsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-4xl sm:max-w-2xl md:max-w-4xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {testTitle}
@@ -100,8 +100,9 @@ export function TestDetailsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
-          {isLoading ? (
+        <ScrollArea className="flex-1 max-h-[60vh] px-6">
+          <div className="pr-4">
+            {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
@@ -214,9 +215,10 @@ export function TestDetailsDialog({
               </div>
             </div>
           ) : null}
+            </div>
         </ScrollArea>
 
-        <div className="flex justify-end pt-4 border-t">
+        <div className="flex justify-end px-6 pb-6 border-t pt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cerrar
           </Button>

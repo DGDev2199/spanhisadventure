@@ -153,7 +153,7 @@ export function ManagePlacementTestDialog({ open, onOpenChange }: ManagePlacemen
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-5xl sm:max-w-2xl md:max-w-5xl">
         <DialogHeader>
           <DialogTitle>Gestionar Test de Nivelación</DialogTitle>
           <DialogDescription>
@@ -161,8 +161,9 @@ export function ManagePlacementTestDialog({ open, onOpenChange }: ManagePlacemen
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
-          <div className="space-y-4">
+        <ScrollArea className="flex-1 max-h-[60vh] px-6">
+          <div className="pr-4">
+            <div className="space-y-4">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -328,16 +329,18 @@ export function ManagePlacementTestDialog({ open, onOpenChange }: ManagePlacemen
                 </Button>
               </>
             )}
+            </div>
           </div>
         </ScrollArea>
 
-        <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 px-6 pb-6 border-t pt-4">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="sm:w-auto">
             Cancelar
           </Button>
           <Button
             onClick={() => saveQuestionsMutation.mutate()}
             disabled={saveQuestionsMutation.isPending || uploadingAudio}
+            className="sm:w-auto"
           >
             {saveQuestionsMutation.isPending ? 'Guardando...' : 'Guardar Cambios'}
           </Button>

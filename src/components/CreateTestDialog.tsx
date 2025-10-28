@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface Question {
   question_type: 'multiple_choice' | 'true_false' | 'free_text';
@@ -143,7 +144,7 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl sm:max-w-2xl md:max-w-4xl">
         <DialogHeader>
           <DialogTitle>Crear Nuevo Test</DialogTitle>
           <DialogDescription>
@@ -151,8 +152,9 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Basic Info */}
+        <ScrollArea className="flex-1 max-h-[60vh] px-6">
+          <div className="space-y-6 pr-4">
+            {/* Basic Info */}
           <div className="space-y-4">
             <div>
               <Label>Tipo de Test *</Label>
@@ -357,20 +359,21 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
               </p>
             )}
           </div>
-
-          {/* Submit */}
-          <div className="flex gap-2">
-            <Button
-              onClick={() => createTestMutation.mutate()}
-              disabled={!title || questions.length === 0 || selectedStudents.length === 0 || createTestMutation.isPending}
-              className="flex-1"
-            >
-              {createTestMutation.isPending ? 'Creando...' : 'Crear y Asignar Test'}
-            </Button>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancelar
-            </Button>
           </div>
+        </ScrollArea>
+
+        {/* Submit */}
+        <div className="flex flex-col-reverse sm:flex-row gap-2 px-6 pb-6">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="sm:w-auto">
+            Cancelar
+          </Button>
+          <Button
+            onClick={() => createTestMutation.mutate()}
+            disabled={!title || questions.length === 0 || selectedStudents.length === 0 || createTestMutation.isPending}
+            className="flex-1 sm:flex-none"
+          >
+            {createTestMutation.isPending ? 'Creando...' : 'Crear y Asignar Test'}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

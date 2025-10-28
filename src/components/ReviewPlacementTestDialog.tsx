@@ -102,7 +102,7 @@ export function ReviewPlacementTestDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-sm mx-auto max-h-[90vh] flex flex-col">
+      <DialogContent className="w-full max-w-3xl sm:max-w-sm md:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Revisar Examen de Nivelación</DialogTitle>
           <DialogDescription>
@@ -110,8 +110,9 @@ export function ReviewPlacementTestDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
-          <div className="space-y-6">
+        <ScrollArea className="flex-1 max-h-[60vh] px-6">
+          <div className="pr-4">
+            <div className="space-y-6">
             {/* Written Test Score */}
             <div className="bg-muted p-4 rounded-lg">
               <h3 className="font-semibold mb-2">Resultado del Examen Escrito</h3>
@@ -276,6 +277,7 @@ export function ReviewPlacementTestDialog({
                   Cancelar
                 </Button>
               </div>
+            </div>
             </div>
           </div>
         </ScrollArea>

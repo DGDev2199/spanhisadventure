@@ -42,7 +42,7 @@ export function TestDetailsDialog({
           student_id,
           status,
           score,
-          submitted_at,
+          completed_at,
           started_at
         `)
         .eq('test_id', testId);

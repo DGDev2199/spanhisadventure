@@ -45,7 +45,10 @@ export function ManagePlacementTestDialog({ open, onOpenChange }: ManagePlacemen
         .order('level', { ascending: true })
         .order('question_number', { ascending: true });
       if (error) throw error;
-      return data as Question[];
+      return data.map(q => ({
+        ...q,
+        question_type: q.question_type || 'text'
+      })) as Question[];
     },
     enabled: open
   });

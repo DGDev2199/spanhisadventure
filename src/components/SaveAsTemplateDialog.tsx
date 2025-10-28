@@ -42,8 +42,7 @@ export const SaveAsTemplateDialog = ({ open, onOpenChange, testId }: SaveAsTempl
           title: templateName,
           description: test.description,
           test_type: test.test_type,
-          created_by: user.id,
-          is_public: isPublic
+          teacher_id: user.id,
         })
         .select()
         .single();

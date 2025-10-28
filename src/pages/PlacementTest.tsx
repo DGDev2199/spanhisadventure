@@ -219,25 +219,39 @@ const PlacementTest = () => {
             </RadioGroup>
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between pt-4">
-              <Button
-                variant="outline"
-                onClick={handlePrevious}
-                disabled={currentQuestion === 0}
-              >
-                Anterior
-              </Button>
-              
-              {currentQuestion === questions.length - 1 ? (
+            <div className="flex flex-col gap-4 pt-4">
+              <div className="flex justify-between">
                 <Button
-                  onClick={handleSubmit}
-                  disabled={Object.keys(answers).length !== questions.length || submitTestMutation.isPending}
+                  variant="outline"
+                  onClick={handlePrevious}
+                  disabled={currentQuestion === 0}
                 >
-                  {submitTestMutation.isPending ? 'Enviando…' : 'Enviar Examen'}
+                  Anterior
                 </Button>
-              ) : (
-                <Button onClick={handleNext}>
-                  Siguiente
+                
+                {currentQuestion === questions.length - 1 ? (
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={Object.keys(answers).length !== questions.length || submitTestMutation.isPending}
+                  >
+                    {submitTestMutation.isPending ? 'Enviando…' : 'Enviar Examen'}
+                  </Button>
+                ) : (
+                  <Button onClick={handleNext}>
+                    Siguiente
+                  </Button>
+                )}
+              </div>
+              
+              {/* Early finish button - only show if not on last question and has some answers */}
+              {currentQuestion < questions.length - 1 && Object.keys(answers).length > 0 && (
+                <Button
+                  variant="secondary"
+                  onClick={handleSubmit}
+                  disabled={submitTestMutation.isPending}
+                  className="w-full"
+                >
+                  {submitTestMutation.isPending ? 'Enviando…' : 'No entiendo más - Finalizar Test'}
                 </Button>
               )}
             </div>

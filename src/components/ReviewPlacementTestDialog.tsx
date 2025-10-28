@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { FileText, Download, CheckCircle2, XCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 
 interface ReviewPlacementTestDialogProps {
   open: boolean;
@@ -103,15 +103,15 @@ export function ReviewPlacementTestDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-3xl sm:max-w-sm md:max-w-3xl">
-        <DialogHeader>
+      <DialogContent className="w-full max-w-3xl md:max-w-3xl flex flex-col max-h-[90vh]">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Revisar Examen de Nivelación</DialogTitle>
           <DialogDescription>
             Estudiante: {studentName}
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 h-[65vh] sm:h-[70vh] px-6">
+        <div className="flex-1 overflow-y-auto px-6 -mx-6">
           <div className="pr-4">
             <div className="space-y-6">
             {/* Written Test Score */}
@@ -289,7 +289,7 @@ export function ReviewPlacementTestDialog({
             </div>
             </div>
           </div>
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );

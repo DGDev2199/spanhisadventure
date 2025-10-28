@@ -100,7 +100,7 @@ export function TestDetailsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 max-h-[60vh] px-6">
+        <ScrollArea className="flex-1 h-[65vh] sm:h-[70vh] px-6">
           <div className="pr-4">
             {isLoading ? (
             <div className="flex items-center justify-center py-8">

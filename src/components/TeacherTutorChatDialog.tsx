@@ -19,12 +19,15 @@ interface TeacherTutorChatDialogProps {
 }
 
 export const TeacherTutorChatDialog = ({ open, onOpenChange, studentId, studentName }: TeacherTutorChatDialogProps) => {
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [message, setMessage] = useState('');
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  
+  // Check if user is a teacher (only teachers can share tests)
+  const isTeacher = userRole === 'teacher';
 
   // Fetch messages
   const { data: messages } = useQuery({
@@ -46,7 +49,7 @@ export const TeacherTutorChatDialog = ({ open, onOpenChange, studentId, studentN
     enabled: open
   });
 
-  // Fetch available tests
+  // Fetch available tests (only for teachers)
   const { data: availableTests } = useQuery({
     queryKey: ['my-tests', user?.id],
     queryFn: async () => {
@@ -59,7 +62,7 @@ export const TeacherTutorChatDialog = ({ open, onOpenChange, studentId, studentN
       if (error) throw error;
       return data;
     },
-    enabled: open
+    enabled: open && isTeacher
   });
 
   // Send message mutation
@@ -105,7 +108,9 @@ export const TeacherTutorChatDialog = ({ open, onOpenChange, studentId, studentN
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl h-[600px] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Chat - {studentName}</DialogTitle>
+          <DialogTitle>
+            Chat sobre {studentName} {isTeacher ? '(con Tutor)' : '(con Profesor)'}
+          </DialogTitle>
         </DialogHeader>
 
         {/* Messages */}
@@ -131,7 +136,7 @@ export const TeacherTutorChatDialog = ({ open, onOpenChange, studentId, studentN
 
         {/* Input */}
         <div className="space-y-2">
-          {selectedTestId && (
+          {isTeacher && selectedTestId && (
             <div className="flex items-center gap-2">
               <Badge>
                 <FileText className="h-3 w-3 mr-1" />
@@ -143,26 +148,28 @@ export const TeacherTutorChatDialog = ({ open, onOpenChange, studentId, studentN
             </div>
           )}
           
-          <div className="flex gap-2">
-            <select
-              className="p-2 border rounded-md"
-              value={selectedTestId || ''}
-              onChange={(e) => setSelectedTestId(e.target.value || null)}
-            >
-              <option value="">Compartir test (opcional)</option>
-              {availableTests?.map((test) => (
-                <option key={test.id} value={test.id}>
-                  {test.title} - {test.test_type === 'final' ? 'Final' : 'Regular'}
-                </option>
-              ))}
-            </select>
-          </div>
+          {isTeacher && (
+            <div className="flex gap-2">
+              <select
+                className="w-full p-2 border rounded-md"
+                value={selectedTestId || ''}
+                onChange={(e) => setSelectedTestId(e.target.value || null)}
+              >
+                <option value="">Compartir test (opcional)</option>
+                {availableTests?.map((test) => (
+                  <option key={test.id} value={test.id}>
+                    {test.title} - {test.test_type === 'final' ? 'Final' : 'Regular'}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="flex gap-2">
             <Textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Escribe un mensaje..."
+              placeholder={isTeacher ? "Escribe un mensaje..." : "Escribe un mensaje al profesor..."}
               className="flex-1"
               rows={2}
               onKeyDown={(e) => {

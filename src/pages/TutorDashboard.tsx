@@ -149,28 +149,31 @@ const TutorDashboard = () => {
                     <TableHead>Email</TableHead>
                     <TableHead>Nivel</TableHead>
                     <TableHead>Sala</TableHead>
-                    <TableHead>Profesor</TableHead>
-                    <TableHead>Tutor</TableHead>
+                    <TableHead>Profesor Asignado</TableHead>
                     <TableHead>Acciones</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {myStudents.map((student: any) => (
                     <TableRow key={student.id}>
-                      <TableCell className="font-medium">{student.profiles?.full_name}</TableCell>
-                      <TableCell>{student.profiles?.email}</TableCell>
+                      <TableCell className="font-medium">{student.profiles?.full_name || 'Sin nombre'}</TableCell>
+                      <TableCell>{student.profiles?.email || '-'}</TableCell>
                       <TableCell>{student.level || 'No asignado'}</TableCell>
                       <TableCell>{student.room || 'No asignado'}</TableCell>
-                      <TableCell>{student.teacher?.full_name || 'No asignado'}</TableCell>
-                      <TableCell>{student.tutor?.full_name || 'No asignado'}</TableCell>
+                      <TableCell>
+                        {student.teacher?.full_name || (
+                          <span className="text-muted-foreground">No asignado</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Button 
                           size="sm" 
                           variant="outline"
                           onClick={() => openChat(student.user_id, student.profiles?.full_name)}
+                          disabled={!student.teacher_id}
                         >
                           <MessageSquare className="h-4 w-4 mr-1" />
-                          Chat
+                          Chat con Profesor
                         </Button>
                       </TableCell>
                     </TableRow>

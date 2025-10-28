@@ -19,6 +19,7 @@ import { CreateTestDialog } from '@/components/CreateTestDialog';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 import { TestDetailsDialog } from '@/components/TestDetailsDialog';
 import { FinalTestReviewDialog } from '@/components/FinalTestReviewDialog';
+import { StaffHoursCard } from '@/components/StaffHoursCard';
 
 const TeacherDashboard = () => {
   const { user, signOut } = useAuth();
@@ -255,6 +256,13 @@ const TeacherDashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Staff Hours Card */}
+        {user?.id && (
+          <div className="mb-8">
+            <StaffHoursCard userId={user.id} />
+          </div>
+        )}
 
         {/* Students Table */}
         <Card className="shadow-md mb-6">

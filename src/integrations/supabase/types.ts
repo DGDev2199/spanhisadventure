@@ -280,6 +280,69 @@ export type Database = {
         }
         Relationships: []
       }
+      staff_hours: {
+        Row: {
+          calculated_hours: number
+          created_at: string
+          id: string
+          last_calculated_at: string | null
+          manual_adjustment_hours: number
+          total_hours: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calculated_hours?: number
+          created_at?: string
+          id?: string
+          last_calculated_at?: string | null
+          manual_adjustment_hours?: number
+          total_hours?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calculated_hours?: number
+          created_at?: string
+          id?: string
+          last_calculated_at?: string | null
+          manual_adjustment_hours?: number
+          total_hours?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      staff_hours_log: {
+        Row: {
+          change_type: string
+          changed_by: string | null
+          created_at: string
+          description: string | null
+          hours_change: number
+          id: string
+          user_id: string
+        }
+        Insert: {
+          change_type: string
+          changed_by?: string | null
+          created_at?: string
+          description?: string | null
+          hours_change: number
+          id?: string
+          user_id: string
+        }
+        Update: {
+          change_type?: string
+          changed_by?: string | null
+          created_at?: string
+          description?: string | null
+          hours_change?: number
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       student_profiles: {
         Row: {
           created_at: string
@@ -562,6 +625,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_staff_hours_from_schedule: {
+        Args: { staff_user_id: string }
+        Returns: number
+      }
       get_teacher_id_from_assignment: {
         Args: { _assignment_id: string }
         Returns: string
@@ -580,6 +647,15 @@ export type Database = {
       is_test_assigned_to_student: {
         Args: { _test_id: string; _user_id: string }
         Returns: boolean
+      }
+      recalculate_all_staff_hours: { Args: never; Returns: undefined }
+      update_staff_hours: {
+        Args: {
+          manual_hours?: number
+          should_reset?: boolean
+          staff_user_id: string
+        }
+        Returns: undefined
       }
     }
     Enums: {

@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import logo from '@/assets/logo.png';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
+import { StaffHoursCard } from '@/components/StaffHoursCard';
 
 const TutorDashboard = () => {
   const { user, signOut } = useAuth();
@@ -173,6 +174,13 @@ const TutorDashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Staff Hours Card */}
+        {user?.id && (
+          <div className="mb-8">
+            <StaffHoursCard userId={user.id} />
+          </div>
+        )}
 
         {/* Students Table */}
         <Card className="shadow-md mb-6">

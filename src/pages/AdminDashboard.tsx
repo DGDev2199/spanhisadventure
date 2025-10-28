@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { LogOut, Users, GraduationCap, UserCheck, BookOpen, Settings, Home, Calendar, Plus, FileCheck } from 'lucide-react';
+import { LogOut, Users, GraduationCap, UserCheck, BookOpen, Settings, Home, Calendar, Plus, FileCheck, Clock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import logo from '@/assets/logo.png';
@@ -13,6 +13,7 @@ import { ManageRoomsDialog } from '@/components/ManageRoomsDialog';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 import { CreateScheduleEventDialog } from '@/components/CreateScheduleEventDialog';
 import { ManagePlacementTestDialog } from '@/components/ManagePlacementTestDialog';
+import { ManageStaffHoursDialog } from '@/components/ManageStaffHoursDialog';
 
 const AdminDashboard = () => {
   const { signOut } = useAuth();
@@ -21,6 +22,7 @@ const AdminDashboard = () => {
   const [roomsDialogOpen, setRoomsDialogOpen] = useState(false);
   const [createEventDialogOpen, setCreateEventDialogOpen] = useState(false);
   const [placementTestDialogOpen, setPlacementTestDialogOpen] = useState(false);
+  const [staffHoursDialogOpen, setStaffHoursDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
 
@@ -157,6 +159,11 @@ const AdminDashboard = () => {
               <Home className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Gestionar Habitaciones</span>
               <span className="sm:hidden">Habitaciones</span>
+            </Button>
+            <Button onClick={() => setStaffHoursDialogOpen(true)} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+              <Clock className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Gestionar Horas</span>
+              <span className="sm:hidden">Horas</span>
             </Button>
             <Button onClick={() => setCreateEventDialogOpen(true)} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
               <Calendar className="h-4 w-4 mr-2" />
@@ -415,6 +422,11 @@ const AdminDashboard = () => {
       <ManagePlacementTestDialog
         open={placementTestDialogOpen}
         onOpenChange={setPlacementTestDialogOpen}
+      />
+
+      <ManageStaffHoursDialog
+        open={staffHoursDialogOpen}
+        onOpenChange={setStaffHoursDialogOpen}
       />
     </div>
   );

@@ -438,6 +438,7 @@ export type Database = {
           read_at: string | null
           sender_id: string
           student_id: string
+          task_id: string | null
           test_id: string | null
         }
         Insert: {
@@ -447,6 +448,7 @@ export type Database = {
           read_at?: string | null
           sender_id: string
           student_id: string
+          task_id?: string | null
           test_id?: string | null
         }
         Update: {
@@ -456,9 +458,17 @@ export type Database = {
           read_at?: string | null
           sender_id?: string
           student_id?: string
+          task_id?: string | null
           test_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "teacher_tutor_messages_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "teacher_tutor_messages_test_id_fkey"
             columns: ["test_id"]

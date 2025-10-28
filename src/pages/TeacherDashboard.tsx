@@ -397,9 +397,10 @@ const TeacherDashboard = () => {
                               setChatStudent({ id: student.user_id, name: student.profiles?.full_name });
                               setChatOpen(true);
                             }}
+                            disabled={!student.tutor_id}
                           >
                             <MessageSquare className="h-4 w-4 mr-1" />
-                            Chat
+                            Chat con Tutor
                           </Button>
                           <Button
                             size="sm"

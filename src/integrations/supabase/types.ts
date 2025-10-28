@@ -430,6 +430,88 @@ export type Database = {
         }
         Relationships: []
       }
+      teacher_tutor_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read_at: string | null
+          sender_id: string
+          student_id: string
+          test_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          read_at?: string | null
+          sender_id: string
+          student_id: string
+          test_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read_at?: string | null
+          sender_id?: string
+          student_id?: string
+          test_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_tutor_messages_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "custom_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_questions: {
+        Row: {
+          correct_answer: string | null
+          created_at: string
+          id: string
+          options: Json | null
+          order_number: number
+          points: number
+          question_text: string
+          question_type: string
+          template_id: string
+        }
+        Insert: {
+          correct_answer?: string | null
+          created_at?: string
+          id?: string
+          options?: Json | null
+          order_number: number
+          points?: number
+          question_text: string
+          question_type: string
+          template_id: string
+        }
+        Update: {
+          correct_answer?: string | null
+          created_at?: string
+          id?: string
+          options?: Json | null
+          order_number?: number
+          points?: number
+          question_text?: string
+          question_type?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_questions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "test_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       test_answers: {
         Row: {
           answer_text: string | null
@@ -565,6 +647,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      test_templates: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_public: boolean
+          test_type: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          test_type?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_public?: boolean
+          test_type?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       tutor_sessions: {
         Row: {

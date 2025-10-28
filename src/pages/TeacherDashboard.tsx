@@ -20,6 +20,7 @@ import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 import { TestDetailsDialog } from '@/components/TestDetailsDialog';
 import { FinalTestReviewDialog } from '@/components/FinalTestReviewDialog';
 import { StaffHoursCard } from '@/components/StaffHoursCard';
+import { TeacherTutorChatDialog } from '@/components/TeacherTutorChatDialog';
 
 const TeacherDashboard = () => {
   const { user, signOut } = useAuth();
@@ -32,6 +33,8 @@ const TeacherDashboard = () => {
   const [isCreateTestDialogOpen, setIsCreateTestDialogOpen] = useState(false);
   const [isTestDetailsOpen, setIsTestDetailsOpen] = useState(false);
   const [isFinalReviewOpen, setIsFinalReviewOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatStudent, setChatStudent] = useState<{ id: string; name: string } | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [selectedTest, setSelectedTest] = useState<any>(null);
   const [finalReviewData, setFinalReviewData] = useState<{ studentId: string; studentName: string; score: number } | null>(null);
@@ -57,14 +60,18 @@ const TeacherDashboard = () => {
         throw studentError;
       }
 
-      // Get profiles for these students
+      // Get profiles for these students AND their teachers/tutors
       const userIds = studentData?.map(s => s.user_id) || [];
-      if (userIds.length === 0) return [];
+      const teacherIds = studentData?.map(s => s.teacher_id).filter(Boolean) || [];
+      const tutorIds = studentData?.map(s => s.tutor_id).filter(Boolean) || [];
+      const allUserIds = [...new Set([...userIds, ...teacherIds, ...tutorIds])];
+      
+      if (allUserIds.length === 0) return [];
 
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name, email')
-        .in('id', userIds);
+        .in('id', allUserIds);
 
       if (profilesError) {
         console.error('Error loading profiles:', profilesError);
@@ -74,7 +81,9 @@ const TeacherDashboard = () => {
       // Merge the data
       const studentsWithProfiles = studentData?.map(student => ({
         ...student,
-        profiles: profilesData?.find(p => p.id === student.user_id)
+        profiles: profilesData?.find(p => p.id === student.user_id),
+        teacher: profilesData?.find(p => p.id === student.teacher_id),
+        tutor: profilesData?.find(p => p.id === student.tutor_id)
       }));
 
       return studentsWithProfiles;
@@ -329,6 +338,8 @@ const TeacherDashboard = () => {
                     <TableHead>Email</TableHead>
                     <TableHead>Nivel</TableHead>
                     <TableHead>Habitación</TableHead>
+                    <TableHead>Profesor</TableHead>
+                    <TableHead>Tutor</TableHead>
                     <TableHead>Test Status</TableHead>
                     <TableHead>Acciones</TableHead>
                   </TableRow>
@@ -353,6 +364,16 @@ const TeacherDashboard = () => {
                         )}
                       </TableCell>
                       <TableCell>
+                        {student.teacher?.full_name || (
+                          <span className="text-muted-foreground">No asignado</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {student.tutor?.full_name || (
+                          <span className="text-muted-foreground">No asignado</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                           student.placement_test_status === 'completed' 
                             ? 'bg-green-100 text-green-700' 
@@ -369,6 +390,17 @@ const TeacherDashboard = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setChatStudent({ id: student.user_id, name: student.profiles?.full_name });
+                              setChatOpen(true);
+                            }}
+                          >
+                            <MessageSquare className="h-4 w-4 mr-1" />
+                            Chat
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"
@@ -678,6 +710,16 @@ const TeacherDashboard = () => {
           studentId={finalReviewData.studentId}
           studentName={finalReviewData.studentName}
           testScore={finalReviewData.score}
+        />
+      )}
+
+      {/* Chat Dialog */}
+      {chatStudent && (
+        <TeacherTutorChatDialog
+          open={chatOpen}
+          onOpenChange={setChatOpen}
+          studentId={chatStudent.id}
+          studentName={chatStudent.name}
         />
       )}
     </div>

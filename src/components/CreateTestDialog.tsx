@@ -6,13 +6,15 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Trash2, Upload } from 'lucide-react';
+import { Plus, Trash2, Upload, Save, FolderOpen } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { SaveAsTemplateDialog } from '@/components/SaveAsTemplateDialog';
+import { LoadTemplateDialog } from '@/components/LoadTemplateDialog';
 
 interface Question {
   question_type: 'multiple_choice' | 'true_false' | 'free_text';
@@ -38,6 +40,9 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
   const [testType, setTestType] = useState<'regular' | 'final'>('regular');
+  const [createdTestId, setCreatedTestId] = useState<string | null>(null);
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [showLoadTemplate, setShowLoadTemplate] = useState(false);
 
   const createTestMutation = useMutation({
     mutationFn: async () => {
@@ -90,7 +95,9 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
 
       if (assignmentsError) throw assignmentsError;
     },
-    onSuccess: () => {
+    onSuccess: (_, __, context: any) => {
+      const testId = context?.testId;
+      if (testId) setCreatedTestId(testId);
       queryClient.invalidateQueries({ queryKey: ['teacher-tests'] });
       toast.success('¡Test creado y asignado exitosamente!');
       resetForm();
@@ -142,6 +149,33 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
     setQuestions(questions.filter((_, i) => i !== index));
   };
 
+  const loadTemplate = async (templateId: string) => {
+    try {
+      const { data: template, error: templateError } = await supabase
+        .from('test_templates')
+        .select('*, template_questions(*)')
+        .eq('id', templateId)
+        .single();
+
+      if (templateError) throw templateError;
+
+      setTitle(template.title);
+      setDescription(template.description || '');
+      setTestType(template.test_type as 'regular' | 'final');
+      setQuestions(template.template_questions.map((q: any) => ({
+        question_type: q.question_type,
+        question_text: q.question_text,
+        options: q.options,
+        correct_answer: q.correct_answer,
+        points: q.points
+      })));
+
+      toast.success('Template cargado');
+    } catch (error) {
+      toast.error('Error al cargar template');
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl sm:max-w-2xl md:max-w-4xl">
@@ -151,6 +185,19 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
             Crea un test personalizado y asígnalo a tus estudiantes
           </DialogDescription>
         </DialogHeader>
+
+        <div className="flex gap-2 mb-4">
+          <Button variant="outline" size="sm" onClick={() => setShowLoadTemplate(true)}>
+            <FolderOpen className="h-4 w-4 mr-2" />
+            Cargar Template
+          </Button>
+          {createdTestId && (
+            <Button variant="outline" size="sm" onClick={() => setShowSaveTemplate(true)}>
+              <Save className="h-4 w-4 mr-2" />
+              Guardar como Template
+            </Button>
+          )}
+        </div>
 
         <ScrollArea className="flex-1 h-[65vh] sm:h-[70vh] px-6">
           <div className="space-y-6 pr-4">
@@ -376,6 +423,20 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
           </Button>
         </div>
       </DialogContent>
+
+      {createdTestId && (
+        <SaveAsTemplateDialog
+          open={showSaveTemplate}
+          onOpenChange={setShowSaveTemplate}
+          testId={createdTestId}
+        />
+      )}
+
+      <LoadTemplateDialog
+        open={showLoadTemplate}
+        onOpenChange={setShowLoadTemplate}
+        onSelectTemplate={loadTemplate}
+      />
     </Dialog>
   );
 };

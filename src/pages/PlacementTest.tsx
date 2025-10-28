@@ -36,23 +36,33 @@ const PlacementTest = () => {
     mutationFn: async ({ score, answers }: { score: number; answers: Record<string, string> }) => {
       if (!user?.id) throw new Error('No user');
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('student_profiles')
         .update({
           placement_test_status: 'pending',
           placement_test_written_score: score,
           placement_test_answers: answers
         })
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .select()
+        .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating student profile:', error);
+        throw error;
+      }
+      
+      console.log('Test submitted successfully:', data);
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['student-profile'] });
+      queryClient.invalidateQueries({ queryKey: ['teacher-students'] });
       setTestComplete(true);
       toast.success('¡Examen enviado exitosamente! Tu profesor lo revisará pronto.');
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('Mutation error:', error);
       toast.error('Error al enviar el examen. Por favor intenta de nuevo.');
     }
   });

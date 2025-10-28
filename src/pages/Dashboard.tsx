@@ -31,6 +31,7 @@ const Dashboard = () => {
         console.error('Error loading student profile:', error);
         throw error;
       }
+      console.log('Student profile loaded:', data);
       return data;
     },
     enabled: !!user?.id

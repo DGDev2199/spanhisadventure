@@ -231,9 +231,9 @@ const PlacementTest = () => {
               {currentQuestion === questions.length - 1 ? (
                 <Button
                   onClick={handleSubmit}
-                  disabled={Object.keys(answers).length !== questions.length}
+                  disabled={Object.keys(answers).length !== questions.length || submitTestMutation.isPending}
                 >
-                  Enviar Examen
+                  {submitTestMutation.isPending ? 'Enviando…' : 'Enviar Examen'}
                 </Button>
               ) : (
                 <Button onClick={handleNext}>

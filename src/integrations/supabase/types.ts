@@ -463,6 +463,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "teacher_tutor_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_tutor_messages_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "teacher_tutor_messages_task_id_fkey"
             columns: ["task_id"]
             isOneToOne: false

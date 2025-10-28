@@ -49,7 +49,7 @@ export const TeacherTutorChatDialog = ({ open, onOpenChange, studentId, studentN
         .from('teacher_tutor_messages')
         .select(`
           *,
-          sender:profiles!teacher_tutor_messages_sender_id_fkey(full_name),
+          sender:sender_id(full_name),
           test:custom_tests(title, test_type),
           task:tasks(title, description, due_date)
         `)

@@ -55,6 +55,42 @@ export type Database = {
           },
         ]
       }
+      extra_hours: {
+        Row: {
+          approved: boolean | null
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string
+          hours: number
+          id: string
+          justification: string
+          user_id: string
+        }
+        Insert: {
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by: string
+          hours: number
+          id?: string
+          justification: string
+          user_id: string
+        }
+        Update: {
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string
+          hours?: number
+          id?: string
+          justification?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       feedback: {
         Row: {
           author_id: string
@@ -387,6 +423,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      student_schedule_assignments: {
+        Row: {
+          assigned_by: string
+          created_at: string
+          id: string
+          schedule_event_id: string
+          student_id: string
+        }
+        Insert: {
+          assigned_by: string
+          created_at?: string
+          id?: string
+          schedule_event_id: string
+          student_id: string
+        }
+        Update: {
+          assigned_by?: string
+          created_at?: string
+          id?: string
+          schedule_event_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_schedule_assignments_schedule_event_id_fkey"
+            columns: ["schedule_event_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tasks: {
         Row: {
@@ -767,6 +835,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_staff_hours: { Args: never; Returns: undefined }
       get_test_questions_for_student: {
         Args: { p_test_id: string }
         Returns: {

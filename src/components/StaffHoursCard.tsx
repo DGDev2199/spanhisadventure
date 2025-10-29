@@ -1,14 +1,21 @@
+import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Clock, Calendar, TrendingUp } from 'lucide-react';
+import { Clock, Calendar, TrendingUp, Plus, History } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { AddExtraHoursDialog } from '@/components/AddExtraHoursDialog';
+import { ViewExtraHoursDialog } from '@/components/ViewExtraHoursDialog';
 
 interface StaffHoursCardProps {
   userId: string;
 }
 
 export function StaffHoursCard({ userId }: StaffHoursCardProps) {
+  const [showAddHours, setShowAddHours] = useState(false);
+  const [showViewHours, setShowViewHours] = useState(false);
+
   const { data: hoursData, isLoading } = useQuery({
     queryKey: ['staff-hours', userId],
     queryFn: async () => {
@@ -66,16 +73,38 @@ export function StaffHoursCard({ userId }: StaffHoursCardProps) {
   }
 
   return (
-    <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Clock className="h-5 w-5" />
-          Mis Horas Semanales
-        </CardTitle>
-        <CardDescription>
-          Calculadas desde tus actividades en el horario semanal
-        </CardDescription>
-      </CardHeader>
+    <>
+      <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                Mis Horas Semanales
+              </CardTitle>
+              <CardDescription>
+                Calculadas desde tus actividades en el horario semanal
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setShowViewHours(true)}
+              >
+                <History className="h-4 w-4 mr-2" />
+                Ver Historial
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => setShowAddHours(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar Horas
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white/80 dark:bg-gray-800/80 p-4 rounded-lg">
@@ -136,12 +165,25 @@ export function StaffHoursCard({ userId }: StaffHoursCardProps) {
           </div>
         )}
 
-        <Alert className="bg-blue-50 border-blue-200">
-          <AlertDescription className="text-xs">
-            💡 Tus horas se actualizan automáticamente cuando se modifican tus actividades en el horario semanal.
-          </AlertDescription>
-        </Alert>
-      </CardContent>
-    </Card>
+          <Alert className="bg-blue-50 border-blue-200">
+            <AlertDescription className="text-xs">
+              💡 Tus horas se actualizan automáticamente desde el horario. Las horas extras requieren aprobación del administrador.
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+
+      <AddExtraHoursDialog
+        open={showAddHours}
+        onOpenChange={setShowAddHours}
+        userId={userId}
+      />
+
+      <ViewExtraHoursDialog
+        open={showViewHours}
+        onOpenChange={setShowViewHours}
+        userId={userId}
+      />
+    </>
   );
 }

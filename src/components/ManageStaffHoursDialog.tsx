@@ -7,8 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Clock, RotateCcw, Save, TrendingUp } from 'lucide-react';
+import { Clock, RotateCcw, Save, TrendingUp, History } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ViewExtraHoursDialog } from '@/components/ViewExtraHoursDialog';
 
 interface ManageStaffHoursDialogProps {
   open: boolean;
@@ -18,6 +19,7 @@ interface ManageStaffHoursDialogProps {
 export function ManageStaffHoursDialog({ open, onOpenChange }: ManageStaffHoursDialogProps) {
   const queryClient = useQueryClient();
   const [adjustments, setAdjustments] = useState<Record<string, number>>({});
+  const [viewExtraHoursUserId, setViewExtraHoursUserId] = useState<string | null>(null);
 
   // Fetch all staff (teachers and tutors) with their hours
   const { data: staffData, isLoading } = useQuery({
@@ -138,13 +140,12 @@ export function ManageStaffHoursDialog({ open, onOpenChange }: ManageStaffHoursD
   // Mutation to recalculate all hours
   const recalculateAllMutation = useMutation({
     mutationFn: async () => {
-      // This would typically trigger a background job
-      // For now, we'll just invalidate the cache
-      toast.info('Recalculando horas...');
+      const { error } = await supabase.rpc('calculate_staff_hours');
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff-hours-management'] });
-      toast.success('Todas las horas han sido recalculadas');
+      toast.success('Todas las horas han sido recalculadas desde el horario semanal');
     },
     onError: (error: any) => {
       toast.error(`Error: ${error.message}`);
@@ -179,8 +180,8 @@ export function ManageStaffHoursDialog({ open, onOpenChange }: ManageStaffHoursD
         <Alert className="flex-shrink-0">
           <TrendingUp className="h-4 w-4" />
           <AlertDescription>
-            <strong>Horas Calculadas:</strong> Se suman automáticamente desde las actividades asignadas en el Horario Semanal. 
-            <strong> Ajuste Manual:</strong> Puedes agregar o restar horas adicionales.
+            <strong>Horas del Horario:</strong> Se calculan automáticamente desde las actividades asignadas en el Horario Semanal. 
+            <strong> Horas Extras:</strong> Solicitudes aprobadas de horas adicionales con justificación.
           </AlertDescription>
         </Alert>
 
@@ -208,7 +209,7 @@ export function ManageStaffHoursDialog({ open, onOpenChange }: ManageStaffHoursD
                   <TableHead>Nombre</TableHead>
                   <TableHead>Rol</TableHead>
                   <TableHead className="text-right">Hrs. Horario</TableHead>
-                  <TableHead className="text-right">Ajuste Manual</TableHead>
+                  <TableHead className="text-right">Hrs. Extras</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>
@@ -234,14 +235,17 @@ export function ManageStaffHoursDialog({ open, onOpenChange }: ManageStaffHoursD
                     <TableCell className="text-right">
                       <span className="font-mono text-sm">{staff.calculatedHours.toFixed(2)}h</span>
                     </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        step="0.5"
-                        value={adjustments[staff.userId] ?? staff.manualAdjustment}
-                        onChange={(e) => handleAdjustmentChange(staff.userId, e.target.value)}
-                        className="w-24 text-right"
-                      />
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="font-mono text-sm">{staff.manualAdjustment.toFixed(2)}h</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setViewExtraHoursUserId(staff.userId)}
+                        >
+                          <History className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <span className="font-bold text-lg text-primary">
@@ -249,24 +253,14 @@ export function ManageStaffHoursDialog({ open, onOpenChange }: ManageStaffHoursD
                       </span>
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleSaveAdjustment(staff.userId)}
-                          disabled={adjustments[staff.userId] === undefined || adjustHoursMutation.isPending}
-                        >
-                          <Save className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => resetHoursMutation.mutate(staff.userId)}
-                          disabled={resetHoursMutation.isPending}
-                        >
-                          <RotateCcw className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => resetHoursMutation.mutate(staff.userId)}
+                        disabled={resetHoursMutation.isPending}
+                      >
+                        <RotateCcw className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -285,6 +279,15 @@ export function ManageStaffHoursDialog({ open, onOpenChange }: ManageStaffHoursD
           </Button>
         </div>
       </DialogContent>
+
+      {viewExtraHoursUserId && (
+        <ViewExtraHoursDialog
+          open={!!viewExtraHoursUserId}
+          onOpenChange={(open) => !open && setViewExtraHoursUserId(null)}
+          userId={viewExtraHoursUserId}
+          isAdmin={true}
+        />
+      )}
     </Dialog>
   );
 }

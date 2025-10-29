@@ -51,10 +51,7 @@ const TakeCustomTest = () => {
     queryFn: async () => {
       if (!assignment?.test_id) return [];
       const { data, error } = await supabase
-        .from('test_questions')
-        .select('*')
-        .eq('test_id', assignment.test_id)
-        .order('order_number', { ascending: true });
+        .rpc('get_test_questions_for_student', { p_test_id: assignment.test_id });
       
       if (error) throw error;
       return data;
@@ -103,37 +100,14 @@ const TakeCustomTest = () => {
     mutationFn: async () => {
       if (!assignmentId || !questions) return;
 
-      // Calculate score for auto-graded questions
-      let totalPoints = 0;
-      let earnedPoints = 0;
-
-      const answersToInsert = questions.map((q) => {
-        totalPoints += q.points;
-        const userAnswer = answers[q.id];
-        let isCorrect = false;
-        let pointsEarned = 0;
-
-        if (q.question_type !== 'free_text' && q.correct_answer) {
-          if (q.question_type === 'true_false') {
-            isCorrect = userAnswer === q.correct_answer;
-          } else if (q.question_type === 'multiple_choice') {
-            isCorrect = userAnswer === q.correct_answer;
-          }
-          
-          if (isCorrect) {
-            pointsEarned = q.points;
-            earnedPoints += q.points;
-          }
-        }
-
-        return {
-          assignment_id: assignmentId,
-          question_id: q.id,
-          answer_text: userAnswer || '',
-          is_correct: q.question_type !== 'free_text' ? isCorrect : null,
-          points_earned: pointsEarned,
-        };
-      });
+      // Store student answers - scoring will be done server-side by teacher
+      const answersToInsert = questions.map((q) => ({
+        assignment_id: assignmentId,
+        question_id: q.id,
+        answer_text: answers[q.id] || '',
+        is_correct: null, // Will be graded by teacher
+        points_earned: 0, // Will be calculated after grading
+      }));
 
       // Insert answers
       const { error: answersError } = await supabase
@@ -142,14 +116,12 @@ const TakeCustomTest = () => {
 
       if (answersError) throw answersError;
 
-      // Update assignment
-      const score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
+      // Update assignment to submitted status (no score yet)
       const { error: assignmentError } = await supabase
         .from('test_assignments')
         .update({
           status: 'submitted',
-          submitted_at: new Date().toISOString(),
-          score: score,
+          completed_at: new Date().toISOString(),
         })
         .eq('id', assignmentId);
 

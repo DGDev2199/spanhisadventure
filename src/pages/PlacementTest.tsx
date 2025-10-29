@@ -122,15 +122,20 @@ const PlacementTest = () => {
 
       if (uploadError) {
         console.error('Audio upload error:', uploadError);
-        // Don't show error toast - just skip audio upload
         return null;
       }
 
-      const { data: { publicUrl } } = supabase.storage
+      // Use signed URL instead of public URL (1 hour expiry)
+      const { data, error: signedUrlError } = await supabase.storage
         .from('student-audio-responses')
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 3600);
 
-      return publicUrl;
+      if (signedUrlError || !data) {
+        console.error('Error creating signed URL:', signedUrlError);
+        return null;
+      }
+
+      return data.signedUrl;
     } catch (error) {
       console.error('Audio upload exception:', error);
       return null;

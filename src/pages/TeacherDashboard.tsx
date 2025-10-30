@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { LogOut, GraduationCap, BookOpen, MessageSquare, Plus, Home, FileCheck, ClipboardList, Calendar, Clock } from 'lucide-react';
+import { LogOut, GraduationCap, BookOpen, MessageSquare, Plus, Home, FileCheck, ClipboardList, Calendar, Clock, TrendingUp } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -21,6 +21,7 @@ import { TestDetailsDialog } from '@/components/TestDetailsDialog';
 import { FinalTestReviewDialog } from '@/components/FinalTestReviewDialog';
 import { StaffHoursCard } from '@/components/StaffHoursCard';
 import { TeacherTutorChatDialog } from '@/components/TeacherTutorChatDialog';
+import { StudentProgressView } from '@/components/StudentProgressView';
 
 const TeacherDashboard = () => {
   const { user, signOut } = useAuth();
@@ -42,6 +43,8 @@ const TeacherDashboard = () => {
   const [feedbackForm, setFeedbackForm] = useState({ student_id: '', content: '' });
   const [taskAttachment, setTaskAttachment] = useState<File | null>(null);
   const [isUploadingTask, setIsUploadingTask] = useState(false);
+  const [progressDialogOpen, setProgressDialogOpen] = useState(false);
+  const [progressStudent, setProgressStudent] = useState<{ id: string; name: string } | null>(null);
 
   const { data: myStudents, isLoading: studentsLoading } = useQuery({
     queryKey: ['teacher-students', user?.id],
@@ -388,8 +391,19 @@ const TeacherDashboard = () => {
                             : 'No iniciado'}
                         </span>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
+                       <TableCell>
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setProgressStudent({ id: student.user_id, name: student.profiles?.full_name });
+                              setProgressDialogOpen(true);
+                            }}
+                          >
+                            <TrendingUp className="h-4 w-4 mr-1" />
+                            Progreso
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"
@@ -400,7 +414,7 @@ const TeacherDashboard = () => {
                             disabled={!student.tutor_id}
                           >
                             <MessageSquare className="h-4 w-4 mr-1" />
-                            Chat con Tutor
+                            Chat
                           </Button>
                           <Button
                             size="sm"
@@ -722,6 +736,21 @@ const TeacherDashboard = () => {
           studentId={chatStudent.id}
           studentName={chatStudent.name}
         />
+      )}
+
+      {/* Progress Dialog */}
+      {progressStudent && (
+        <Dialog open={progressDialogOpen} onOpenChange={setProgressDialogOpen}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Progreso del Estudiante - {progressStudent.name}</DialogTitle>
+              <DialogDescription>
+                Seguimiento semanal del aprendizaje y desarrollo
+              </DialogDescription>
+            </DialogHeader>
+            <StudentProgressView studentId={progressStudent.id} isEditable={true} />
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

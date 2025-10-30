@@ -11,6 +11,7 @@ import { EditProfileDialog } from '@/components/EditProfileDialog';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
+import { StudentProgressView } from '@/components/StudentProgressView';
 
 const Dashboard = () => {
   const { user, userRole, signOut } = useAuth();
@@ -387,37 +388,11 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="shadow-md">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-accent" />
-                Recent Feedback
-              </CardTitle>
-              <CardDescription>
-                See what your teachers and tutors are saying
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {feedbackLoading ? (
-                <div className="flex items-center justify-center py-4">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                </div>
-              ) : feedback && feedback.length > 0 ? (
-                <div className="space-y-4">
-                  {feedback.map((item: any) => (
-                    <div key={item.id} className="border-l-2 border-primary pl-3">
-                      <p className="text-sm font-medium">{item.profiles?.full_name}</p>
-                      <p className="text-sm text-muted-foreground">{item.content}</p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(item.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No feedback yet. Keep up the good work!
-                </p>
+          {/* Student Progress Section */}
+          <Card className="shadow-md lg:col-span-2">
+            <CardContent className="pt-6">
+              {user?.id && (
+                <StudentProgressView studentId={user.id} isEditable={false} />
               )}
             </CardContent>
           </Card>

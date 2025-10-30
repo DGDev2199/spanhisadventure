@@ -424,6 +424,83 @@ export type Database = {
         }
         Relationships: []
       }
+      student_progress_notes: {
+        Row: {
+          created_at: string
+          created_by: string
+          day_type: string
+          id: string
+          notes: string | null
+          updated_at: string
+          week_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          day_type: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          week_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          day_type?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          week_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_progress_notes_week_id_fkey"
+            columns: ["week_id"]
+            isOneToOne: false
+            referencedRelation: "student_progress_weeks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_progress_weeks: {
+        Row: {
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          id: string
+          is_completed: boolean
+          student_id: string
+          updated_at: string
+          week_number: number
+          week_objectives: string | null
+          week_theme: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          student_id: string
+          updated_at?: string
+          week_number: number
+          week_objectives?: string | null
+          week_theme?: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          student_id?: string
+          updated_at?: string
+          week_number?: number
+          week_objectives?: string | null
+          week_theme?: string
+        }
+        Relationships: []
+      }
       student_schedule_assignments: {
         Row: {
           assigned_by: string

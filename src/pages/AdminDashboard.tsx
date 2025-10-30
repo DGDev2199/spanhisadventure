@@ -3,7 +3,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { LogOut, Users, GraduationCap, UserCheck, BookOpen, Settings, Home, Calendar, Plus, FileCheck, Clock } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { LogOut, Users, GraduationCap, UserCheck, BookOpen, Settings, Home, Calendar, Plus, FileCheck, Clock, TrendingUp } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import logo from '@/assets/logo.png';
@@ -14,6 +15,7 @@ import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 import { CreateScheduleEventDialog } from '@/components/CreateScheduleEventDialog';
 import { ManagePlacementTestDialog } from '@/components/ManagePlacementTestDialog';
 import { ManageStaffHoursDialog } from '@/components/ManageStaffHoursDialog';
+import { StudentProgressView } from '@/components/StudentProgressView';
 
 const AdminDashboard = () => {
   const { signOut } = useAuth();
@@ -25,6 +27,8 @@ const AdminDashboard = () => {
   const [staffHoursDialogOpen, setStaffHoursDialogOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [progressDialogOpen, setProgressDialogOpen] = useState(false);
+  const [progressStudent, setProgressStudent] = useState<{ id: string; name: string } | null>(null);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
@@ -293,17 +297,30 @@ const AdminDashboard = () => {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedStudent(student);
-                              setAssignDialogOpen(true);
-                            }}
-                          >
-                            <Settings className="h-4 w-4 sm:mr-1" />
-                            <span className="hidden sm:inline">Assign</span>
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setProgressStudent({ id: student.user_id, name: student.profiles?.full_name });
+                                setProgressDialogOpen(true);
+                              }}
+                            >
+                              <TrendingUp className="h-4 w-4 sm:mr-1" />
+                              <span className="hidden sm:inline">Progreso</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedStudent(student);
+                                setAssignDialogOpen(true);
+                              }}
+                            >
+                              <Settings className="h-4 w-4 sm:mr-1" />
+                              <span className="hidden sm:inline">Assign</span>
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -428,6 +445,21 @@ const AdminDashboard = () => {
         open={staffHoursDialogOpen}
         onOpenChange={setStaffHoursDialogOpen}
       />
+
+      {/* Progress Dialog */}
+      {progressStudent && (
+        <Dialog open={progressDialogOpen} onOpenChange={setProgressDialogOpen}>
+          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Progreso del Estudiante - {progressStudent.name}</DialogTitle>
+              <DialogDescription>
+                Seguimiento semanal del aprendizaje y desarrollo
+              </DialogDescription>
+            </DialogHeader>
+            <StudentProgressView studentId={progressStudent.id} isEditable={true} />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };

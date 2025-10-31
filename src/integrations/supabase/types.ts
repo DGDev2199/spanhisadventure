@@ -454,6 +454,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "student_progress_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "student_progress_notes_week_id_fkey"
             columns: ["week_id"]
             isOneToOne: false
@@ -499,7 +506,15 @@ export type Database = {
           week_objectives?: string | null
           week_theme?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "student_progress_weeks_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_schedule_assignments: {
         Row: {

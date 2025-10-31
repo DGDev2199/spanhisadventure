@@ -381,7 +381,7 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                             </div>
                             {getNoteForDay(week.id, day)?.author?.full_name && (
                               <p className="text-xs text-muted-foreground italic">
-                                Escrito por: {getNoteForDay(week.id, day)?.author?.full_name}
+                                Escrito por: {(getNoteForDay(week.id, day)?.author as any)?.full_name}
                               </p>
                             )}
                           </div>
@@ -403,9 +403,9 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                   )}
                   
                   {/* Show who completed the week */}
-                  {week.is_completed && week.completed_by_profile?.full_name && (
+                  {week.is_completed && (week as any).completed_by_profile?.full_name && (
                     <p className="text-sm text-muted-foreground text-center">
-                      Completada por: {week.completed_by_profile.full_name}
+                      Completada por: {(week as any).completed_by_profile.full_name}
                     </p>
                   )}
                 </div>

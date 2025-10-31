@@ -39,7 +39,10 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
     queryFn: async () => {
       const { data, error } = await supabase
         .from('student_progress_weeks')
-        .select('*')
+        .select(`
+          *,
+          completed_by_profile:profiles!student_progress_weeks_completed_by_fkey(full_name)
+        `)
         .eq('student_id', studentId)
         .order('week_number', { ascending: true });
       
@@ -57,7 +60,10 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
       const weekIds = weeks.map(w => w.id);
       const { data, error } = await supabase
         .from('student_progress_notes')
-        .select('*')
+        .select(`
+          *,
+          author:profiles!student_progress_notes_created_by_fkey(full_name)
+        `)
         .in('week_id', weekIds);
       
       if (error) throw error;
@@ -193,7 +199,7 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
   };
 
   const getNoteForDay = (weekId: string, dayType: string) => {
-    return getWeekNotes(weekId).find(n => n.day_type === dayType)?.notes || '';
+    return getWeekNotes(weekId).find(n => n.day_type === dayType);
   };
 
   const handleSaveNote = async (weekId: string, dayType: string, content: string) => {
@@ -233,8 +239,8 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
 
       <Accordion type="single" collapsible defaultValue="week-1" className="space-y-4">
         {weeks.map((week) => {
-          const isAccessible = isEditable || week.week_number <= currentWeekNumber;
           const isCurrent = week.week_number === currentWeekNumber;
+          const canEditNotes = isEditable && isCurrent;
           const weekNotes = getWeekNotes(week.id);
 
           return (
@@ -249,16 +255,15 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
             >
               <AccordionTrigger
                 className="px-4 hover:no-underline"
-                disabled={!isAccessible}
               >
                 <div className="flex items-center justify-between w-full pr-4">
                   <div className="flex items-center gap-3">
                     {week.is_completed ? (
                       <CheckCircle className="h-5 w-5 text-green-600" />
-                    ) : !isAccessible ? (
-                      <Lock className="h-5 w-5 text-muted-foreground" />
+                    ) : isCurrent ? (
+                      <div className="h-5 w-5 rounded-full border-2 border-primary animate-pulse" />
                     ) : (
-                      <div className="h-5 w-5 rounded-full border-2 border-primary" />
+                      <div className="h-5 w-5 rounded-full border-2 border-muted-foreground" />
                     )}
                     <div className="text-left">
                       <p className="font-semibold">
@@ -269,9 +274,11 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                       )}
                     </div>
                   </div>
-                  {week.is_completed && (
-                    <span className="text-sm text-green-600 font-medium">Completada</span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {week.is_completed && (
+                      <span className="text-sm text-green-600 font-medium">Completada</span>
+                    )}
+                  </div>
                 </div>
               </AccordionTrigger>
 
@@ -357,28 +364,34 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                         <Label className="font-semibold mb-2 block">
                           {DAY_LABELS[day as keyof typeof DAY_LABELS]}
                         </Label>
-                        <Textarea
-                          value={getNoteForDay(week.id, day)}
-                          onChange={(e) => {
-                            if (isEditable) {
+                        {canEditNotes ? (
+                          <Textarea
+                            value={getNoteForDay(week.id, day)?.notes || ''}
+                            onChange={(e) => {
                               handleSaveNote(week.id, day, e.target.value);
-                            }
-                          }}
-                          placeholder={
-                            isEditable
-                              ? `Notas para ${DAY_LABELS[day as keyof typeof DAY_LABELS]}...`
-                              : 'Sin notas'
-                          }
-                          disabled={!isEditable}
-                          rows={4}
-                          className="resize-none"
-                        />
+                            }}
+                            placeholder={`Notas para ${DAY_LABELS[day as keyof typeof DAY_LABELS]}...`}
+                            rows={4}
+                            className="resize-none"
+                          />
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="min-h-[100px] p-3 bg-muted/50 rounded-md text-sm">
+                              {getNoteForDay(week.id, day)?.notes || 'Sin notas'}
+                            </div>
+                            {getNoteForDay(week.id, day)?.author?.full_name && (
+                              <p className="text-xs text-muted-foreground italic">
+                                Escrito por: {getNoteForDay(week.id, day)?.author?.full_name}
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
 
                   {/* Complete Week Button */}
-                  {isEditable && !week.is_completed && (
+                  {isEditable && !week.is_completed && isCurrent && (
                     <Button
                       className="w-full"
                       variant="default"
@@ -387,6 +400,13 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                       <CheckCircle className="h-4 w-4 mr-2" />
                       Marcar Semana como Completada
                     </Button>
+                  )}
+                  
+                  {/* Show who completed the week */}
+                  {week.is_completed && week.completed_by_profile?.full_name && (
+                    <p className="text-sm text-muted-foreground text-center">
+                      Completada por: {week.completed_by_profile.full_name}
+                    </p>
                   )}
                 </div>
               </AccordionContent>

@@ -296,7 +296,7 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
             </div>
           </div>
 
-          {eventType === 'class' && (
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Profesor (opcional)</Label>
               <Select value={teacherId} onValueChange={setTeacherId}>
@@ -313,9 +313,7 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
                 </SelectContent>
               </Select>
             </div>
-          )}
 
-          {eventType === 'tutoring' && (
             <div>
               <Label>Tutor (opcional)</Label>
               <Select value={tutorId} onValueChange={setTutorId}>
@@ -332,7 +330,7 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
                 </SelectContent>
               </Select>
             </div>
-          )}
+          </div>
 
           <div className="flex flex-col-reverse sm:flex-row gap-2 pt-4">
             <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">

@@ -22,13 +22,16 @@ export function AddExtraHoursDialog({ open, onOpenChange, userId }: AddExtraHour
 
   const addExtraHoursMutation = useMutation({
     mutationFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No user logged in');
+
       const { error } = await supabase
         .from('extra_hours')
         .insert({
           user_id: userId,
           hours,
           justification,
-          created_by: userId,
+          created_by: user.id,
           approved: false,
         });
 

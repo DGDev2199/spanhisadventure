@@ -133,6 +133,9 @@ export function ManageStudentScheduleDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["student-class-schedules"] });
+      queryClient.invalidateQueries({ queryKey: ["class-schedule"] });
+      queryClient.invalidateQueries({ queryKey: ["tutoring-schedule"] });
+      queryClient.invalidateQueries({ queryKey: ["my-schedule"] });
       queryClient.invalidateQueries({ queryKey: ["staff-hours"] });
       toast.success("Horario agregado exitosamente");
       setStaffId("");
@@ -157,6 +160,9 @@ export function ManageStudentScheduleDialog({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["student-class-schedules"] });
+      queryClient.invalidateQueries({ queryKey: ["class-schedule"] });
+      queryClient.invalidateQueries({ queryKey: ["tutoring-schedule"] });
+      queryClient.invalidateQueries({ queryKey: ["my-schedule"] });
       queryClient.invalidateQueries({ queryKey: ["staff-hours"] });
       toast.success("Horario eliminado exitosamente");
     },

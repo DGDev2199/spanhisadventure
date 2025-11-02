@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { LogOut, GraduationCap, BookOpen, MessageSquare, Plus, Home, FileCheck, ClipboardList, Calendar, Clock, TrendingUp } from 'lucide-react';
+import { LogOut, GraduationCap, BookOpen, MessageSquare, Plus, Home, FileCheck, ClipboardList, Calendar, Clock, TrendingUp, CalendarClock } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +22,7 @@ import { FinalTestReviewDialog } from '@/components/FinalTestReviewDialog';
 import { StaffHoursCard } from '@/components/StaffHoursCard';
 import { TeacherTutorChatDialog } from '@/components/TeacherTutorChatDialog';
 import { StudentProgressView } from '@/components/StudentProgressView';
+import { MyScheduleDialog } from '@/components/MyScheduleDialog';
 
 const TeacherDashboard = () => {
   const { user, signOut } = useAuth();
@@ -45,6 +46,7 @@ const TeacherDashboard = () => {
   const [isUploadingTask, setIsUploadingTask] = useState(false);
   const [progressDialogOpen, setProgressDialogOpen] = useState(false);
   const [progressStudent, setProgressStudent] = useState<{ id: string; name: string } | null>(null);
+  const [myScheduleOpen, setMyScheduleOpen] = useState(false);
 
   const { data: myStudents, isLoading: studentsLoading } = useQuery({
     queryKey: ['teacher-students', user?.id],
@@ -206,15 +208,26 @@ const TeacherDashboard = () => {
               <p className="text-xs sm:text-sm text-white/80">Teacher Dashboard</p>
             </div>
           </div>
-          <Button
-            onClick={signOut}
-            variant="outline"
-            size="sm"
-            className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-          >
-            <LogOut className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Sign Out</span>
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setMyScheduleOpen(true)}
+              variant="outline"
+              size="sm"
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+            >
+              <CalendarClock className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Mi Horario</span>
+            </Button>
+            <Button
+              onClick={signOut}
+              variant="outline"
+              size="sm"
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+            >
+              <LogOut className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Sign Out</span>
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -751,6 +764,16 @@ const TeacherDashboard = () => {
             <StudentProgressView studentId={progressStudent.id} isEditable={true} />
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* My Schedule Dialog */}
+      {user?.id && (
+        <MyScheduleDialog
+          open={myScheduleOpen}
+          onOpenChange={setMyScheduleOpen}
+          userId={user.id}
+          userRole="teacher"
+        />
       )}
     </div>
   );

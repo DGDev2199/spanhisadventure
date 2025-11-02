@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,6 +32,24 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
   const [editingWeek, setEditingWeek] = useState<number | null>(null);
   const [weekTheme, setWeekTheme] = useState('');
   const [weekObjectives, setWeekObjectives] = useState('');
+  const [noteTimers, setNoteTimers] = useState<Record<string, NodeJS.Timeout>>({});
+
+  // Fetch current user to determine role
+  const { data: currentUser } = useQuery({
+    queryKey: ['current-user'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      // Check if user is teacher or tutor
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+
+      return { id: user.id, roles: roles?.map(r => r.role) || [] };
+    }
+  });
 
   // Fetch all weeks for this student
   const { data: weeks, isLoading } = useQuery({
@@ -62,11 +80,27 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
         .from('student_progress_notes')
         .select(`
           *,
-          author:profiles!student_progress_notes_created_by_fkey(full_name)
+          author:profiles!student_progress_notes_created_by_fkey(full_name, id)
         `)
         .in('week_id', weekIds);
       
       if (error) throw error;
+      
+      // Fetch roles for all authors
+      if (data && data.length > 0) {
+        const authorIds = [...new Set(data.map(n => n.created_by))];
+        const { data: authorRoles } = await supabase
+          .from('user_roles')
+          .select('user_id, role')
+          .in('user_id', authorIds);
+        
+        // Attach roles to notes
+        return data.map(note => ({
+          ...note,
+          author_role: authorRoles?.find(r => r.user_id === note.created_by)?.role
+        }));
+      }
+      
       return data || [];
     },
     enabled: !!weeks && weeks.length > 0
@@ -202,8 +236,20 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
     return getWeekNotes(weekId).find(n => n.day_type === dayType);
   };
 
-  const handleSaveNote = async (weekId: string, dayType: string, content: string) => {
-    await saveNoteMutation.mutateAsync({ weekId, dayType, noteContent: content });
+  const handleNoteChange = (weekId: string, dayType: string, content: string) => {
+    const key = `${weekId}-${dayType}`;
+    
+    // Clear existing timer for this note
+    if (noteTimers[key]) {
+      clearTimeout(noteTimers[key]);
+    }
+    
+    // Set new timer to save after 1 second of no typing
+    const timer = setTimeout(() => {
+      saveNoteMutation.mutate({ weekId, dayType, noteContent: content });
+    }, 1000);
+    
+    setNoteTimers({ ...noteTimers, [key]: timer });
   };
 
   return (
@@ -242,6 +288,7 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
           const isCurrent = week.week_number === currentWeekNumber;
           const canEditNotes = isEditable && isCurrent;
           const weekNotes = getWeekNotes(week.id);
+          const canViewNotes = isEditable || week.is_completed; // Students can only see notes of completed weeks
 
           return (
             <AccordionItem
@@ -263,7 +310,7 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                     ) : isCurrent ? (
                       <div className="h-5 w-5 rounded-full border-2 border-primary animate-pulse" />
                     ) : (
-                      <div className="h-5 w-5 rounded-full border-2 border-muted-foreground" />
+                      <Lock className="h-5 w-5 text-muted-foreground" />
                     )}
                     <div className="text-left">
                       <p className="font-semibold">
@@ -350,45 +397,81 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                     </div>
                   )}
 
-                  {/* Daily Notes Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {DAYS.map((day) => (
-                      <div
-                        key={day}
-                        className={`p-4 rounded-lg border ${
-                          day === 'strengths' ? 'bg-green-50 dark:bg-green-950/20 col-span-1' :
-                          day === 'weaknesses' ? 'bg-yellow-50 dark:bg-yellow-950/20 col-span-1' :
-                          'bg-background'
-                        }`}
-                      >
-                        <Label className="font-semibold mb-2 block">
-                          {DAY_LABELS[day as keyof typeof DAY_LABELS]}
-                        </Label>
-                        {canEditNotes ? (
-                          <Textarea
-                            value={getNoteForDay(week.id, day)?.notes || ''}
-                            onChange={(e) => {
-                              handleSaveNote(week.id, day, e.target.value);
-                            }}
-                            placeholder={`Notas para ${DAY_LABELS[day as keyof typeof DAY_LABELS]}...`}
-                            rows={4}
-                            className="resize-none"
-                          />
-                        ) : (
-                          <div className="space-y-2">
-                            <div className="min-h-[100px] p-3 bg-muted/50 rounded-md text-sm">
-                              {getNoteForDay(week.id, day)?.notes || 'Sin notas'}
-                            </div>
-                            {getNoteForDay(week.id, day)?.author?.full_name && (
-                              <p className="text-xs text-muted-foreground italic">
-                                Escrito por: {(getNoteForDay(week.id, day)?.author as any)?.full_name}
-                              </p>
+                  {/* Daily Notes Grid - Only shown for completed weeks or if user can edit */}
+                  {canViewNotes && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {DAYS.map((day) => {
+                        const note = getNoteForDay(week.id, day);
+                        
+                        return (
+                          <div
+                            key={day}
+                            className={`p-4 rounded-lg border ${
+                              day === 'strengths' ? 'col-span-1' :
+                              day === 'weaknesses' ? 'col-span-1' :
+                              ''
+                            }`}
+                          >
+                            <Label className="font-semibold mb-2 block">
+                              {DAY_LABELS[day as keyof typeof DAY_LABELS]}
+                            </Label>
+                            {canEditNotes ? (
+                              <Textarea
+                                value={note?.notes || ''}
+                                onChange={(e) => {
+                                  handleNoteChange(week.id, day, e.target.value);
+                                }}
+                                placeholder={`Notas para ${DAY_LABELS[day as keyof typeof DAY_LABELS]}...`}
+                                rows={4}
+                                className="resize-none"
+                              />
+                            ) : (
+                              <div className="space-y-2">
+                                {note?.notes ? (
+                                  <>
+                                    <div className={`min-h-[100px] p-3 rounded-md text-sm border-l-4 ${
+                                      (note as any).author_role === 'teacher' ? 
+                                      'border-green-500 bg-green-50 dark:bg-green-950/20' :
+                                      (note as any).author_role === 'tutor' ?
+                                      'border-blue-500 bg-blue-50 dark:bg-blue-950/20' :
+                                      'border-muted bg-muted/50'
+                                    }`}>
+                                      {note.notes}
+                                    </div>
+                                    {note.author?.full_name && (
+                                      <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
+                                        (note as any).author_role === 'teacher' ? 
+                                        'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                                        (note as any).author_role === 'tutor' ?
+                                        'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
+                                        'bg-muted text-muted-foreground'
+                                      }`}>
+                                        {(note.author as any)?.full_name}
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <div className="min-h-[100px] p-3 bg-muted/50 rounded-md text-sm text-muted-foreground">
+                                    Sin notas
+                                  </div>
+                                )}
+                              </div>
                             )}
                           </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Message for students when week is not completed */}
+                  {!canViewNotes && (
+                    <div className="p-6 text-center bg-muted/30 rounded-lg border-2 border-dashed">
+                      <Lock className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">
+                        Las notas estarán disponibles cuando se complete esta semana
+                      </p>
+                    </div>
+                  )}
 
                   {/* Complete Week Button */}
                   {isEditable && !week.is_completed && isCurrent && (

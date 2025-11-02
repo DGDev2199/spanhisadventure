@@ -4,10 +4,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock } from "lucide-react";
 
-interface TutoringScheduleDialogProps {
+interface MyScheduleDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  studentId: string;
+  userId: string;
+  userRole: "teacher" | "tutor";
 }
 
 const DAYS = [
@@ -20,22 +21,23 @@ const DAYS = [
   { value: 6, label: "Sábado" },
 ];
 
-export function TutoringScheduleDialog({
+export function MyScheduleDialog({
   open,
   onOpenChange,
-  studentId,
-}: TutoringScheduleDialogProps) {
+  userId,
+  userRole,
+}: MyScheduleDialogProps) {
   const { data: schedules, isLoading } = useQuery({
-    queryKey: ["tutoring-schedule", studentId, open],
+    queryKey: ["my-schedule", userId, userRole, open],
     queryFn: async () => {
+      const column = userRole === "teacher" ? "teacher_id" : "tutor_id";
       const { data, error } = await supabase
         .from("student_class_schedules")
         .select(`
           *,
-          tutor:profiles!student_class_schedules_tutor_id_fkey(full_name)
+          student:profiles!student_class_schedules_student_id_fkey(full_name)
         `)
-        .eq("student_id", studentId)
-        .eq("schedule_type", "tutoring")
+        .eq(column, userId)
         .eq("is_active", true)
         .order("day_of_week")
         .order("start_time");
@@ -58,14 +60,14 @@ export function TutoringScheduleDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Mi Horario de Tutorías</DialogTitle>
+          <DialogTitle>Mi Horario de {userRole === "teacher" ? "Clases" : "Tutorías"}</DialogTitle>
         </DialogHeader>
 
         {isLoading ? (
           <p>Cargando horario...</p>
         ) : !schedules || schedules.length === 0 ? (
           <p className="text-muted-foreground text-center py-8">
-            No tienes horarios de tutoría asignados
+            No tienes horarios asignados
           </p>
         ) : (
           <div className="space-y-4">
@@ -83,7 +85,7 @@ export function TutoringScheduleDialog({
                           {schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          Tutor: {(schedule.tutor as any)?.full_name}
+                          Estudiante: {(schedule.student as any)?.full_name}
                         </p>
                       </div>
                     </div>

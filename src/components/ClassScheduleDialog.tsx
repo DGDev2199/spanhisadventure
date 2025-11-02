@@ -26,13 +26,13 @@ export function ClassScheduleDialog({
   studentId,
 }: ClassScheduleDialogProps) {
   const { data: schedules, isLoading } = useQuery({
-    queryKey: ["class-schedule", studentId],
+    queryKey: ["class-schedule", studentId, open],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("student_class_schedules")
         .select(`
           *,
-          teacher:teacher_id(full_name)
+          teacher:profiles!student_class_schedules_teacher_id_fkey(full_name)
         `)
         .eq("student_id", studentId)
         .eq("schedule_type", "class")

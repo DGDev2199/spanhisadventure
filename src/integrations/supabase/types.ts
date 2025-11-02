@@ -376,6 +376,51 @@ export type Database = {
           },
         ]
       }
+      student_class_schedules: {
+        Row: {
+          created_at: string
+          created_by: string
+          day_of_week: number
+          end_time: string
+          id: string
+          is_active: boolean
+          schedule_type: string
+          start_time: string
+          student_id: string
+          teacher_id: string | null
+          tutor_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          day_of_week: number
+          end_time: string
+          id?: string
+          is_active?: boolean
+          schedule_type: string
+          start_time: string
+          student_id: string
+          teacher_id?: string | null
+          tutor_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          schedule_type?: string
+          start_time?: string
+          student_id?: string
+          teacher_id?: string | null
+          tutor_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       student_profiles: {
         Row: {
           created_at: string

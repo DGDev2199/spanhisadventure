@@ -16,6 +16,7 @@ import { CreateScheduleEventDialog } from '@/components/CreateScheduleEventDialo
 import { ManagePlacementTestDialog } from '@/components/ManagePlacementTestDialog';
 import { ManageStaffHoursDialog } from '@/components/ManageStaffHoursDialog';
 import { StudentProgressView } from '@/components/StudentProgressView';
+import { ManageStudentScheduleDialog } from '@/components/ManageStudentScheduleDialog';
 
 const AdminDashboard = () => {
   const { signOut } = useAuth();
@@ -29,6 +30,8 @@ const AdminDashboard = () => {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [progressDialogOpen, setProgressDialogOpen] = useState(false);
   const [progressStudent, setProgressStudent] = useState<{ id: string; name: string } | null>(null);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [scheduleStudent, setScheduleStudent] = useState<{ id: string; name: string } | null>(null);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
@@ -313,6 +316,17 @@ const AdminDashboard = () => {
                               size="sm"
                               variant="outline"
                               onClick={() => {
+                                setScheduleStudent({ id: student.user_id, name: student.profiles?.full_name });
+                                setScheduleDialogOpen(true);
+                              }}
+                            >
+                              <Calendar className="h-4 w-4 sm:mr-1" />
+                              <span className="hidden sm:inline">Horario</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
                                 setSelectedStudent(student);
                                 setAssignDialogOpen(true);
                               }}
@@ -459,6 +473,16 @@ const AdminDashboard = () => {
             <StudentProgressView studentId={progressStudent.id} isEditable={true} />
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Schedule Dialog */}
+      {scheduleStudent && (
+        <ManageStudentScheduleDialog
+          open={scheduleDialogOpen}
+          onOpenChange={setScheduleDialogOpen}
+          studentId={scheduleStudent.id}
+          studentName={scheduleStudent.name}
+        />
       )}
     </div>
   );

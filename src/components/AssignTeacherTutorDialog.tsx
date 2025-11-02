@@ -6,8 +6,6 @@ import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Calendar } from 'lucide-react';
-import { AssignScheduleEventsDialog } from '@/components/AssignScheduleEventsDialog';
 
 interface AssignTeacherTutorDialogProps {
   open: boolean;
@@ -31,7 +29,6 @@ export const AssignTeacherTutorDialog = ({
   const [teacherId, setTeacherId] = useState(currentTeacherId || '');
   const [tutorId, setTutorId] = useState(currentTutorId || '');
   const [room, setRoom] = useState(currentRoom || '');
-  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: teachers } = useQuery({
@@ -102,16 +99,11 @@ export const AssignTeacherTutorDialog = ({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
-      toast.success('Información del estudiante actualizada. Ahora puedes asignar horarios.');
-      // Show schedule assignment dialog after successful teacher/tutor assignment
-      if (teacherId || tutorId) {
-        setShowScheduleDialog(true);
-      } else {
-        onOpenChange(false);
-      }
+      toast.success('Información del estudiante actualizada exitosamente');
+      onOpenChange(false);
     },
     onError: (error) => {
-      toast.error('Failed to update student information');
+      toast.error('Error al actualizar información del estudiante');
       console.error(error);
     }
   });
@@ -184,22 +176,10 @@ export const AssignTeacherTutorDialog = ({
             Cancelar
           </Button>
           <Button onClick={() => assignMutation.mutate()} disabled={assignMutation.isPending} className="w-full sm:w-auto">
-            {assignMutation.isPending ? 'Guardando...' : 'Guardar y Asignar Horarios'}
+            {assignMutation.isPending ? 'Guardando...' : 'Guardar Cambios'}
           </Button>
         </DialogFooter>
       </DialogContent>
-
-      <AssignScheduleEventsDialog
-        open={showScheduleDialog}
-        onOpenChange={(open) => {
-          setShowScheduleDialog(open);
-          if (!open) onOpenChange(false);
-        }}
-        studentId={studentId}
-        studentName={studentName}
-        teacherId={teacherId}
-        tutorId={tutorId}
-      />
     </Dialog>
   );
 };

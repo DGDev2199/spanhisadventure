@@ -12,12 +12,16 @@ import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 import { StudentProgressView } from '@/components/StudentProgressView';
+import { ClassScheduleDialog } from '@/components/ClassScheduleDialog';
+import { TutoringScheduleDialog } from '@/components/TutoringScheduleDialog';
 
 const Dashboard = () => {
   const { user, userRole, signOut } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [classScheduleOpen, setClassScheduleOpen] = useState(false);
+  const [tutoringScheduleOpen, setTutoringScheduleOpen] = useState(false);
 
   const { data: studentProfile, isLoading: profileLoading } = useQuery({
     queryKey: ['student-profile', user?.id],
@@ -237,6 +241,17 @@ const Dashboard = () => {
               <p className="text-xs text-muted-foreground mt-1">
                 {teacherProfile ? 'Tu profesor' : 'Contacta al admin'}
               </p>
+              {teacherProfile && user?.id && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full mt-3"
+                  onClick={() => setClassScheduleOpen(true)}
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Ver Horario de Clases
+                </Button>
+              )}
             </CardContent>
           </Card>
 
@@ -261,6 +276,17 @@ const Dashboard = () => {
               <p className="text-xs text-muted-foreground mt-1">
                 {tutorProfile ? 'Tu tutor' : 'Contacta al admin'}
               </p>
+              {tutorProfile && user?.id && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full mt-3"
+                  onClick={() => setTutoringScheduleOpen(true)}
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  Ver Horario de Tutorías
+                </Button>
+              )}
             </CardContent>
           </Card>
 
@@ -551,6 +577,21 @@ const Dashboard = () => {
       </main>
 
       <EditProfileDialog open={editProfileOpen} onOpenChange={setEditProfileOpen} />
+      
+      {user?.id && (
+        <>
+          <ClassScheduleDialog 
+            open={classScheduleOpen} 
+            onOpenChange={setClassScheduleOpen}
+            studentId={user.id}
+          />
+          <TutoringScheduleDialog 
+            open={tutoringScheduleOpen} 
+            onOpenChange={setTutoringScheduleOpen}
+            studentId={user.id}
+          />
+        </>
+      )}
     </div>
   );
 };

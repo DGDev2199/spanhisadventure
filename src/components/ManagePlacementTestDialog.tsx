@@ -79,7 +79,7 @@ export function ManagePlacementTestDialog({ open, onOpenChange }: ManagePlacemen
         option_b: q.option_b || null,
         option_c: q.option_c || null,
         option_d: q.option_d || null,
-        correct_answer: q.correct_answer || null,
+        correct_answer: q.correct_answer ? q.correct_answer.toUpperCase() : null,
         audio_url: q.audio_url || null,
         level: q.level as 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2',
         question_number: index + 1,
@@ -137,7 +137,7 @@ export function ManagePlacementTestDialog({ open, onOpenChange }: ManagePlacemen
         option_b: '',
         option_c: '',
         option_d: '',
-        correct_answer: 'a',
+        correct_answer: 'A',
         level: 'A1',
         question_number: editingQuestions.length + 1,
       },
@@ -296,10 +296,10 @@ export function ManagePlacementTestDialog({ open, onOpenChange }: ManagePlacemen
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
-                                    <SelectItem value="a">A</SelectItem>
-                                    <SelectItem value="b">B</SelectItem>
-                                    <SelectItem value="c">C</SelectItem>
-                                    <SelectItem value="d">D</SelectItem>
+                                    <SelectItem value="A">A</SelectItem>
+                                    <SelectItem value="B">B</SelectItem>
+                                    <SelectItem value="C">C</SelectItem>
+                                    <SelectItem value="D">D</SelectItem>
                                   </SelectContent>
                                 </Select>
                               </div>

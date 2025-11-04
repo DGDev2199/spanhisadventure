@@ -155,7 +155,7 @@ export function ReviewPlacementTestDialog({
                       .filter(question => studentAnswers[question.id] !== undefined) // Solo preguntas respondidas
                       .map((question, index) => {
                   const studentAnswer = studentAnswers?.[question.id];
-                  const isCorrect = studentAnswer?.toLowerCase() === question.correct_answer?.toLowerCase();
+                  const isCorrect = studentAnswer === question.correct_answer;
                   
                   return (
                     <Card key={question.id} className={`border-l-4 ${isCorrect ? 'border-l-green-500' : 'border-l-red-500'}`}>
@@ -182,36 +182,36 @@ export function ReviewPlacementTestDialog({
                             
                              <div className="grid grid-cols-1 gap-2 text-sm">
                               <div className={`p-2 rounded ${
-                                question.correct_answer?.toLowerCase() === 'a'
+                                question.correct_answer === 'A'
                                   ? 'bg-green-50 border border-green-200' 
-                                  : studentAnswer?.toLowerCase() === 'a'
+                                  : studentAnswer === 'A'
                                   ? 'bg-red-50 border border-red-200'
                                   : 'bg-muted/50'
                               }`}>
                                 <span className="font-medium">A)</span> {question.option_a}
                               </div>
                               <div className={`p-2 rounded ${
-                                question.correct_answer?.toLowerCase() === 'b'
+                                question.correct_answer === 'B'
                                   ? 'bg-green-50 border border-green-200' 
-                                  : studentAnswer?.toLowerCase() === 'b'
+                                  : studentAnswer === 'B'
                                   ? 'bg-red-50 border border-red-200'
                                   : 'bg-muted/50'
                               }`}>
                                 <span className="font-medium">B)</span> {question.option_b}
                               </div>
                               <div className={`p-2 rounded ${
-                                question.correct_answer?.toLowerCase() === 'c'
+                                question.correct_answer === 'C'
                                   ? 'bg-green-50 border border-green-200' 
-                                  : studentAnswer?.toLowerCase() === 'c'
+                                  : studentAnswer === 'C'
                                   ? 'bg-red-50 border border-red-200'
                                   : 'bg-muted/50'
                               }`}>
                                 <span className="font-medium">C)</span> {question.option_c}
                               </div>
                               <div className={`p-2 rounded ${
-                                question.correct_answer?.toLowerCase() === 'd'
+                                question.correct_answer === 'D'
                                   ? 'bg-green-50 border border-green-200' 
-                                  : studentAnswer?.toLowerCase() === 'd'
+                                  : studentAnswer === 'D'
                                   ? 'bg-red-50 border border-red-200'
                                   : 'bg-muted/50'
                               }`}>
@@ -223,13 +223,13 @@ export function ReviewPlacementTestDialog({
                               <div>
                                 <span className="text-muted-foreground">Respuesta del estudiante: </span>
                                 <span className={`font-semibold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-                                  {studentAnswer ? getOptionLabel(studentAnswer) : 'No respondió'}
+                                  {studentAnswer || 'No respondió'}
                                 </span>
                               </div>
                               <div>
                                 <span className="text-muted-foreground">Respuesta correcta: </span>
                                 <span className="font-semibold text-green-600">
-                                  {getOptionLabel(question.correct_answer)}
+                                  {question.correct_answer}
                                 </span>
                               </div>
                             </div>

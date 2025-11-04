@@ -188,7 +188,7 @@ const PlacementTest = () => {
     let correctCount = 0;
     
     answeredTextQuestions.forEach((q) => {
-      if (answers[q.id]?.toLowerCase() === q.correct_answer?.toLowerCase()) {
+      if (answers[q.id] === q.correct_answer) {
         correctCount++;
       }
     });
@@ -307,25 +307,25 @@ const PlacementTest = () => {
               >
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                    <RadioGroupItem value="a" id="option-a" />
+                    <RadioGroupItem value="A" id="option-a" />
                     <Label htmlFor="option-a" className="flex-1 cursor-pointer">
                       A) {question.option_a}
                     </Label>
                   </div>
                   <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                    <RadioGroupItem value="b" id="option-b" />
+                    <RadioGroupItem value="B" id="option-b" />
                     <Label htmlFor="option-b" className="flex-1 cursor-pointer">
                       B) {question.option_b}
                     </Label>
                   </div>
                   <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                    <RadioGroupItem value="c" id="option-c" />
+                    <RadioGroupItem value="C" id="option-c" />
                     <Label htmlFor="option-c" className="flex-1 cursor-pointer">
                       C) {question.option_c}
                     </Label>
                   </div>
                   <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                    <RadioGroupItem value="d" id="option-d" />
+                    <RadioGroupItem value="D" id="option-d" />
                     <Label htmlFor="option-d" className="flex-1 cursor-pointer">
                       D) {question.option_d}
                     </Label>

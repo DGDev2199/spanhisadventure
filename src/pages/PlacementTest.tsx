@@ -307,25 +307,25 @@ const PlacementTest = () => {
               >
                 <div className="space-y-3">
                   <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                    <RadioGroupItem value="A" id="option-a" />
+                    <RadioGroupItem value="a" id="option-a" />
                     <Label htmlFor="option-a" className="flex-1 cursor-pointer">
                       A) {question.option_a}
                     </Label>
                   </div>
                   <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                    <RadioGroupItem value="B" id="option-b" />
+                    <RadioGroupItem value="b" id="option-b" />
                     <Label htmlFor="option-b" className="flex-1 cursor-pointer">
                       B) {question.option_b}
                     </Label>
                   </div>
                   <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                    <RadioGroupItem value="C" id="option-c" />
+                    <RadioGroupItem value="c" id="option-c" />
                     <Label htmlFor="option-c" className="flex-1 cursor-pointer">
                       C) {question.option_c}
                     </Label>
                   </div>
                   <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
-                    <RadioGroupItem value="D" id="option-d" />
+                    <RadioGroupItem value="d" id="option-d" />
                     <Label htmlFor="option-d" className="flex-1 cursor-pointer">
                       D) {question.option_d}
                     </Label>

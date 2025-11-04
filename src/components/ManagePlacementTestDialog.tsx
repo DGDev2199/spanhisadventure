@@ -108,14 +108,14 @@ export function ManagePlacementTestDialog({ open, onOpenChange }: ManagePlacemen
       const fileName = `question_${Date.now()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('placement-audios')
-        .upload(fileName, file);
+        .from('student-audio-responses')
+        .upload(`placement-questions/${fileName}`, file);
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('placement-audios')
-        .getPublicUrl(fileName);
+        .from('student-audio-responses')
+        .getPublicUrl(`placement-questions/${fileName}`);
 
       updateQuestion(questionIndex, 'audio_url', publicUrl);
       toast.success('Audio subido exitosamente');

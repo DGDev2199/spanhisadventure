@@ -180,38 +180,38 @@ export function ReviewPlacementTestDialog({
                             
                             <p className="font-medium">{question.question}</p>
                             
-                            <div className="grid grid-cols-1 gap-2 text-sm">
+                             <div className="grid grid-cols-1 gap-2 text-sm">
                               <div className={`p-2 rounded ${
-                                getOptionLabel(question.correct_answer) === 'A' 
+                                question.correct_answer?.toLowerCase() === 'a'
                                   ? 'bg-green-50 border border-green-200' 
-                                  : studentAnswer?.toUpperCase() === 'A'
+                                  : studentAnswer?.toLowerCase() === 'a'
                                   ? 'bg-red-50 border border-red-200'
                                   : 'bg-muted/50'
                               }`}>
                                 <span className="font-medium">A)</span> {question.option_a}
                               </div>
                               <div className={`p-2 rounded ${
-                                getOptionLabel(question.correct_answer) === 'B' 
+                                question.correct_answer?.toLowerCase() === 'b'
                                   ? 'bg-green-50 border border-green-200' 
-                                  : studentAnswer?.toUpperCase() === 'B'
+                                  : studentAnswer?.toLowerCase() === 'b'
                                   ? 'bg-red-50 border border-red-200'
                                   : 'bg-muted/50'
                               }`}>
                                 <span className="font-medium">B)</span> {question.option_b}
                               </div>
                               <div className={`p-2 rounded ${
-                                getOptionLabel(question.correct_answer) === 'C' 
+                                question.correct_answer?.toLowerCase() === 'c'
                                   ? 'bg-green-50 border border-green-200' 
-                                  : studentAnswer?.toUpperCase() === 'C'
+                                  : studentAnswer?.toLowerCase() === 'c'
                                   ? 'bg-red-50 border border-red-200'
                                   : 'bg-muted/50'
                               }`}>
                                 <span className="font-medium">C)</span> {question.option_c}
                               </div>
                               <div className={`p-2 rounded ${
-                                getOptionLabel(question.correct_answer) === 'D' 
+                                question.correct_answer?.toLowerCase() === 'd'
                                   ? 'bg-green-50 border border-green-200' 
-                                  : studentAnswer?.toUpperCase() === 'D'
+                                  : studentAnswer?.toLowerCase() === 'd'
                                   ? 'bg-red-50 border border-red-200'
                                   : 'bg-muted/50'
                               }`}>

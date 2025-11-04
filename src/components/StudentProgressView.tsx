@@ -32,7 +32,7 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
   const [editingWeek, setEditingWeek] = useState<number | null>(null);
   const [weekTheme, setWeekTheme] = useState('');
   const [weekObjectives, setWeekObjectives] = useState('');
-  const [noteTimers, setNoteTimers] = useState<Record<string, NodeJS.Timeout>>({});
+  const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
 
   // Fetch current user to determine role
   const { data: currentUser } = useQuery({
@@ -238,18 +238,25 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
 
   const handleNoteChange = (weekId: string, dayType: string, content: string) => {
     const key = `${weekId}-${dayType}`;
-    
-    // Clear existing timer for this note
-    if (noteTimers[key]) {
-      clearTimeout(noteTimers[key]);
-    }
-    
-    // Set new timer to save after 1 second of no typing
-    const timer = setTimeout(() => {
+    setEditingNotes({ ...editingNotes, [key]: content });
+  };
+
+  const handleSaveNote = (weekId: string, dayType: string) => {
+    const key = `${weekId}-${dayType}`;
+    const content = editingNotes[key];
+    if (content !== undefined) {
       saveNoteMutation.mutate({ weekId, dayType, noteContent: content });
-    }, 1000);
-    
-    setNoteTimers({ ...noteTimers, [key]: timer });
+      // Remove from editing state after save
+      const newEditingNotes = { ...editingNotes };
+      delete newEditingNotes[key];
+      setEditingNotes(newEditingNotes);
+    }
+  };
+
+  const getNoteValue = (weekId: string, dayType: string) => {
+    const key = `${weekId}-${dayType}`;
+    const note = getNoteForDay(weekId, dayType);
+    return editingNotes[key] !== undefined ? editingNotes[key] : (note?.notes || '');
   };
 
   return (
@@ -416,15 +423,24 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                               {DAY_LABELS[day as keyof typeof DAY_LABELS]}
                             </Label>
                             {canEditNotes ? (
-                              <Textarea
-                                value={note?.notes || ''}
-                                onChange={(e) => {
-                                  handleNoteChange(week.id, day, e.target.value);
-                                }}
-                                placeholder={`Notas para ${DAY_LABELS[day as keyof typeof DAY_LABELS]}...`}
-                                rows={4}
-                                className="resize-none"
-                              />
+                              <div className="space-y-2">
+                                <Textarea
+                                  value={getNoteValue(week.id, day)}
+                                  onChange={(e) => {
+                                    handleNoteChange(week.id, day, e.target.value);
+                                  }}
+                                  placeholder={`Notas para ${DAY_LABELS[day as keyof typeof DAY_LABELS]}...`}
+                                  rows={4}
+                                  className="resize-none"
+                                />
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleSaveNote(week.id, day)}
+                                  disabled={editingNotes[`${week.id}-${day}`] === undefined}
+                                >
+                                  Guardar Nota
+                                </Button>
+                              </div>
                             ) : (
                               <div className="space-y-2">
                                 {note?.notes ? (

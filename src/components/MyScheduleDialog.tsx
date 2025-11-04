@@ -34,8 +34,7 @@ export function MyScheduleDialog({
       const { data, error } = await supabase
         .from("student_class_schedules")
         .select(`
-          *,
-          student:profiles!student_class_schedules_student_id_fkey(full_name)
+          *
         `)
         .eq(column, userId)
         .eq("is_active", true)
@@ -85,7 +84,7 @@ export function MyScheduleDialog({
                           {schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          Estudiante: {(schedule.student as any)?.full_name}
+                          Estudiante asignado
                         </p>
                       </div>
                     </div>

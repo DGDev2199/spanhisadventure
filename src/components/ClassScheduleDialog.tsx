@@ -31,8 +31,7 @@ export function ClassScheduleDialog({
       const { data, error } = await supabase
         .from("student_class_schedules")
         .select(`
-          *,
-          teacher:profiles!student_class_schedules_teacher_id_fkey(full_name)
+          *
         `)
         .eq("student_id", studentId)
         .eq("schedule_type", "class")
@@ -83,7 +82,7 @@ export function ClassScheduleDialog({
                           {schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          Profesor: {(schedule.teacher as any)?.full_name}
+                          Profesor asignado
                         </p>
                       </div>
                     </div>

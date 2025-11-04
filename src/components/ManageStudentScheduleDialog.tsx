@@ -47,9 +47,7 @@ export function ManageStudentScheduleDialog({
       const { data, error } = await supabase
         .from("student_class_schedules")
         .select(`
-          *,
-          teacher:teacher_id(id, full_name),
-          tutor:tutor_id(id, full_name)
+          *
         `)
         .eq("student_id", studentId)
         .eq("is_active", true)
@@ -103,6 +101,18 @@ export function ManageStudentScheduleDialog({
     },
     enabled: open,
   });
+
+  const getTeacherName = (id?: string) => {
+    if (!id) return 'Profesor asignado';
+    const t = teachers?.find((x: any) => x.id === id);
+    return t?.full_name || 'Profesor asignado';
+  };
+
+  const getTutorName = (id?: string) => {
+    if (!id) return 'Tutor asignado';
+    const t = tutors?.find((x: any) => x.id === id);
+    return t?.full_name || 'Tutor asignado';
+  };
 
   // Add schedule mutation
   const addScheduleMutation = useMutation({
@@ -296,8 +306,7 @@ export function ManageStudentScheduleDialog({
                                 {DAYS.find(d => d.value === schedule.day_of_week)?.label}
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                {schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)} con{" "}
-                                {(schedule.teacher as any)?.full_name}
+                                {schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)} con {getTeacherName((schedule as any).teacher_id)}
                               </p>
                             </div>
                           </div>
@@ -335,8 +344,7 @@ export function ManageStudentScheduleDialog({
                                 {DAYS.find(d => d.value === schedule.day_of_week)?.label}
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                {schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)} con{" "}
-                                {(schedule.tutor as any)?.full_name}
+                                {schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)} con {getTutorName((schedule as any).tutor_id)}
                               </p>
                             </div>
                           </div>

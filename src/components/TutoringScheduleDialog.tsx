@@ -31,8 +31,7 @@ export function TutoringScheduleDialog({
       const { data, error } = await supabase
         .from("student_class_schedules")
         .select(`
-          *,
-          tutor:profiles!student_class_schedules_tutor_id_fkey(full_name)
+          *
         `)
         .eq("student_id", studentId)
         .eq("schedule_type", "tutoring")
@@ -83,7 +82,7 @@ export function TutoringScheduleDialog({
                           {schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          Tutor: {(schedule.tutor as any)?.full_name}
+                          Tutor asignado
                         </p>
                       </div>
                     </div>

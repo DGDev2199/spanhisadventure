@@ -41,14 +41,13 @@ export function ReviewPlacementTestDialog({
     setSelectedLevel(currentLevel || '');
   }, [currentLevel]);
 
-  // Fetch placement test questions - ONLY text-based multiple choice questions
+  // Fetch ALL placement test questions
   const { data: questions, isLoading: questionsLoading } = useQuery({
-    queryKey: ['placement-test-questions-text-only'],
+    queryKey: ['placement-test-questions-all'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('placement_tests')
         .select('*')
-        .eq('question_type', 'text') // Only get multiple choice questions
         .order('level', { ascending: true })
         .order('question_number', { ascending: true });
       if (error) throw error;
@@ -179,8 +178,8 @@ export function ReviewPlacementTestDialog({
             {/* Info Alert */}
             <Alert className="bg-blue-50 border-blue-200">
               <AlertDescription className="text-sm">
-                📝 Este modal muestra solo las <strong>preguntas de opción múltiple</strong> del test escrito. 
-                Las preguntas de audio y respuestas grabadas se revisan durante la entrevista oral.
+                📝 Aquí puedes revisar todas las respuestas del estudiante: preguntas de opción múltiple, 
+                respuestas de texto y respuestas de audio.
               </AlertDescription>
             </Alert>
 
@@ -200,96 +199,163 @@ export function ReviewPlacementTestDialog({
                 ) : (
                   <>
                     <h3 className="font-semibold text-lg">
-                      Respuestas de Opción Múltiple ({Object.keys(studentAnswers).length} preguntas respondidas)
+                      Respuestas del Test ({Object.keys(studentAnswers).length} preguntas respondidas)
                     </h3>
                     {questions
-                      .filter(question => studentAnswers[question.id] !== undefined) // Solo preguntas respondidas
+                      .filter(question => studentAnswers[question.id] !== undefined)
                       .map((question, index) => {
-                  const studentAnswer = studentAnswers?.[question.id];
-                  const isCorrect = studentAnswer === question.correct_answer;
-                  
-                  return (
-                    <Card key={question.id} className={`border-l-4 ${isCorrect ? 'border-l-green-500' : 'border-l-red-500'}`}>
-                      <CardContent className="pt-6">
-                        <div className="flex items-start gap-3">
-                          <div className="flex-shrink-0 mt-1">
-                            {isCorrect ? (
-                              <CheckCircle2 className="h-5 w-5 text-green-600" />
-                            ) : (
-                              <XCircle className="h-5 w-5 text-red-600" />
-                            )}
-                          </div>
-                          <div className="flex-1 space-y-3">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-muted-foreground">
-                                Pregunta {index + 1}
-                              </span>
-                              <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
-                                Nivel {question.level}
-                              </span>
-                            </div>
-                            
-                            <p className="font-medium">{question.question}</p>
-                            
-                             <div className="grid grid-cols-1 gap-2 text-sm">
-                              <div className={`p-2 rounded ${
-                                question.correct_answer === 'A'
-                                  ? 'bg-green-50 border border-green-200' 
-                                  : studentAnswer === 'A'
-                                  ? 'bg-red-50 border border-red-200'
-                                  : 'bg-muted/50'
-                              }`}>
-                                <span className="font-medium">A)</span> {question.option_a}
-                              </div>
-                              <div className={`p-2 rounded ${
-                                question.correct_answer === 'B'
-                                  ? 'bg-green-50 border border-green-200' 
-                                  : studentAnswer === 'B'
-                                  ? 'bg-red-50 border border-red-200'
-                                  : 'bg-muted/50'
-                              }`}>
-                                <span className="font-medium">B)</span> {question.option_b}
-                              </div>
-                              <div className={`p-2 rounded ${
-                                question.correct_answer === 'C'
-                                  ? 'bg-green-50 border border-green-200' 
-                                  : studentAnswer === 'C'
-                                  ? 'bg-red-50 border border-red-200'
-                                  : 'bg-muted/50'
-                              }`}>
-                                <span className="font-medium">C)</span> {question.option_c}
-                              </div>
-                              <div className={`p-2 rounded ${
-                                question.correct_answer === 'D'
-                                  ? 'bg-green-50 border border-green-200' 
-                                  : studentAnswer === 'D'
-                                  ? 'bg-red-50 border border-red-200'
-                                  : 'bg-muted/50'
-                              }`}>
-                                <span className="font-medium">D)</span> {question.option_d}
-                              </div>
-                            </div>
+                        const studentAnswer = studentAnswers?.[question.id];
+                        
+                        // Multiple choice question (text type)
+                        if (question.question_type === 'text') {
+                          const isCorrect = studentAnswer === question.correct_answer;
+                          
+                          return (
+                            <Card key={question.id} className={`border-l-4 ${isCorrect ? 'border-l-green-500' : 'border-l-red-500'}`}>
+                              <CardContent className="pt-6">
+                                <div className="flex items-start gap-3">
+                                  <div className="flex-shrink-0 mt-1">
+                                    {isCorrect ? (
+                                      <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                    ) : (
+                                      <XCircle className="h-5 w-5 text-red-600" />
+                                    )}
+                                  </div>
+                                  <div className="flex-1 space-y-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm font-medium text-muted-foreground">
+                                        Pregunta {index + 1} - Opción Múltiple
+                                      </span>
+                                      <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
+                                        Nivel {question.level}
+                                      </span>
+                                    </div>
+                                    
+                                    <p className="font-medium">{question.question}</p>
+                                    
+                                    <div className="grid grid-cols-1 gap-2 text-sm">
+                                      <div className={`p-2 rounded ${
+                                        question.correct_answer === 'A'
+                                          ? 'bg-green-50 border border-green-200' 
+                                          : studentAnswer === 'A'
+                                          ? 'bg-red-50 border border-red-200'
+                                          : 'bg-muted/50'
+                                      }`}>
+                                        <span className="font-medium">A)</span> {question.option_a}
+                                      </div>
+                                      <div className={`p-2 rounded ${
+                                        question.correct_answer === 'B'
+                                          ? 'bg-green-50 border border-green-200' 
+                                          : studentAnswer === 'B'
+                                          ? 'bg-red-50 border border-red-200'
+                                          : 'bg-muted/50'
+                                      }`}>
+                                        <span className="font-medium">B)</span> {question.option_b}
+                                      </div>
+                                      <div className={`p-2 rounded ${
+                                        question.correct_answer === 'C'
+                                          ? 'bg-green-50 border border-green-200' 
+                                          : studentAnswer === 'C'
+                                          ? 'bg-red-50 border border-red-200'
+                                          : 'bg-muted/50'
+                                      }`}>
+                                        <span className="font-medium">C)</span> {question.option_c}
+                                      </div>
+                                      <div className={`p-2 rounded ${
+                                        question.correct_answer === 'D'
+                                          ? 'bg-green-50 border border-green-200' 
+                                          : studentAnswer === 'D'
+                                          ? 'bg-red-50 border border-red-200'
+                                          : 'bg-muted/50'
+                                      }`}>
+                                        <span className="font-medium">D)</span> {question.option_d}
+                                      </div>
+                                    </div>
 
-                            <div className="flex items-center gap-4 text-sm pt-2">
-                              <div>
-                                <span className="text-muted-foreground">Respuesta del estudiante: </span>
-                                <span className={`font-semibold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
-                                  {studentAnswer || 'No respondió'}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Respuesta correcta: </span>
-                                <span className="font-semibold text-green-600">
-                                  {question.correct_answer}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                      );
-                    })}
+                                    <div className="flex items-center gap-4 text-sm pt-2">
+                                      <div>
+                                        <span className="text-muted-foreground">Respuesta del estudiante: </span>
+                                        <span className={`font-semibold ${isCorrect ? 'text-green-600' : 'text-red-600'}`}>
+                                          {studentAnswer || 'No respondió'}
+                                        </span>
+                                      </div>
+                                      <div>
+                                        <span className="text-muted-foreground">Respuesta correcta: </span>
+                                        <span className="font-semibold text-green-600">
+                                          {question.correct_answer}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        }
+                        
+                        // Audio listen question (listening comprehension)
+                        if (question.question_type === 'audio_listen') {
+                          return (
+                            <Card key={question.id} className="border-l-4 border-l-blue-500">
+                              <CardContent className="pt-6">
+                                <div className="space-y-3">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-muted-foreground">
+                                      Pregunta {index + 1} - Comprensión Auditiva
+                                    </span>
+                                    <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
+                                      Nivel {question.level}
+                                    </span>
+                                  </div>
+                                  
+                                  <p className="font-medium">{question.question}</p>
+                                  
+                                  {question.audio_url && (
+                                    <div className="bg-accent/10 p-4 rounded-lg">
+                                      <p className="text-sm text-muted-foreground mb-2">Audio de la pregunta:</p>
+                                      <audio controls src={question.audio_url} className="w-full" />
+                                    </div>
+                                  )}
+                                  
+                                  <div className="bg-muted/50 p-4 rounded-lg">
+                                    <p className="text-sm text-muted-foreground mb-1">Respuesta del estudiante:</p>
+                                    <p className="font-medium">{studentAnswer}</p>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        }
+                        
+                        // Audio response question (speaking)
+                        if (question.question_type === 'audio_response') {
+                          return (
+                            <Card key={question.id} className="border-l-4 border-l-purple-500">
+                              <CardContent className="pt-6">
+                                <div className="space-y-3">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-muted-foreground">
+                                      Pregunta {index + 1} - Respuesta Oral
+                                    </span>
+                                    <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
+                                      Nivel {question.level}
+                                    </span>
+                                  </div>
+                                  
+                                  <p className="font-medium">{question.question}</p>
+                                  
+                                  <div className="bg-accent/10 p-4 rounded-lg">
+                                    <p className="text-sm text-muted-foreground mb-2">Respuesta de audio del estudiante:</p>
+                                    <audio controls src={studentAnswer} className="w-full" />
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        }
+                        
+                        return null;
+                      })}
                   </>
                 )}
               </div>

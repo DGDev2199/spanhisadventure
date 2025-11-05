@@ -351,7 +351,6 @@ const TeacherDashboard = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nombre</TableHead>
-                    <TableHead>Email</TableHead>
                     <TableHead>Nivel</TableHead>
                     <TableHead>Habitación</TableHead>
                     <TableHead>Profesor</TableHead>
@@ -368,7 +367,6 @@ const TeacherDashboard = () => {
                           <span className="text-muted-foreground">Sin nombre</span>
                         )}
                       </TableCell>
-                      <TableCell>{student.profiles?.email || '-'}</TableCell>
                       <TableCell>
                         {student.level || (
                           <span className="text-muted-foreground">No establecido</span>

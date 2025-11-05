@@ -163,7 +163,6 @@ const TutorDashboard = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nombre</TableHead>
-                    <TableHead>Email</TableHead>
                     <TableHead>Nivel</TableHead>
                     <TableHead>Sala</TableHead>
                     <TableHead>Profesor Asignado</TableHead>
@@ -174,7 +173,6 @@ const TutorDashboard = () => {
                   {myStudents.map((student: any) => (
                     <TableRow key={student.id}>
                       <TableCell className="font-medium">{student.profiles?.full_name || 'Sin nombre'}</TableCell>
-                      <TableCell>{student.profiles?.email || '-'}</TableCell>
                       <TableCell>{student.level || 'No asignado'}</TableCell>
                       <TableCell>{student.room || 'No asignado'}</TableCell>
                       <TableCell>

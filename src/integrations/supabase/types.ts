@@ -118,42 +118,42 @@ export type Database = {
       placement_tests: {
         Row: {
           audio_url: string | null
-          correct_answer: string
+          correct_answer: string | null
           created_at: string
           id: string
           level: Database["public"]["Enums"]["cefr_level"]
-          option_a: string
-          option_b: string
-          option_c: string
-          option_d: string
+          option_a: string | null
+          option_b: string | null
+          option_c: string | null
+          option_d: string | null
           question: string
           question_number: number
           question_type: string
         }
         Insert: {
           audio_url?: string | null
-          correct_answer: string
+          correct_answer?: string | null
           created_at?: string
           id?: string
           level: Database["public"]["Enums"]["cefr_level"]
-          option_a: string
-          option_b: string
-          option_c: string
-          option_d: string
+          option_a?: string | null
+          option_b?: string | null
+          option_c?: string | null
+          option_d?: string | null
           question: string
           question_number: number
           question_type?: string
         }
         Update: {
           audio_url?: string | null
-          correct_answer?: string
+          correct_answer?: string | null
           created_at?: string
           id?: string
           level?: Database["public"]["Enums"]["cefr_level"]
-          option_a?: string
-          option_b?: string
-          option_c?: string
-          option_d?: string
+          option_a?: string | null
+          option_b?: string | null
+          option_c?: string | null
+          option_d?: string | null
           question?: string
           question_number?: number
           question_type?: string
@@ -425,6 +425,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          initial_feedback: string | null
           level: Database["public"]["Enums"]["cefr_level"] | null
           placement_test_answers: Json | null
           placement_test_oral_completed: boolean | null
@@ -440,6 +441,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          initial_feedback?: string | null
           level?: Database["public"]["Enums"]["cefr_level"] | null
           placement_test_answers?: Json | null
           placement_test_oral_completed?: boolean | null
@@ -455,6 +457,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          initial_feedback?: string | null
           level?: Database["public"]["Enums"]["cefr_level"] | null
           placement_test_answers?: Json | null
           placement_test_oral_completed?: boolean | null

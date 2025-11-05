@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -33,6 +34,7 @@ export function ReviewPlacementTestDialog({
   studentAnswers
 }: ReviewPlacementTestDialogProps) {
   const [selectedLevel, setSelectedLevel] = useState<string>(currentLevel || '');
+  const [initialFeedback, setInitialFeedback] = useState<string>('');
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -56,15 +58,28 @@ export function ReviewPlacementTestDialog({
   });
 
   const assignLevelMutation = useMutation({
-    mutationFn: async (level: string) => {
-      console.log('Assigning level:', { level, studentId });
+    mutationFn: async ({ level, feedback }: { level: string; feedback: string }) => {
+      console.log('Assigning level:', { level, studentId, feedback });
       
+      // Calculate starting week based on level
+      const levelToWeek: Record<string, number> = {
+        'A1': 1,
+        'A2': 3,
+        'B1': 5,
+        'B2': 7,
+        'C1': 9,
+        'C2': 11
+      };
+      const startingWeek = levelToWeek[level] || 1;
+
+      // Update student profile
       const { data, error } = await supabase
         .from('student_profiles')
         .update({
           level: level as 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2',
           placement_test_status: 'completed' as const,
-          placement_test_oral_completed: true
+          placement_test_oral_completed: true,
+          initial_feedback: feedback
         })
         .eq('user_id', studentId)
         .select();
@@ -72,6 +87,38 @@ export function ReviewPlacementTestDialog({
       if (error) {
         console.error('Error assigning level:', error);
         throw error;
+      }
+      
+      // Create initial progress week with feedback note
+      if (feedback) {
+        const { data: weekData, error: weekError } = await supabase
+          .from('student_progress_weeks')
+          .insert({
+            student_id: studentId,
+            week_number: startingWeek,
+            week_theme: `Nivel Inicial: ${level}`,
+            week_objectives: `Evaluación inicial del estudiante y asignación de nivel ${level}`,
+            is_completed: false
+          })
+          .select()
+          .single();
+
+        if (weekError) {
+          console.error('Error creating initial week:', weekError);
+        } else if (weekData) {
+          // Get current user (teacher)
+          const { data: { user } } = await supabase.auth.getUser();
+          
+          // Create initial note
+          await supabase
+            .from('student_progress_notes')
+            .insert({
+              week_id: weekData.id,
+              day_type: 'evaluation',
+              notes: feedback,
+              created_by: user?.id || studentId
+            });
+        }
       }
       
       console.log('Level assigned successfully:', data);
@@ -94,7 +141,11 @@ export function ReviewPlacementTestDialog({
       toast.error('Por favor selecciona un nivel');
       return;
     }
-    assignLevelMutation.mutate(selectedLevel);
+    if (!initialFeedback.trim()) {
+      toast.error('Por favor escribe un comentario inicial sobre el estudiante');
+      return;
+    }
+    assignLevelMutation.mutate({ level: selectedLevel, feedback: initialFeedback });
   };
 
   const getOptionLabel = (option: string) => {
@@ -279,6 +330,21 @@ export function ReviewPlacementTestDialog({
               <p className="text-sm text-muted-foreground">
                 Selecciona el nivel final después de revisar el examen
               </p>
+
+              <div className="space-y-2">
+                <Label htmlFor="initial-feedback">Comentario Inicial</Label>
+                <Textarea
+                  id="initial-feedback"
+                  value={initialFeedback}
+                  onChange={(e) => setInitialFeedback(e.target.value)}
+                  placeholder="Describe las fortalezas, debilidades y razón de la asignación de nivel..."
+                  rows={4}
+                  className="resize-none"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Este comentario será visible para el estudiante y explicará por qué comienza en este nivel
+                </p>
+              </div>
               
               {/* Mobile Actions */}
               <div className="flex flex-col gap-3 w-full">

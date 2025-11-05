@@ -235,7 +235,7 @@ const Dashboard = () => {
               </div>
               {teacherProfile && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  {teacherProfile.email}
+                  Profesor Asignado
                 </p>
               )}
               <p className="text-xs text-muted-foreground mt-1">
@@ -270,7 +270,7 @@ const Dashboard = () => {
               </div>
               {tutorProfile && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  {tutorProfile.email}
+                  Tutor Asignado
                 </p>
               )}
               <p className="text-xs text-muted-foreground mt-1">

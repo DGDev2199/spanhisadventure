@@ -11,6 +11,22 @@ interface MyScheduleDialogProps {
   userRole: "teacher" | "tutor";
 }
 
+type ScheduleWithStudent = {
+  id: string;
+  student_id: string;
+  teacher_id: string;
+  tutor_id: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  schedule_type: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  created_by: string;
+  studentName: string;
+};
+
 const DAYS = [
   { value: 0, label: "Domingo" },
   { value: 1, label: "Lunes" },
@@ -27,22 +43,34 @@ export function MyScheduleDialog({
   userId,
   userRole,
 }: MyScheduleDialogProps) {
-  const { data: schedules, isLoading } = useQuery({
+  const { data: schedules, isLoading } = useQuery<ScheduleWithStudent[]>({
     queryKey: ["my-schedule", userId, userRole, open],
-    queryFn: async () => {
+    queryFn: async (): Promise<ScheduleWithStudent[]> => {
       const column = userRole === "teacher" ? "teacher_id" : "tutor_id";
       const { data, error } = await supabase
         .from("student_class_schedules")
-        .select(`
-          *
-        `)
+        .select('*')
         .eq(column, userId)
         .eq("is_active", true)
         .order("day_of_week")
         .order("start_time");
 
       if (error) throw error;
-      return data;
+      if (!data || data.length === 0) return [];
+      
+      // Fetch student names separately
+      const studentIds = [...new Set(data.map(s => s.student_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', studentIds);
+      
+      const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || []);
+      
+      return data.map(schedule => ({
+        ...schedule,
+        studentName: profileMap.get(schedule.student_id) || 'Estudiante'
+      }));
     },
     enabled: open,
   });
@@ -53,7 +81,7 @@ export function MyScheduleDialog({
     if (!acc[day]) acc[day] = [];
     acc[day].push(schedule);
     return acc;
-  }, {} as Record<number, typeof schedules>);
+  }, {} as Record<number, ScheduleWithStudent[]>);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -84,7 +112,7 @@ export function MyScheduleDialog({
                           {schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          Estudiante asignado
+                          {schedule.studentName}
                         </p>
                       </div>
                     </div>

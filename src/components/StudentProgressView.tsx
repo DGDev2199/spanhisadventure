@@ -51,6 +51,20 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
     }
   });
 
+  const { data: studentProfile } = useQuery({
+    queryKey: ['student-profile', studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('student_profiles')
+        .select('*')
+        .eq('user_id', studentId)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Fetch all weeks for this student
   const { data: weeks, isLoading } = useQuery({
     queryKey: ['student-progress-weeks', studentId],
@@ -291,11 +305,26 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
       </Card>
 
       <Accordion type="single" collapsible defaultValue="week-1" className="space-y-4">
+        {studentProfile?.initial_feedback && (
+          <Card className="border-primary/30 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <span className="text-primary">📋</span> Evaluación Inicial
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm whitespace-pre-wrap">{studentProfile.initial_feedback}</p>
+            </CardContent>
+          </Card>
+        )}
+
         {weeks.map((week) => {
           const isCurrent = week.week_number === currentWeekNumber;
           const canEditNotes = isEditable && isCurrent;
           const weekNotes = getWeekNotes(week.id);
-          const canViewNotes = isEditable || week.is_completed; // Students can only see notes of completed weeks
+          const isTeacher = currentUser?.roles?.includes('teacher');
+          const isTutor = currentUser?.roles?.includes('tutor');
+          const canViewNotes = isEditable || week.is_completed || (!week.is_completed && weeks.find(w => !w.is_completed)?.id === week.id);
 
           return (
             <AccordionItem

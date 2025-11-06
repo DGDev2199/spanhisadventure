@@ -305,12 +305,16 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
       </Card>
 
       <Accordion type="single" collapsible defaultValue="week-1" className="space-y-4">
-        {studentProfile?.initial_feedback && (
+        {/* Show initial feedback only if first week is not completed */}
+        {studentProfile?.initial_feedback && completedWeeks === 0 && (
           <Card className="border-primary/30 bg-primary/5">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <span className="text-primary">📋</span> Evaluación Inicial
               </CardTitle>
+              <CardDescription className="text-xs">
+                Este mensaje desaparecerá cuando completes la primera semana
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-sm whitespace-pre-wrap">{studentProfile.initial_feedback}</p>

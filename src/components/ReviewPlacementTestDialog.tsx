@@ -45,12 +45,19 @@ export function ReviewPlacementTestDialog({
   const { data: questions, isLoading: questionsLoading } = useQuery({
     queryKey: ['placement-test-questions-all'],
     queryFn: async () => {
+      console.log('📚 Fetching placement test questions...');
       const { data, error } = await supabase
         .from('placement_tests')
         .select('*')
         .order('level', { ascending: true })
         .order('question_number', { ascending: true });
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching questions:', error);
+        throw error;
+      }
+      console.log('✅ Questions fetched:', data?.length || 0, 'questions');
+      console.log('📝 Student answers provided:', studentAnswers);
+      console.log('📊 Number of student answers:', studentAnswers ? Object.keys(studentAnswers).length : 0);
       return data;
     },
     enabled: open
@@ -60,16 +67,27 @@ export function ReviewPlacementTestDialog({
     mutationFn: async ({ level, feedback }: { level: string; feedback: string }) => {
       console.log('Assigning level:', { level, studentId, feedback });
       
-      // Calculate starting week based on level
-      const levelToWeek: Record<string, number> = {
-        'A1': 1,
-        'A2': 3,
-        'B1': 5,
-        'B2': 7,
-        'C1': 9,
-        'C2': 11
+      // Calculate starting week based on level (each level = 2 weeks)
+      // A1: weeks 1-2, A2: weeks 3-4, B1: weeks 5-6, B2: weeks 7-8, C1: weeks 9-10, C2: weeks 11-12
+      const levelToWeek: Record<string, { start: number; end: number; current: number }> = {
+        'A1': { start: 1, end: 2, current: 1 },
+        'A2': { start: 3, end: 4, current: 3 },
+        'B1': { start: 5, end: 6, current: 5 },
+        'B2': { start: 7, end: 8, current: 7 },
+        'C1': { start: 9, end: 10, current: 9 },
+        'C2': { start: 11, end: 12, current: 11 }
       };
-      const startingWeek = levelToWeek[level] || 1;
+      const weekInfo = levelToWeek[level] || { start: 1, end: 2, current: 1 };
+      const startingWeek = weekInfo.current;
+      
+      console.log('🎯 Assigning level:', {
+        level,
+        startWeek: weekInfo.start,
+        endWeek: weekInfo.end,
+        currentWeek: startingWeek,
+        studentId,
+        feedback: feedback.substring(0, 50) + '...'
+      });
 
       // Update student profile
       const { data, error } = await supabase
@@ -84,32 +102,35 @@ export function ReviewPlacementTestDialog({
         .select();
 
       if (error) {
-        console.error('Error assigning level:', error);
+        console.error('❌ Error updating student profile:', error);
         throw error;
       }
+      console.log('✅ Student profile updated successfully');
       
       // Create initial progress week with feedback note
       if (feedback) {
+        console.log('📝 Creating initial progress week...');
         const { data: weekData, error: weekError } = await supabase
           .from('student_progress_weeks')
           .insert({
             student_id: studentId,
             week_number: startingWeek,
-            week_theme: `Nivel Inicial: ${level}`,
-            week_objectives: `Evaluación inicial del estudiante y asignación de nivel ${level}`,
+            week_theme: `Nivel Inicial: ${level} (Semanas ${weekInfo.start}-${weekInfo.end})`,
+            week_objectives: `Evaluación inicial del estudiante. Nivel asignado: ${level}. Semana actual: ${startingWeek}`,
             is_completed: false
           })
           .select()
           .single();
 
         if (weekError) {
-          console.error('Error creating initial week:', weekError);
+          console.error('❌ Error creating initial week:', weekError);
         } else if (weekData) {
+          console.log('✅ Initial week created:', weekData);
           // Get current user (teacher)
           const { data: { user } } = await supabase.auth.getUser();
           
           // Create initial note
-          await supabase
+          const { error: noteError } = await supabase
             .from('student_progress_notes')
             .insert({
               week_id: weekData.id,
@@ -117,10 +138,16 @@ export function ReviewPlacementTestDialog({
               notes: feedback,
               created_by: user?.id || studentId
             });
+          
+          if (noteError) {
+            console.error('❌ Error creating initial note:', noteError);
+          } else {
+            console.log('✅ Initial feedback note created');
+          }
         }
       }
       
-      console.log('Level assigned successfully:', data);
+      console.log('✅ Level assignment completed successfully:', data);
       return data;
     },
     onSuccess: () => {

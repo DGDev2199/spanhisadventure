@@ -17,11 +17,12 @@ import { SaveAsTemplateDialog } from '@/components/SaveAsTemplateDialog';
 import { LoadTemplateDialog } from '@/components/LoadTemplateDialog';
 
 interface Question {
-  question_type: 'multiple_choice' | 'true_false' | 'free_text';
+  question_type: 'multiple_choice' | 'true_false' | 'free_text' | 'audio_listen' | 'audio_response';
   question_text: string;
   options?: string[];
   correct_answer?: string;
   points: number;
+  audio_url?: string;
 }
 
 interface CreateTestDialogProps {
@@ -46,11 +47,14 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
 
   const createTestMutation = useMutation({
     mutationFn: async () => {
+      console.log('🧪 Creating test...', { title, questionsCount: questions.length, studentsCount: selectedStudents.length });
+      
       if (!user?.id) throw new Error('No user');
       if (questions.length === 0) throw new Error('Add at least one question');
       if (selectedStudents.length === 0) throw new Error('Select at least one student');
 
       // Create test
+      console.log('📝 Inserting test into database...');
       const { data: testData, error: testError } = await supabase
         .from('custom_tests')
         .insert({
@@ -64,9 +68,14 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
         .select()
         .single();
 
-      if (testError) throw testError;
+      if (testError) {
+        console.error('❌ Error creating test:', testError);
+        throw testError;
+      }
+      console.log('✅ Test created:', testData.id);
 
       // Create questions
+      console.log('❓ Inserting questions...');
       const questionsToInsert = questions.map((q, index) => ({
         test_id: testData.id,
         question_type: q.question_type,
@@ -81,9 +90,14 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
         .from('test_questions')
         .insert(questionsToInsert);
 
-      if (questionsError) throw questionsError;
+      if (questionsError) {
+        console.error('❌ Error creating questions:', questionsError);
+        throw questionsError;
+      }
+      console.log('✅ Questions created:', questionsToInsert.length);
 
       // Create assignments
+      console.log('👥 Creating assignments for students...');
       const assignmentsToInsert = selectedStudents.map(studentId => ({
         test_id: testData.id,
         student_id: studentId,
@@ -93,10 +107,16 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
         .from('test_assignments')
         .insert(assignmentsToInsert);
 
-      if (assignmentsError) throw assignmentsError;
+      if (assignmentsError) {
+        console.error('❌ Error creating assignments:', assignmentsError);
+        throw assignmentsError;
+      }
+      console.log('✅ Assignments created for', assignmentsToInsert.length, 'students');
+      
+      return testData.id;
     },
-    onSuccess: (_, __, context: any) => {
-      const testId = context?.testId;
+    onSuccess: (testId) => {
+      console.log('✅ Test creation completed successfully!');
       if (testId) setCreatedTestId(testId);
       queryClient.invalidateQueries({ queryKey: ['teacher-tests'] });
       toast.success('¡Test creado y asignado exitosamente!');
@@ -199,7 +219,7 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
           )}
         </div>
 
-        <ScrollArea className="flex-1 h-[65vh] sm:h-[70vh] px-6">
+        <ScrollArea className="flex-1 max-h-[65vh] px-6">
           <div className="space-y-6 pr-4">
             {/* Basic Info */}
           <div className="space-y-4">
@@ -311,6 +331,8 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
                             <SelectItem value="multiple_choice">Opción Múltiple</SelectItem>
                             <SelectItem value="true_false">Verdadero/Falso</SelectItem>
                             <SelectItem value="free_text">Texto Libre</SelectItem>
+                            <SelectItem value="audio_listen">Audio - Escuchar y Responder</SelectItem>
+                            <SelectItem value="audio_response">Audio - Respuesta Oral</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -374,6 +396,22 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
                               ))}
                             </SelectContent>
                           </Select>
+                        </div>
+                      )}
+
+                      {(question.question_type === 'audio_listen' || question.question_type === 'audio_response') && (
+                        <div>
+                          <Label>URL del Audio (opcional)</Label>
+                          <Input
+                            value={question.audio_url || ''}
+                            onChange={(e) => updateQuestion(qIndex, 'audio_url', e.target.value)}
+                            placeholder="https://ejemplo.com/audio.mp3"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {question.question_type === 'audio_listen' 
+                              ? 'Audio que el estudiante escuchará antes de responder'
+                              : 'Opcional: audio de referencia para la pregunta'}
+                          </p>
                         </div>
                       )}
 

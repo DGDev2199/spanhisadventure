@@ -24,6 +24,16 @@ interface ReviewPlacementTestDialogProps {
 
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
+// Map each level to its available weeks
+const LEVEL_WEEKS: Record<string, number[]> = {
+  'A1': [1, 2],
+  'A2': [3, 4],
+  'B1': [5, 6],
+  'B2': [7, 8],
+  'C1': [9, 10],
+  'C2': [11, 12]
+};
+
 export function ReviewPlacementTestDialog({
   open,
   onOpenChange,
@@ -34,12 +44,24 @@ export function ReviewPlacementTestDialog({
   studentAnswers
 }: ReviewPlacementTestDialogProps) {
   const [selectedLevel, setSelectedLevel] = useState<string>(currentLevel || '');
+  const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [initialFeedback, setInitialFeedback] = useState<string>('');
   const queryClient = useQueryClient();
 
   useEffect(() => {
     setSelectedLevel(currentLevel || '');
-  }, [currentLevel]);
+    // Reset selected week when dialog opens or level changes
+    if (currentLevel && LEVEL_WEEKS[currentLevel]) {
+      setSelectedWeek(LEVEL_WEEKS[currentLevel][0]); // Default to first week of level
+    }
+  }, [currentLevel, open]);
+
+  // Update selected week when level changes
+  useEffect(() => {
+    if (selectedLevel && LEVEL_WEEKS[selectedLevel]) {
+      setSelectedWeek(LEVEL_WEEKS[selectedLevel][0]); // Default to first week of new level
+    }
+  }, [selectedLevel]);
 
   // Fetch ALL placement test questions
   const { data: questions, isLoading: questionsLoading } = useQuery({
@@ -64,27 +86,10 @@ export function ReviewPlacementTestDialog({
   });
 
   const assignLevelMutation = useMutation({
-    mutationFn: async ({ level, feedback }: { level: string; feedback: string }) => {
-      console.log('Assigning level:', { level, studentId, feedback });
-      
-      // Calculate starting week based on level (each level = 2 weeks)
-      // A1: weeks 1-2, A2: weeks 3-4, B1: weeks 5-6, B2: weeks 7-8, C1: weeks 9-10, C2: weeks 11-12
-      const levelToWeek: Record<string, { start: number; end: number; current: number }> = {
-        'A1': { start: 1, end: 2, current: 1 },
-        'A2': { start: 3, end: 4, current: 3 },
-        'B1': { start: 5, end: 6, current: 5 },
-        'B2': { start: 7, end: 8, current: 7 },
-        'C1': { start: 9, end: 10, current: 9 },
-        'C2': { start: 11, end: 12, current: 11 }
-      };
-      const weekInfo = levelToWeek[level] || { start: 1, end: 2, current: 1 };
-      const startingWeek = weekInfo.current;
-      
-      console.log('🎯 Assigning level:', {
+    mutationFn: async ({ level, week, feedback }: { level: string; week: number; feedback: string }) => {
+      console.log('🎯 Assigning level and week:', {
         level,
-        startWeek: weekInfo.start,
-        endWeek: weekInfo.end,
-        currentWeek: startingWeek,
+        selectedWeek: week,
         studentId,
         feedback: feedback.substring(0, 50) + '...'
       });
@@ -109,14 +114,14 @@ export function ReviewPlacementTestDialog({
       
       // Create initial progress week with feedback note
       if (feedback) {
-        console.log('📝 Creating initial progress week...');
+        console.log('📝 Creating initial progress week at week', week);
         const { data: weekData, error: weekError } = await supabase
           .from('student_progress_weeks')
           .insert({
             student_id: studentId,
-            week_number: startingWeek,
-            week_theme: `Nivel Inicial: ${level} (Semanas ${weekInfo.start}-${weekInfo.end})`,
-            week_objectives: `Evaluación inicial del estudiante. Nivel asignado: ${level}. Semana actual: ${startingWeek}`,
+            week_number: week,
+            week_theme: `Nivel Inicial: ${level} - Semana ${week}`,
+            week_objectives: `Evaluación inicial del estudiante. Nivel asignado: ${level}. Comenzando en semana ${week}.`,
             is_completed: false
           })
           .select()
@@ -167,11 +172,16 @@ export function ReviewPlacementTestDialog({
       toast.error('Por favor selecciona un nivel');
       return;
     }
+    if (!selectedWeek) {
+      toast.error('Por favor selecciona la semana de inicio');
+      return;
+    }
     if (!initialFeedback.trim()) {
       toast.error('Por favor escribe un comentario inicial sobre el estudiante');
       return;
     }
-    assignLevelMutation.mutate({ level: selectedLevel, feedback: initialFeedback });
+    console.log('🚀 Submitting level assignment:', { level: selectedLevel, week: selectedWeek, feedback: initialFeedback.substring(0, 50) });
+    assignLevelMutation.mutate({ level: selectedLevel, week: selectedWeek, feedback: initialFeedback });
   };
 
   const getOptionLabel = (option: string) => {

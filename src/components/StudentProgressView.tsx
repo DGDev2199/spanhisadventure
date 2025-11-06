@@ -69,6 +69,7 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
   const { data: weeks, isLoading } = useQuery({
     queryKey: ['student-progress-weeks', studentId],
     queryFn: async () => {
+      console.log('📚 Fetching student progress weeks for student:', studentId);
       const { data, error } = await supabase
         .from('student_progress_weeks')
         .select(`
@@ -78,7 +79,12 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
         .eq('student_id', studentId)
         .order('week_number', { ascending: true });
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error fetching weeks:', error);
+        throw error;
+      }
+      console.log('✅ Weeks fetched:', data?.length || 0, 'weeks');
+      console.log('📊 Week numbers:', data?.map(w => w.week_number));
       return data || [];
     }
   });
@@ -197,19 +203,9 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
     }
   });
 
-  // Initialize weeks if they don't exist
+  // Initialize weeks if they don't exist (not used anymore, weeks are created on level assignment)
   const initializeWeeks = async () => {
-    if (!weeks || weeks.length === 0) {
-      const weeksToCreate = Array.from({ length: 12 }, (_, i) => ({
-        student_id: studentId,
-        week_number: i + 1,
-        week_theme: `Semana ${i + 1}`,
-        week_objectives: ''
-      }));
-
-      await supabase.from('student_progress_weeks').insert(weeksToCreate);
-      queryClient.invalidateQueries({ queryKey: ['student-progress-weeks', studentId] });
-    }
+    console.log('⚠️ initializeWeeks called but should not be used - weeks are created on level assignment');
   };
 
   if (isLoading) {
@@ -234,13 +230,19 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
   }
 
   const completedWeeks = weeks.filter(w => w.is_completed).length;
-  const progressPercentage = (completedWeeks / 12) * 100;
+  const totalWeeks = weeks.length;
+  const progressPercentage = totalWeeks > 0 ? (completedWeeks / totalWeeks) * 100 : 0;
 
-  // Determine which weeks are accessible (current week or completed weeks)
-  const lastCompletedWeekNumber = weeks
-    .filter(w => w.is_completed)
-    .sort((a, b) => b.week_number - a.week_number)[0]?.week_number || 0;
-  const currentWeekNumber = lastCompletedWeekNumber + 1;
+  // Determine current week (first non-completed week)
+  const currentWeek = weeks.find(w => !w.is_completed);
+  const currentWeekNumber = currentWeek?.week_number || (weeks[weeks.length - 1]?.week_number || 0);
+  
+  console.log('📈 Progress calculation:', {
+    completedWeeks,
+    totalWeeks,
+    currentWeekNumber,
+    progressPercentage: Math.round(progressPercentage)
+  });
 
   const getWeekNotes = (weekId: string) => {
     return notes?.filter(n => n.week_id === weekId) || [];
@@ -291,8 +293,13 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
               <div className="space-y-1">
                 <p className="text-sm font-medium">Progreso General</p>
                 <p className="text-2xl font-bold text-primary">
-                  {completedWeeks} / 12 Semanas
+                  {completedWeeks} / {totalWeeks} Semanas
                 </p>
+                {currentWeek && (
+                  <p className="text-xs text-muted-foreground">
+                    Semana actual: {currentWeek.week_number}
+                  </p>
+                )}
               </div>
               <div className="text-right">
                 <p className="text-3xl font-bold text-secondary">{Math.round(progressPercentage)}%</p>
@@ -304,16 +311,16 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
         </CardContent>
       </Card>
 
-      <Accordion type="single" collapsible defaultValue="week-1" className="space-y-4">
-        {/* Show initial feedback only if first week is not completed */}
-        {studentProfile?.initial_feedback && completedWeeks === 0 && (
+      <Accordion type="single" collapsible defaultValue={`week-${currentWeekNumber}`} className="space-y-4">
+        {/* Show initial feedback only if current week is not completed */}
+        {studentProfile?.initial_feedback && !currentWeek?.is_completed && (
           <Card className="border-primary/30 bg-primary/5">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <span className="text-primary">📋</span> Evaluación Inicial
               </CardTitle>
               <CardDescription className="text-xs">
-                Este mensaje desaparecerá cuando completes la primera semana
+                Este mensaje desaparecerá cuando completes la semana actual (Semana {currentWeekNumber})
               </CardDescription>
             </CardHeader>
             <CardContent>

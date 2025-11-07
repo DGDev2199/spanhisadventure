@@ -180,10 +180,27 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
     }
   });
 
-  // Mark week as completed
+  // Mark week as completed and create next week if needed
   const completeWeekMutation = useMutation({
     mutationFn: async (weekId: string) => {
-      const { error } = await supabase
+      console.log('🎯 Completing week:', weekId);
+      
+      // Get the current week data
+      const { data: currentWeekData, error: fetchError } = await supabase
+        .from('student_progress_weeks')
+        .select('*')
+        .eq('id', weekId)
+        .single();
+      
+      if (fetchError) {
+        console.error('❌ Error fetching week data:', fetchError);
+        throw fetchError;
+      }
+      
+      console.log('📊 Current week data:', currentWeekData);
+      
+      // Mark current week as completed
+      const { error: updateError } = await supabase
         .from('student_progress_weeks')
         .update({
           is_completed: true,
@@ -192,13 +209,73 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
         })
         .eq('id', weekId);
       
-      if (error) throw error;
+      if (updateError) {
+        console.error('❌ Error updating week:', updateError);
+        throw updateError;
+      }
+      
+      console.log('✅ Week marked as completed');
+      
+      // Create next week if we haven't reached week 12
+      const nextWeekNumber = currentWeekData.week_number + 1;
+      if (nextWeekNumber <= 12) {
+        console.log('📝 Creating next week:', nextWeekNumber);
+        
+        // Check if next week already exists
+        const { data: existingWeek } = await supabase
+          .from('student_progress_weeks')
+          .select('id')
+          .eq('student_id', studentId)
+          .eq('week_number', nextWeekNumber)
+          .maybeSingle();
+        
+        if (!existingWeek) {
+          // Determine the level and theme for the next week
+          const levelWeeks: Record<string, { level: string; weeks: number[] }> = {
+            'A1': { level: 'A1', weeks: [1, 2] },
+            'A2': { level: 'A2', weeks: [3, 4] },
+            'B1': { level: 'B1', weeks: [5, 6] },
+            'B2': { level: 'B2', weeks: [7, 8] },
+            'C1': { level: 'C1', weeks: [9, 10] },
+            'C2': { level: 'C2', weeks: [11, 12] }
+          };
+          
+          let nextLevel = 'A1';
+          for (const [level, data] of Object.entries(levelWeeks)) {
+            if (data.weeks.includes(nextWeekNumber)) {
+              nextLevel = level;
+              break;
+            }
+          }
+          
+          const { error: insertError } = await supabase
+            .from('student_progress_weeks')
+            .insert({
+              student_id: studentId,
+              week_number: nextWeekNumber,
+              week_theme: `${nextLevel} - Semana ${nextWeekNumber}`,
+              week_objectives: `Objetivos para la semana ${nextWeekNumber} del nivel ${nextLevel}`,
+              is_completed: false
+            });
+          
+          if (insertError) {
+            console.error('❌ Error creating next week:', insertError);
+          } else {
+            console.log('✅ Next week created successfully:', nextWeekNumber);
+          }
+        } else {
+          console.log('ℹ️ Next week already exists:', nextWeekNumber);
+        }
+      } else {
+        console.log('🎓 Student has completed all 12 weeks!');
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student-progress-weeks', studentId] });
       toast.success('Semana marcada como completada');
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('❌ Complete week mutation error:', error);
       toast.error('Error al completar la semana');
     }
   });

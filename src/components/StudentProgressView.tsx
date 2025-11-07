@@ -389,15 +389,15 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
       </Card>
 
       <Accordion type="single" collapsible defaultValue={`week-${currentWeekNumber}`} className="space-y-4">
-        {/* Show initial feedback only if current week is not completed */}
-        {studentProfile?.initial_feedback && !currentWeek?.is_completed && (
+        {/* Show initial feedback only until the first week is completed */}
+        {studentProfile?.initial_feedback && completedWeeks === 0 && (
           <Card className="border-primary/30 bg-primary/5">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <span className="text-primary">📋</span> Evaluación Inicial
               </CardTitle>
               <CardDescription className="text-xs">
-                Este mensaje desaparecerá cuando completes la semana actual (Semana {currentWeekNumber})
+                Este mensaje desaparecerá cuando completes tu primera semana asignada
               </CardDescription>
             </CardHeader>
             <CardContent>

@@ -85,6 +85,36 @@ export function ReviewPlacementTestDialog({
     enabled: open
   });
 
+  // Generate signed URLs for audio questions so they are always playable
+  const [signedQuestionAudio, setSignedQuestionAudio] = useState<Record<string, string>>({});
+  useEffect(() => {
+    const generate = async () => {
+      if (!questions || !open) return;
+      const entries: Record<string, string> = {};
+      for (const q of questions) {
+        if (q.question_type === 'audio_listen' && q.audio_url) {
+          const extractPath = (urlOrPath: string) => {
+            if (!urlOrPath) return null;
+            if (!urlOrPath.startsWith('http')) return urlOrPath;
+            const marker = '/student-audio-responses/';
+            const idx = urlOrPath.indexOf(marker);
+            if (idx === -1) return null;
+            return urlOrPath.substring(idx + marker.length);
+          };
+          const path = extractPath(q.audio_url);
+          if (path) {
+            const { data } = await supabase.storage
+              .from('student-audio-responses')
+              .createSignedUrl(path, 3600);
+            if (data?.signedUrl) entries[q.id] = data.signedUrl;
+          }
+        }
+      }
+      setSignedQuestionAudio(entries);
+    };
+    generate();
+  }, [questions, open]);
+
   const assignLevelMutation = useMutation({
     mutationFn: async ({ level, week, feedback }: { level: string; week: number; feedback: string }) => {
       console.log('🎯 Assigning level and week:', {
@@ -375,7 +405,7 @@ export function ReviewPlacementTestDialog({
                             {question.audio_url && (
                               <div className="bg-accent/10 p-4 rounded-lg">
                                 <p className="text-sm text-muted-foreground mb-2">Audio de la pregunta:</p>
-                                <audio controls src={question.audio_url} className="w-full" />
+                                <audio controls src={signedQuestionAudio[question.id] || question.audio_url} className="w-full" />
                               </div>
                             )}
                             
@@ -418,7 +448,7 @@ export function ReviewPlacementTestDialog({
                             {wasAnswered ? (
                               <div className="bg-accent/10 p-4 rounded-lg">
                                 <p className="text-sm text-muted-foreground mb-2">Respuesta de audio del estudiante:</p>
-                                <audio controls src={studentAnswer} className="w-full" />
+                                <audio controls src={signedStudentAudio[question.id] || studentAnswer} className="w-full" />
                               </div>
                             ) : (
                               <div className="bg-muted/50 p-4 rounded-lg">

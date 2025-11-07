@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -125,17 +125,8 @@ const PlacementTest = () => {
         return null;
       }
 
-      // Use signed URL instead of public URL (1 hour expiry)
-      const { data, error: signedUrlError } = await supabase.storage
-        .from('student-audio-responses')
-        .createSignedUrl(fileName, 3600);
-
-      if (signedUrlError || !data) {
-        console.error('Error creating signed URL:', signedUrlError);
-        return null;
-      }
-
-      return data.signedUrl;
+      // Return the storage path; we'll generate signed URLs when needed
+      return fileName;
     } catch (error) {
       console.error('Audio upload exception:', error);
       return null;
@@ -256,6 +247,40 @@ const PlacementTest = () => {
 
   const question = questions[currentQuestion];
   const progress = ((currentQuestion + 1) / questions.length) * 100;
+
+  const [signedAudioUrl, setSignedAudioUrl] = useState<string | null>(null);
+  useEffect(() => {
+    const setup = async () => {
+      if (!question) return setSignedAudioUrl(null);
+      if (question.question_type !== 'audio_listen' || !question.audio_url) {
+        setSignedAudioUrl(null);
+        return;
+      }
+      const extractPath = (urlOrPath: string) => {
+        if (!urlOrPath) return null;
+        if (!urlOrPath.startsWith('http')) return urlOrPath;
+        const marker = '/student-audio-responses/';
+        const idx = urlOrPath.indexOf(marker);
+        if (idx === -1) return null;
+        return urlOrPath.substring(idx + marker.length);
+      };
+      const path = extractPath(question.audio_url);
+      if (!path) {
+        setSignedAudioUrl(question.audio_url);
+        return;
+      }
+      const { data, error } = await supabase.storage
+        .from('student-audio-responses')
+        .createSignedUrl(path, 3600);
+      if (error || !data) {
+        console.warn('Audio signed URL error:', error);
+        setSignedAudioUrl(question.audio_url);
+      } else {
+        setSignedAudioUrl(data.signedUrl);
+      }
+    };
+    setup();
+  }, [question?.id, question?.audio_url, question?.question_type]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -382,7 +407,7 @@ const PlacementTest = () => {
                   <div className="flex flex-col items-center gap-3">
                     <Volume2 className="h-8 w-8 text-primary" />
                     {question.audio_url && (
-                      <audio controls src={question.audio_url} className="w-full" />
+                      <audio controls src={signedAudioUrl || question.audio_url} className="w-full" />
                     )}
                   </div>
                 </div>
@@ -413,7 +438,7 @@ const PlacementTest = () => {
                 {currentQuestion === questions.length - 1 ? (
                   <Button
                     onClick={handleSubmit}
-                    disabled={Object.keys(answers).length !== questions.length || submitTestMutation.isPending}
+                    disabled={Object.keys({ ...answers, ...audioAnswers }).length !== questions.length || submitTestMutation.isPending}
                   >
                     {submitTestMutation.isPending ? 'Enviando…' : 'Enviar Examen'}
                   </Button>

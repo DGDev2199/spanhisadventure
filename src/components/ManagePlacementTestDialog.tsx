@@ -113,11 +113,9 @@ export function ManagePlacementTestDialog({ open, onOpenChange }: ManagePlacemen
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('student-audio-responses')
-        .getPublicUrl(`placement-questions/${fileName}`);
+      const path = `placement-questions/${fileName}`;
 
-      updateQuestion(questionIndex, 'audio_url', publicUrl);
+      updateQuestion(questionIndex, 'audio_url', path);
       toast.success('Audio subido exitosamente');
     } catch (error: any) {
       toast.error(`Error al subir audio: ${error.message}`);

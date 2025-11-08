@@ -22,11 +22,12 @@ interface ReviewPlacementTestDialogProps {
   studentAnswers?: Record<string, string>;
 }
 
-const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+const LEVELS = ['A1', 'A1 Especial', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
 // Map each level to its available weeks
 const LEVEL_WEEKS: Record<string, number[]> = {
   'A1': [1, 2],
+  'A1 Especial': [1, 2],
   'A2': [3, 4],
   'B1': [5, 6],
   'B2': [7, 8],

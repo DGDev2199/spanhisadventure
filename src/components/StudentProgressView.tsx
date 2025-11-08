@@ -180,6 +180,74 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
     }
   });
 
+  // Mark week as special (complete current and create special week)
+  const specialWeekMutation = useMutation({
+    mutationFn: async (weekId: string) => {
+      console.log('⭐ Creating special week from:', weekId);
+      
+      // Get the current week data
+      const { data: currentWeekData, error: fetchError } = await supabase
+        .from('student_progress_weeks')
+        .select('*')
+        .eq('id', weekId)
+        .single();
+      
+      if (fetchError) {
+        console.error('❌ Error fetching week data:', fetchError);
+        throw fetchError;
+      }
+      
+      console.log('📊 Current week data for special:', currentWeekData);
+      
+      // Mark current week as completed
+      const { error: updateError } = await supabase
+        .from('student_progress_weeks')
+        .update({
+          is_completed: true,
+          completed_by: (await supabase.auth.getUser()).data.user?.id,
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', weekId);
+      
+      if (updateError) {
+        console.error('❌ Error updating week:', updateError);
+        throw updateError;
+      }
+      
+      console.log('✅ Week marked as completed');
+      
+      // Create special week with same week number but marked as special
+      const specialWeekNumber = currentWeekData.week_number + 0.5; // Use decimal to indicate special
+      
+      console.log('📝 Creating special week:', specialWeekNumber);
+      
+      const { error: insertError } = await supabase
+        .from('student_progress_weeks')
+        .insert({
+          student_id: studentId,
+          week_number: Math.ceil(specialWeekNumber), // Store as same week number
+          week_theme: `${currentWeekData.week_theme} - Semana Especial`,
+          week_objectives: `Objetivos especiales de refuerzo para semana ${currentWeekData.week_number}`,
+          is_completed: false
+        });
+      
+      if (insertError) {
+        console.error('❌ Error creating special week:', insertError);
+        throw insertError;
+      }
+      
+      console.log('✅ Special week created successfully');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student-progress-weeks', studentId] });
+      toast.success('Semana especial creada');
+    },
+    onError: (error: any) => {
+      console.error('❌ Special week mutation error:', error);
+      toast.error('Error al crear semana especial');
+    }
+  });
+
   // Mark week as completed and create next week if needed
   const completeWeekMutation = useMutation({
     mutationFn: async (weekId: string) => {
@@ -606,16 +674,25 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                     </div>
                   )}
 
-                  {/* Complete Week Button */}
-                  {isEditable && !week.is_completed && isCurrent && (
-                    <Button
-                      className="w-full"
-                      variant="default"
-                      onClick={() => completeWeekMutation.mutate(week.id)}
-                    >
-                      <CheckCircle className="h-4 w-4 mr-2" />
-                      Marcar Semana como Completada
-                    </Button>
+                  {/* Complete Week Button - Only for current week */}
+                  {isEditable && isCurrent && !week.is_completed && (
+                    <div className="flex gap-2 mt-4">
+                      <Button
+                        onClick={() => completeWeekMutation.mutate(week.id)}
+                        disabled={completeWeekMutation.isPending}
+                        className="flex-1"
+                      >
+                        {completeWeekMutation.isPending ? 'Completando...' : 'Marcar Semana como Completada'}
+                      </Button>
+                      <Button
+                        onClick={() => specialWeekMutation.mutate(week.id)}
+                        disabled={specialWeekMutation.isPending}
+                        variant="secondary"
+                        className="flex-1"
+                      >
+                        {specialWeekMutation.isPending ? 'Creando...' : 'Semana Especial'}
+                      </Button>
+                    </div>
                   )}
                   
                   {/* Show who completed the week */}

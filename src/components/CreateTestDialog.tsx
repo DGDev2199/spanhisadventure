@@ -17,7 +17,7 @@ import { SaveAsTemplateDialog } from '@/components/SaveAsTemplateDialog';
 import { LoadTemplateDialog } from '@/components/LoadTemplateDialog';
 
 interface Question {
-  question_type: 'multiple_choice' | 'true_false' | 'free_text' | 'audio_listen' | 'audio_response';
+  question_type: 'multiple_choice' | 'true_false' | 'free_text' | 'text' | 'audio_listen' | 'audio_response';
   question_text: string;
   options?: string[];
   correct_answer?: string;
@@ -198,29 +198,29 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl sm:max-w-2xl md:max-w-4xl">
-        <DialogHeader>
-          <DialogTitle>Crear Nuevo Test</DialogTitle>
-          <DialogDescription>
-            Crea un test personalizado y asígnalo a tus estudiantes
-          </DialogDescription>
-        </DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Crear Nuevo Test</DialogTitle>
+            <DialogDescription>
+              Crea un test personalizado y asígnalo a tus estudiantes
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="flex gap-2 mb-4">
-          <Button variant="outline" size="sm" onClick={() => setShowLoadTemplate(true)}>
-            <FolderOpen className="h-4 w-4 mr-2" />
-            Cargar Template
-          </Button>
-          {createdTestId && (
-            <Button variant="outline" size="sm" onClick={() => setShowSaveTemplate(true)}>
-              <Save className="h-4 w-4 mr-2" />
-              Guardar como Template
+          <div className="flex gap-2 mb-4 px-6">
+            <Button variant="outline" size="sm" onClick={() => setShowLoadTemplate(true)}>
+              <FolderOpen className="h-4 w-4 mr-2" />
+              Cargar Template
             </Button>
-          )}
-        </div>
+            {createdTestId && (
+              <Button variant="outline" size="sm" onClick={() => setShowSaveTemplate(true)}>
+                <Save className="h-4 w-4 mr-2" />
+                Guardar como Template
+              </Button>
+            )}
+          </div>
 
-        <ScrollArea className="flex-1 max-h-[65vh] px-6">
-          <div className="space-y-6 pr-4">
+          <ScrollArea className="flex-1 px-6 max-h-[calc(80vh-200px)]">
+            <div className="space-y-6 pr-4">
             {/* Basic Info */}
           <div className="space-y-4">
             <div>
@@ -331,7 +331,8 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
                             <SelectItem value="multiple_choice">Opción Múltiple</SelectItem>
                             <SelectItem value="true_false">Verdadero/Falso</SelectItem>
                             <SelectItem value="free_text">Texto Libre</SelectItem>
-                            <SelectItem value="audio_listen">Audio - Escuchar y Responder</SelectItem>
+                            <SelectItem value="text">Texto Simple</SelectItem>
+                            <SelectItem value="audio_listen">Audio - Escuchar y Escribir</SelectItem>
                             <SelectItem value="audio_response">Audio - Respuesta Oral</SelectItem>
                           </SelectContent>
                         </Select>
@@ -401,17 +402,42 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
 
                       {(question.question_type === 'audio_listen' || question.question_type === 'audio_response') && (
                         <div>
-                          <Label>URL del Audio (opcional)</Label>
+                          <Label>Archivo de Audio</Label>
                           <Input
-                            value={question.audio_url || ''}
-                            onChange={(e) => updateQuestion(qIndex, 'audio_url', e.target.value)}
-                            placeholder="https://ejemplo.com/audio.mp3"
+                            type="file"
+                            accept="audio/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                try {
+                                  // Upload to Supabase storage
+                                  const fileName = `test-audio/${Date.now()}-${file.name}`;
+                                  const { data, error } = await supabase.storage
+                                    .from('student-audio-responses')
+                                    .upload(fileName, file);
+                                  
+                                  if (error) throw error;
+                                  
+                                  // Update question with storage path
+                                  updateQuestion(qIndex, 'audio_url', fileName);
+                                  toast.success('Audio subido exitosamente');
+                                } catch (error) {
+                                  console.error('Error uploading audio:', error);
+                                  toast.error('Error al subir audio');
+                                }
+                              }
+                            }}
                           />
                           <p className="text-xs text-muted-foreground mt-1">
                             {question.question_type === 'audio_listen' 
                               ? 'Audio que el estudiante escuchará antes de responder'
                               : 'Opcional: audio de referencia para la pregunta'}
                           </p>
+                          {question.audio_url && (
+                            <p className="text-xs text-green-600 mt-1">
+                              ✓ Audio cargado
+                            </p>
+                          )}
                         </div>
                       )}
 

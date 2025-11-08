@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Users, GraduationCap, UserCheck, BookOpen, Settings, Home, Calendar, Plus, FileCheck, Clock, TrendingUp } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { LogOut, Users, GraduationCap, UserCheck, BookOpen, Settings, Home, Calendar, Plus, FileCheck, Clock, TrendingUp, Trash2 } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 import { AssignTeacherTutorDialog } from '@/components/AssignTeacherTutorDialog';
 import { ChangeRoleDialog } from '@/components/ChangeRoleDialog';
@@ -20,6 +21,7 @@ import { ManageStudentScheduleDialog } from '@/components/ManageStudentScheduleD
 
 const AdminDashboard = () => {
   const { signOut } = useAuth();
+  const queryClient = useQueryClient();
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [roomsDialogOpen, setRoomsDialogOpen] = useState(false);
@@ -122,6 +124,98 @@ const AdminDashboard = () => {
       return usersWithRoles;
     }
   });
+
+  // Delete user mutation
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    try {
+      console.log('🗑️ Starting user deletion for:', userId);
+      
+      // Delete in order: student_class_schedules, student_progress_notes, student_progress_weeks, student_profiles, user_roles, profiles
+      
+      // 1. Delete student class schedules
+      const { error: schedError } = await supabase
+        .from('student_class_schedules')
+        .delete()
+        .eq('student_id', userId);
+      
+      if (schedError) console.error('Error deleting schedules:', schedError);
+      
+      // 2. Delete student progress notes (via weeks)
+      const { data: weeks } = await supabase
+        .from('student_progress_weeks')
+        .select('id')
+        .eq('student_id', userId);
+      
+      if (weeks && weeks.length > 0) {
+        const weekIds = weeks.map(w => w.id);
+        const { error: notesError } = await supabase
+          .from('student_progress_notes')
+          .delete()
+          .in('week_id', weekIds);
+        
+        if (notesError) console.error('Error deleting notes:', notesError);
+      }
+      
+      // 3. Delete student progress weeks
+      const { error: weeksError } = await supabase
+        .from('student_progress_weeks')
+        .delete()
+        .eq('student_id', userId);
+      
+      if (weeksError) console.error('Error deleting weeks:', weeksError);
+      
+      // 4. Delete student profile
+      const { error: studentError } = await supabase
+        .from('student_profiles')
+        .delete()
+        .eq('user_id', userId);
+      
+      if (studentError) console.error('Error deleting student profile:', studentError);
+      
+      // 5. Delete user roles
+      const { error: rolesError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+      
+      if (rolesError) {
+        console.error('Error deleting roles:', rolesError);
+        throw rolesError;
+      }
+      
+      // 6. Delete profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+      
+      if (profileError) {
+        console.error('Error deleting profile:', profileError);
+        throw profileError;
+      }
+      
+      console.log('✅ User deleted successfully');
+      
+      // Log audit trail
+      console.log('📋 Audit Log: User deleted', {
+        deletedUserId: userId,
+        deletedUserName: userName,
+        deletedBy: (await supabase.auth.getUser()).data.user?.id,
+        timestamp: new Date().toISOString()
+      });
+      
+      toast.success(`Usuario ${userName} eliminado exitosamente`);
+      
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['all-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+      
+    } catch (error) {
+      console.error('❌ Error deleting user:', error);
+      toast.error('Error al eliminar usuario. Verifica la consola para más detalles.');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -388,17 +482,30 @@ const AdminDashboard = () => {
                         <TableCell className="text-sm hidden md:table-cell">{user.nationality || 'N/A'}</TableCell>
                         <TableCell className="text-sm hidden lg:table-cell">{user.age || 'N/A'}</TableCell>
                         <TableCell>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedUser(user);
-                              setRoleDialogOpen(true);
-                            }}
-                          >
-                            <Settings className="h-4 w-4 sm:mr-1" />
-                            <span className="hidden sm:inline">Change</span>
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setRoleDialogOpen(true);
+                              }}
+                            >
+                              <Settings className="h-4 w-4 sm:mr-1" />
+                              <span className="hidden sm:inline">Change</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => {
+                                if (window.confirm(`¿Estás seguro de eliminar a ${user.full_name}? Esta acción no se puede deshacer y eliminará:\n\n- Perfil del usuario\n- Todos sus roles\n- Datos de estudiante (si aplica)\n- Todas sus asignaciones\n\n¿Continuar?`)) {
+                                  handleDeleteUser(user.id, user.full_name);
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

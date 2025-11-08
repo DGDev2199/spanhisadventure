@@ -87,6 +87,8 @@ export function ReviewPlacementTestDialog({
 
   // Generate signed URLs for audio questions so they are always playable
   const [signedQuestionAudio, setSignedQuestionAudio] = useState<Record<string, string>>({});
+  const [signedStudentAudio, setSignedStudentAudio] = useState<Record<string, string>>({});
+  
   useEffect(() => {
     const generate = async () => {
       if (!questions || !open) return;
@@ -114,6 +116,35 @@ export function ReviewPlacementTestDialog({
     };
     generate();
   }, [questions, open]);
+
+  // Generate signed URLs for student audio responses
+  useEffect(() => {
+    const generate = async () => {
+      if (!studentAnswers || !open) return;
+      const entries: Record<string, string> = {};
+      for (const [questionId, answer] of Object.entries(studentAnswers)) {
+        if (answer && typeof answer === 'string' && answer.includes('student-audio-responses')) {
+          const extractPath = (urlOrPath: string) => {
+            if (!urlOrPath) return null;
+            if (!urlOrPath.startsWith('http')) return urlOrPath;
+            const marker = '/student-audio-responses/';
+            const idx = urlOrPath.indexOf(marker);
+            if (idx === -1) return null;
+            return urlOrPath.substring(idx + marker.length);
+          };
+          const path = extractPath(answer);
+          if (path) {
+            const { data } = await supabase.storage
+              .from('student-audio-responses')
+              .createSignedUrl(path, 3600);
+            if (data?.signedUrl) entries[questionId] = data.signedUrl;
+          }
+        }
+      }
+      setSignedStudentAudio(entries);
+    };
+    generate();
+  }, [studentAnswers, open]);
 
   const assignLevelMutation = useMutation({
     mutationFn: async ({ level, week, feedback }: { level: string; week: number; feedback: string }) => {

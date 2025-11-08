@@ -216,18 +216,26 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
       
       console.log('✅ Week marked as completed');
       
-      // Create special week with same week number but marked as special
-      const specialWeekNumber = currentWeekData.week_number + 0.5; // Use decimal to indicate special
+      // Create special week - use a decimal-like identifier in the theme
+      console.log('📝 Creating special week for week:', currentWeekData.week_number);
       
-      console.log('📝 Creating special week:', specialWeekNumber);
+      // Check how many special weeks exist for this week number
+      const { data: existingSpecialWeeks } = await supabase
+        .from('student_progress_weeks')
+        .select('week_number, week_theme')
+        .eq('student_id', studentId)
+        .eq('week_number', currentWeekData.week_number)
+        .ilike('week_theme', '%Especial%');
+      
+      const specialCount = (existingSpecialWeeks?.length || 0) + 1;
       
       const { error: insertError } = await supabase
         .from('student_progress_weeks')
         .insert({
           student_id: studentId,
-          week_number: Math.ceil(specialWeekNumber), // Store as same week number
-          week_theme: `${currentWeekData.week_theme} - Semana Especial`,
-          week_objectives: `Objetivos especiales de refuerzo para semana ${currentWeekData.week_number}`,
+          week_number: currentWeekData.week_number, // Same week number
+          week_theme: `${currentWeekData.week_theme} - Semana Especial ${specialCount}`,
+          week_objectives: `Objetivos especiales de refuerzo para semana ${currentWeekData.week_number} (Especial ${specialCount})`,
           is_completed: false
         });
       

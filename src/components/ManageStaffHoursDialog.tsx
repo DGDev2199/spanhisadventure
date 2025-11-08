@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Clock, RotateCcw, Save, TrendingUp, History } from 'lucide-react';
+import { Clock, RotateCcw, Save, TrendingUp, History, Check, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ViewExtraHoursDialog } from '@/components/ViewExtraHoursDialog';
 
@@ -20,6 +20,70 @@ export function ManageStaffHoursDialog({ open, onOpenChange }: ManageStaffHoursD
   const queryClient = useQueryClient();
   const [adjustments, setAdjustments] = useState<Record<string, number>>({});
   const [viewExtraHoursUserId, setViewExtraHoursUserId] = useState<string | null>(null);
+  const [showPendingHours, setShowPendingHours] = useState(false);
+
+  // Fetch pending extra hours for admin
+  const { data: pendingHours, isLoading: pendingLoading } = useQuery({
+    queryKey: ['pending-extra-hours'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('extra_hours')
+        .select(`
+          *,
+          user_profile:profiles!extra_hours_user_id_fkey(full_name, email),
+          created_by_profile:profiles!extra_hours_created_by_fkey(full_name)
+        `)
+        .eq('approved', false)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: open,
+  });
+
+  // Mutation to approve pending hours
+  const approvePendingMutation = useMutation({
+    mutationFn: async (extraHourId: string) => {
+      const { error } = await supabase
+        .from('extra_hours')
+        .update({
+          approved: true,
+          approved_by: (await supabase.auth.getUser()).data.user?.id,
+          approved_at: new Date().toISOString(),
+        })
+        .eq('id', extraHourId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pending-extra-hours'] });
+      queryClient.invalidateQueries({ queryKey: ['staff-hours-management'] });
+      toast.success('Horas extras aprobadas');
+    },
+    onError: (error: any) => {
+      toast.error(`Error: ${error.message}`);
+    },
+  });
+
+  // Mutation to reject/delete pending hours
+  const rejectPendingMutation = useMutation({
+    mutationFn: async (extraHourId: string) => {
+      const { error } = await supabase
+        .from('extra_hours')
+        .delete()
+        .eq('id', extraHourId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pending-extra-hours'] });
+      toast.success('Solicitud rechazada');
+    },
+    onError: (error: any) => {
+      toast.error(`Error: ${error.message}`);
+    },
+  });
 
   // Fetch all staff (teachers and tutors) with their hours
   const { data: staffData, isLoading } = useQuery({
@@ -176,6 +240,94 @@ export function ManageStaffHoursDialog({ open, onOpenChange }: ManageStaffHoursD
             Las horas se calculan automáticamente desde el horario semanal. Puedes hacer ajustes manuales o resetear.
           </DialogDescription>
         </DialogHeader>
+
+        {/* Pending Hours Alert */}
+        {pendingHours && pendingHours.length > 0 && (
+          <Alert className="flex-shrink-0 border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20">
+            <AlertDescription className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-yellow-600" />
+                <span className="font-medium text-yellow-800 dark:text-yellow-200">
+                  Tienes {pendingHours.length} solicitud{pendingHours.length !== 1 ? 'es' : ''} de horas extras pendiente{pendingHours.length !== 1 ? 's' : ''} de aprobación
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPendingHours(!showPendingHours)}
+              >
+                {showPendingHours ? 'Ocultar' : 'Ver Pendientes'}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {/* Pending Hours Table */}
+        {showPendingHours && pendingHours && pendingHours.length > 0 && (
+          <div className="flex-shrink-0 border rounded-lg p-4 bg-muted/30">
+            <h3 className="font-semibold mb-3">Solicitudes Pendientes de Aprobación</h3>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Usuario</TableHead>
+                  <TableHead>Solicitado por</TableHead>
+                  <TableHead className="text-right">Horas</TableHead>
+                  <TableHead>Justificación</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pendingHours.map((pending: any) => (
+                  <TableRow key={pending.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{pending.user_profile?.full_name}</div>
+                        <div className="text-xs text-muted-foreground">{pending.user_profile?.email}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {pending.created_by_profile?.full_name}
+                    </TableCell>
+                    <TableCell className="text-right font-bold text-lg">
+                      {pending.hours}h
+                    </TableCell>
+                    <TableCell className="max-w-xs">
+                      <p className="text-sm line-clamp-2">{pending.justification}</p>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {new Date(pending.created_at).toLocaleDateString('es-ES')}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          onClick={() => approvePendingMutation.mutate(pending.id)}
+                          disabled={approvePendingMutation.isPending}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          Aprobar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => {
+                            if (window.confirm('¿Rechazar esta solicitud de horas extras?')) {
+                              rejectPendingMutation.mutate(pending.id);
+                            }
+                          }}
+                          disabled={rejectPendingMutation.isPending}
+                        >
+                          Rechazar
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
         <Alert className="flex-shrink-0">
           <TrendingUp className="h-4 w-4" />

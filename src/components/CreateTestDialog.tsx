@@ -198,7 +198,7 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Crear Nuevo Test</DialogTitle>
             <DialogDescription>
@@ -206,7 +206,7 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex gap-2 mb-4 px-6">
+          <div className="flex gap-2 px-6 pb-2">
             <Button variant="outline" size="sm" onClick={() => setShowLoadTemplate(true)}>
               <FolderOpen className="h-4 w-4 mr-2" />
               Cargar Template
@@ -219,10 +219,10 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
             )}
           </div>
 
-          <ScrollArea className="flex-1 px-6 max-h-[calc(80vh-200px)]">
-            <div className="space-y-6 pr-4">
-            {/* Basic Info */}
-          <div className="space-y-4">
+          <div className="flex-1 overflow-y-auto px-6">
+            <div className="space-y-6 pb-4">
+              {/* Basic Info */}
+              <div className="space-y-4">
             <div>
               <Label>Tipo de Test *</Label>
               <RadioGroup value={testType} onValueChange={(value: 'regular' | 'final') => setTestType(value)}>
@@ -305,15 +305,15 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
 
           {/* Questions */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label className="text-lg">Preguntas</Label>
-              <Button onClick={addQuestion} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Agregar Pregunta
-              </Button>
-            </div>
+              <div className="flex items-center justify-between">
+                <Label className="text-lg">Preguntas</Label>
+                <Button onClick={addQuestion} size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar Pregunta
+                </Button>
+              </div>
 
-            {questions.map((question, qIndex) => (
+              {questions.map((question, qIndex) => (
               <Card key={qIndex}>
                 <CardContent className="pt-6 space-y-4">
                   <div className="flex items-start justify-between gap-4">
@@ -462,19 +462,19 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
                   </div>
                 </CardContent>
               </Card>
-            ))}
+              ))}
 
-            {questions.length === 0 && (
-              <p className="text-center text-muted-foreground py-8">
-                No hay preguntas aún. Haz clic en "Agregar Pregunta" para comenzar.
-              </p>
-            )}
+              {questions.length === 0 && (
+                <p className="text-center text-muted-foreground py-8">
+                  No hay preguntas aún. Haz clic en "Agregar Pregunta" para comenzar.
+                </p>
+              )}
+            </div>
           </div>
-          </div>
-        </ScrollArea>
+        </div>
 
-        {/* Submit */}
-        <div className="flex flex-col-reverse sm:flex-row gap-2 px-6 pb-6">
+        {/* Submit Buttons - Fixed at bottom */}
+        <div className="flex flex-col-reverse sm:flex-row gap-2 px-6 py-4 border-t bg-background">
           <Button variant="outline" onClick={() => onOpenChange(false)} className="sm:w-auto">
             Cancelar
           </Button>

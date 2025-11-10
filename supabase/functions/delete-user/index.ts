@@ -1,0 +1,61 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
+    const { userId } = await req.json()
+
+    if (!userId) {
+      return new Response(
+        JSON.stringify({ error: 'userId is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log('Deleting user from auth:', userId)
+
+    // Delete from auth.users using admin client
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId)
+
+    if (authError) {
+      console.error('Error deleting from auth.users:', authError)
+      return new Response(
+        JSON.stringify({ error: authError.message }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    console.log('User deleted successfully from auth')
+
+    return new Response(
+      JSON.stringify({ success: true }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  } catch (error) {
+    console.error('Error in delete-user function:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+    return new Response(
+      JSON.stringify({ error: errorMessage }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
+  }
+})

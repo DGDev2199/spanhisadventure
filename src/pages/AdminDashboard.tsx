@@ -126,19 +126,17 @@ const AdminDashboard = () => {
   });
 
   // Delete user mutation
-  const handleDeleteUser = async (userId: string, userName: string) => {
-    try {
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
       console.log('🗑️ Starting user deletion for:', userId);
       
       // Delete in order: student_class_schedules, student_progress_notes, student_progress_weeks, student_profiles, user_roles, profiles
       
       // 1. Delete student class schedules
-      const { error: schedError } = await supabase
+      await supabase
         .from('student_class_schedules')
         .delete()
         .eq('student_id', userId);
-      
-      if (schedError) console.error('Error deleting schedules:', schedError);
       
       // 2. Delete student progress notes (via weeks)
       const { data: weeks } = await supabase
@@ -148,29 +146,23 @@ const AdminDashboard = () => {
       
       if (weeks && weeks.length > 0) {
         const weekIds = weeks.map(w => w.id);
-        const { error: notesError } = await supabase
+        await supabase
           .from('student_progress_notes')
           .delete()
           .in('week_id', weekIds);
-        
-        if (notesError) console.error('Error deleting notes:', notesError);
       }
       
       // 3. Delete student progress weeks
-      const { error: weeksError } = await supabase
+      await supabase
         .from('student_progress_weeks')
         .delete()
         .eq('student_id', userId);
       
-      if (weeksError) console.error('Error deleting weeks:', weeksError);
-      
       // 4. Delete student profile
-      const { error: studentError } = await supabase
+      await supabase
         .from('student_profiles')
         .delete()
         .eq('user_id', userId);
-      
-      if (studentError) console.error('Error deleting student profile:', studentError);
       
       // 5. Delete user roles
       const { error: rolesError } = await supabase
@@ -178,10 +170,7 @@ const AdminDashboard = () => {
         .delete()
         .eq('user_id', userId);
       
-      if (rolesError) {
-        console.error('Error deleting roles:', rolesError);
-        throw rolesError;
-      }
+      if (rolesError) throw rolesError;
       
       // 6. Delete profile
       const { error: profileError } = await supabase
@@ -189,31 +178,42 @@ const AdminDashboard = () => {
         .delete()
         .eq('id', userId);
       
-      if (profileError) {
-        console.error('Error deleting profile:', profileError);
-        throw profileError;
-      }
+      if (profileError) throw profileError;
       
-      console.log('✅ User deleted successfully');
-      
-      // Log audit trail
-      console.log('📋 Audit Log: User deleted', {
-        deletedUserId: userId,
-        deletedUserName: userName,
-        deletedBy: (await supabase.auth.getUser()).data.user?.id,
-        timestamp: new Date().toISOString()
+      // 7. Delete from auth.users using edge function
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ userId }),
       });
       
-      toast.success(`Usuario ${userName} eliminado exitosamente`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Error deleting user from auth');
+      }
       
-      // Invalidate queries
+      console.log('✅ User deleted successfully from all tables including auth');
+      return userId;
+    },
+    onSuccess: (userId) => {
+      toast.success('Usuario eliminado exitosamente');
       queryClient.invalidateQueries({ queryKey: ['students'] });
       queryClient.invalidateQueries({ queryKey: ['all-users'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
-      
-    } catch (error) {
+    },
+    onError: (error) => {
       console.error('❌ Error deleting user:', error);
-      toast.error('Error al eliminar usuario. Verifica la consola para más detalles.');
+      toast.error('Error al eliminar usuario: ' + error.message);
+    }
+  });
+
+  const handleDeleteUser = (userId: string, userName: string) => {
+    if (window.confirm(`¿Estás seguro de eliminar a ${userName}? Esta acción no se puede deshacer.`)) {
+      deleteUserMutation.mutate(userId);
     }
   };
 

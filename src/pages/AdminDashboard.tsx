@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Users, GraduationCap, UserCheck, BookOpen, Settings, Home, Calendar, Plus, FileCheck, Clock, TrendingUp, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { LogOut, Users, GraduationCap, UserCheck, BookOpen, Settings, Home, Calendar, Plus, FileCheck, Clock, TrendingUp, Trash2, RotateCcw } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -34,6 +35,7 @@ const AdminDashboard = () => {
   const [progressStudent, setProgressStudent] = useState<{ id: string; name: string } | null>(null);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [scheduleStudent, setScheduleStudent] = useState<{ id: string; name: string } | null>(null);
+  const [resetScheduleDialogOpen, setResetScheduleDialogOpen] = useState(false);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
@@ -217,6 +219,45 @@ const AdminDashboard = () => {
     }
   };
 
+  // Reset schedules mutation
+  const resetSchedulesMutation = useMutation({
+    mutationFn: async () => {
+      console.log('🔄 Resetting all schedules...');
+      
+      // Delete all schedule events
+      const { error: eventsError } = await supabase
+        .from('schedule_events')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      
+      if (eventsError) throw eventsError;
+      
+      // Delete all student class schedules
+      const { error: classError } = await supabase
+        .from('student_class_schedules')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      
+      if (classError) throw classError;
+      
+      console.log('✅ All schedules reset successfully');
+    },
+    onSuccess: () => {
+      toast.success('Todos los horarios han sido reiniciados');
+      queryClient.invalidateQueries({ queryKey: ['schedule-events'] });
+      queryClient.invalidateQueries({ queryKey: ['student-class-schedules'] });
+      queryClient.invalidateQueries({ queryKey: ['class-schedule'] });
+      queryClient.invalidateQueries({ queryKey: ['tutoring-schedule'] });
+      queryClient.invalidateQueries({ queryKey: ['my-schedule'] });
+      queryClient.invalidateQueries({ queryKey: ['staff-hours'] });
+      setResetScheduleDialogOpen(false);
+    },
+    onError: (error) => {
+      console.error('❌ Error resetting schedules:', error);
+      toast.error('Error al reiniciar horarios: ' + error.message);
+    }
+  });
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -265,6 +306,11 @@ const AdminDashboard = () => {
               <Clock className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Gestionar Horas</span>
               <span className="sm:hidden">Horas</span>
+            </Button>
+            <Button onClick={() => setResetScheduleDialogOpen(true)} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm border-destructive text-destructive hover:bg-destructive/10">
+              <RotateCcw className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Reiniciar Horarios</span>
+              <span className="sm:hidden">Reiniciar</span>
             </Button>
             <Button onClick={() => setCreateEventDialogOpen(true)} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
               <Calendar className="h-4 w-4 mr-2" />
@@ -591,6 +637,29 @@ const AdminDashboard = () => {
           studentName={scheduleStudent.name}
         />
       )}
+
+      {/* Reset Schedules Confirmation Dialog */}
+      <AlertDialog open={resetScheduleDialogOpen} onOpenChange={setResetScheduleDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Reiniciar todos los horarios?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará TODOS los eventos del horario semanal y TODOS los horarios de clases y tutorías asignados a estudiantes.
+              Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => resetSchedulesMutation.mutate()}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={resetSchedulesMutation.isPending}
+            >
+              {resetSchedulesMutation.isPending ? 'Reiniciando...' : 'Sí, reiniciar todo'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

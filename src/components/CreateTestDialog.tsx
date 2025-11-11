@@ -418,8 +418,13 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
                                   
                                   if (error) throw error;
                                   
-                                  // Update question with storage path
-                                  updateQuestion(qIndex, 'audio_url', fileName);
+                                  // Get signed URL for playback
+                                  const { data: urlData } = await supabase.storage
+                                    .from('student-audio-responses')
+                                    .createSignedUrl(fileName, 3600);
+                                  
+                                  // Update question with signed URL
+                                  updateQuestion(qIndex, 'audio_url', urlData?.signedUrl || fileName);
                                   toast.success('Audio subido exitosamente');
                                 } catch (error) {
                                   console.error('Error uploading audio:', error);
@@ -434,9 +439,15 @@ export const CreateTestDialog = ({ open, onOpenChange, students }: CreateTestDia
                               : 'Opcional: audio de referencia para la pregunta'}
                           </p>
                           {question.audio_url && (
-                            <p className="text-xs text-green-600 mt-1">
-                              ✓ Audio cargado
-                            </p>
+                            <div className="mt-2 space-y-2">
+                              <p className="text-xs text-green-600">
+                                ✓ Audio cargado
+                              </p>
+                              <audio controls className="w-full">
+                                <source src={question.audio_url} type="audio/mpeg" />
+                                Tu navegador no soporta el elemento de audio.
+                              </audio>
+                            </div>
                           )}
                         </div>
                       )}

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, GraduationCap, MessageSquare, TrendingUp, CalendarClock } from 'lucide-react';
+import { LogOut, GraduationCap, MessageSquare, TrendingUp, CalendarClock, Users } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useState } from 'react';
@@ -13,6 +13,7 @@ import { StaffHoursCard } from '@/components/StaffHoursCard';
 import { TeacherTutorChatDialog } from '@/components/TeacherTutorChatDialog';
 import { StudentProgressView } from '@/components/StudentProgressView';
 import { MyScheduleDialog } from '@/components/MyScheduleDialog';
+import { AssignMultipleStudentsDialog } from '@/components/AssignMultipleStudentsDialog';
 
 const TutorDashboard = () => {
   const { user, signOut } = useAuth();
@@ -21,6 +22,7 @@ const TutorDashboard = () => {
   const [progressDialogOpen, setProgressDialogOpen] = useState(false);
   const [progressStudent, setProgressStudent] = useState<{ id: string; name: string } | null>(null);
   const [myScheduleOpen, setMyScheduleOpen] = useState(false);
+  const [assignMultipleOpen, setAssignMultipleOpen] = useState(false);
 
   const { data: myStudents } = useQuery({
     queryKey: ['tutor-students', user?.id],
@@ -86,6 +88,15 @@ const TutorDashboard = () => {
             </div>
           </div>
           <div className="flex gap-2">
+            <Button
+              onClick={() => setAssignMultipleOpen(true)}
+              variant="outline"
+              size="sm"
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+            >
+              <Users className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Asignar Grupo</span>
+            </Button>
             <Button
               onClick={() => setMyScheduleOpen(true)}
               variant="outline"
@@ -252,6 +263,14 @@ const TutorDashboard = () => {
           onOpenChange={setMyScheduleOpen}
           userId={user.id}
           userRole="tutor"
+        />
+      )}
+
+      {user?.id && (
+        <AssignMultipleStudentsDialog
+          open={assignMultipleOpen}
+          onOpenChange={setAssignMultipleOpen}
+          teacherId={user.id}
         />
       )}
     </div>

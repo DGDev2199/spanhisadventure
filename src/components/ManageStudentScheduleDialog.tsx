@@ -35,7 +35,7 @@ export function ManageStudentScheduleDialog({
 }: ManageStudentScheduleDialogProps) {
   const queryClient = useQueryClient();
   const [scheduleType, setScheduleType] = useState<"class" | "tutoring">("class");
-  const [dayOfWeek, setDayOfWeek] = useState<number>(1);
+  const [selectedDays, setSelectedDays] = useState<number[]>([1]);
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
   const [staffId, setStaffId] = useState("");
@@ -120,24 +120,29 @@ export function ManageStudentScheduleDialog({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No user");
 
-      const scheduleData: any = {
-        student_id: studentId,
-        schedule_type: scheduleType,
-        day_of_week: dayOfWeek,
-        start_time: startTime,
-        end_time: endTime,
-        created_by: user.id,
-      };
+      // Create one schedule for each selected day
+      const schedulesToCreate = selectedDays.map(day => {
+        const scheduleData: any = {
+          student_id: studentId,
+          schedule_type: scheduleType,
+          day_of_week: day,
+          start_time: startTime,
+          end_time: endTime,
+          created_by: user.id,
+        };
 
-      if (scheduleType === "class") {
-        scheduleData.teacher_id = staffId;
-      } else {
-        scheduleData.tutor_id = staffId;
-      }
+        if (scheduleType === "class") {
+          scheduleData.teacher_id = staffId;
+        } else {
+          scheduleData.tutor_id = staffId;
+        }
+
+        return scheduleData;
+      });
 
       const { error } = await supabase
         .from("student_class_schedules")
-        .insert(scheduleData);
+        .insert(schedulesToCreate);
 
       if (error) throw error;
     },
@@ -147,8 +152,9 @@ export function ManageStudentScheduleDialog({
       queryClient.invalidateQueries({ queryKey: ["tutoring-schedule"] });
       queryClient.invalidateQueries({ queryKey: ["my-schedule"] });
       queryClient.invalidateQueries({ queryKey: ["staff-hours"] });
-      toast.success("Horario agregado exitosamente");
+      toast.success(`Horario${selectedDays.length > 1 ? 's' : ''} agregado${selectedDays.length > 1 ? 's' : ''} exitosamente`);
       setStaffId("");
+      setSelectedDays([1]);
       setStartTime("09:00");
       setEndTime("10:00");
     },
@@ -224,20 +230,38 @@ export function ManageStudentScheduleDialog({
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Día</Label>
-                  <Select value={String(dayOfWeek)} onValueChange={(v) => setDayOfWeek(Number(v))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {DAYS.map((day) => (
-                        <SelectItem key={day.value} value={String(day.value)}>
+                <div className="space-y-2 col-span-2">
+                  <Label>Días de la Semana * (selecciona uno o varios)</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 border rounded-lg p-3">
+                    {DAYS.map((day) => (
+                      <div key={day.value} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={`day-${day.value}`}
+                          checked={selectedDays.includes(day.value)}
+                          onChange={() => {
+                            setSelectedDays(prev =>
+                              prev.includes(day.value)
+                                ? prev.filter(d => d !== day.value)
+                                : [...prev, day.value]
+                            );
+                          }}
+                          className="rounded"
+                        />
+                        <label
+                          htmlFor={`day-${day.value}`}
+                          className="text-sm font-medium cursor-pointer"
+                        >
                           {day.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                  {selectedDays.length > 0 && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {selectedDays.length} día{selectedDays.length > 1 ? 's' : ''} seleccionado{selectedDays.length > 1 ? 's' : ''}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -275,9 +299,9 @@ export function ManageStudentScheduleDialog({
                 </div>
               </div>
 
-              <Button onClick={handleAddSchedule} disabled={addScheduleMutation.isPending} className="w-full">
+              <Button onClick={handleAddSchedule} disabled={addScheduleMutation.isPending || selectedDays.length === 0} className="w-full">
                 <Plus className="h-4 w-4 mr-2" />
-                Agregar Horario
+                Agregar Horario{selectedDays.length > 1 ? 's' : ''}
               </Button>
             </CardContent>
           </Card>

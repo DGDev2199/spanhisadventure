@@ -262,25 +262,25 @@ const AdminDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-primary text-white">
-        <div className="container mx-auto px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
+      <header className="border-b bg-gradient-primary shadow-md safe-top">
+        <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 sm:gap-4">
-            <img src={logo} alt="Spanish Adventure" className="h-10 sm:h-12" />
-            <div>
-              <h1 className="text-base sm:text-xl font-bold">Spanish Adventure</h1>
-              <p className="text-xs sm:text-sm text-white/80">Admin Dashboard</p>
+            <img src={logo} alt="Spanish Adventure" className="h-10 sm:h-12 lg:h-14" />
+            <div className="min-w-0">
+              <h1 className="text-base sm:text-xl lg:text-2xl font-bold text-white truncate">Spanish Adventure</h1>
+              <p className="text-xs sm:text-sm text-white/90">Administrador</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <NotificationBell />
             <Button
               onClick={signOut}
               variant="outline"
               size="sm"
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
             >
               <LogOut className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Sign Out</span>
+              <span className="hidden sm:inline">Cerrar Sesión</span>
             </Button>
           </div>
         </div>

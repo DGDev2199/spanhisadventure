@@ -207,33 +207,35 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <img src={logo} alt="Spanish Adventure" className="h-20 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold text-white mb-2">Spanish Adventure</h1>
-          <p className="text-white/90">Your journey to fluency starts here</p>
+    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <div className="w-full max-w-md animate-fade-in">
+        {/* Logo and Title */}
+        <div className="text-center mb-6 sm:mb-8">
+          <img src={logo} alt="Spanish Adventure" className="h-16 sm:h-20 mx-auto mb-3 sm:mb-4" />
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">Spanish Adventure</h1>
+          <p className="text-sm sm:text-base text-white/90">Tu aventura hacia la fluidez comienza aquí</p>
         </div>
 
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Compass className="h-5 w-5 text-primary" />
-              Welcome
+        {/* Auth Card */}
+        <Card className="shadow-xl border-0">
+          <CardHeader className="space-y-1 pb-4">
+            <CardTitle className="flex items-center gap-2 text-xl sm:text-2xl">
+              <Compass className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+              Bienvenido
             </CardTitle>
-            <CardDescription>Sign in to your account or create a new one</CardDescription>
+            <CardDescription className="text-sm">Inicia sesión o crea una cuenta nueva</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pb-6">
             <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Register</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6 h-10 sm:h-11">
+                <TabsTrigger value="login" className="text-sm sm:text-base">Iniciar Sesión</TabsTrigger>
+                <TabsTrigger value="register" className="text-sm sm:text-base">Registrarse</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
+                <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label htmlFor="login-email" className="text-sm">Email</Label>
                     <Input
                       id="login-email"
                       type="email"
@@ -244,17 +246,17 @@ const Auth = () => {
                         setErrors(prev => ({ ...prev, email: '' }));
                       }}
                       required
-                      className={errors.email ? 'border-destructive' : ''}
+                      className={`h-10 sm:h-11 ${errors.email ? 'border-destructive' : ''}`}
                     />
                     {errors.email && (
-                      <p className="text-sm text-destructive flex items-center gap-1">
+                      <p className="text-xs sm:text-sm text-destructive flex items-center gap-1">
                         <AlertCircle className="h-3 w-3" />
                         {errors.email}
                       </p>
                     )}
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="login-password">Contraseña</Label>
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label htmlFor="login-password" className="text-sm">Contraseña</Label>
                     <Input
                       id="login-password"
                       type="password"
@@ -265,10 +267,10 @@ const Auth = () => {
                       }}
                       required
                       minLength={6}
-                      className={errors.password ? 'border-destructive' : ''}
+                      className={`h-10 sm:h-11 ${errors.password ? 'border-destructive' : ''}`}
                     />
                     {errors.password && (
-                      <p className="text-sm text-destructive flex items-center gap-1">
+                      <p className="text-xs sm:text-sm text-destructive flex items-center gap-1">
                         <AlertCircle className="h-3 w-3" />
                         {errors.password}
                       </p>
@@ -277,16 +279,16 @@ const Auth = () => {
                       Mínimo 6 caracteres
                     </p>
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button type="submit" className="w-full h-10 sm:h-11 touch-target" disabled={loading}>
                     {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
                   </Button>
                   
-                  <div className="relative">
+                  <div className="relative my-4">
                     <div className="absolute inset-0 flex items-center">
                       <span className="w-full border-t" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-background px-2 text-muted-foreground">
+                      <span className="bg-card px-2 text-muted-foreground">
                         O continúa con
                       </span>
                     </div>
@@ -295,7 +297,7 @@ const Auth = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full"
+                    className="w-full h-10 sm:h-11 touch-target"
                     onClick={handleGoogleLogin}
                     disabled={loading}
                   >
@@ -323,9 +325,9 @@ const Auth = () => {
               </TabsContent>
 
               <TabsContent value="register">
-                <form onSubmit={handleRegister} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="register-name">Nombre Completo *</Label>
+                <form onSubmit={handleRegister} className="space-y-3 sm:space-y-4 max-h-[60vh] sm:max-h-none overflow-y-auto custom-scrollbar pr-1">
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label htmlFor="register-name" className="text-sm">Nombre Completo *</Label>
                     <Input
                       id="register-name"
                       type="text"
@@ -336,17 +338,17 @@ const Auth = () => {
                         setErrors(prev => ({ ...prev, fullName: '' }));
                       }}
                       required
-                      className={errors.fullName ? 'border-destructive' : ''}
+                      className={`h-10 sm:h-11 ${errors.fullName ? 'border-destructive' : ''}`}
                     />
                     {errors.fullName && (
-                      <p className="text-sm text-destructive flex items-center gap-1">
+                      <p className="text-xs sm:text-sm text-destructive flex items-center gap-1">
                         <AlertCircle className="h-3 w-3" />
                         {errors.fullName}
                       </p>
                     )}
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-email">Email *</Label>
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label htmlFor="register-email" className="text-sm">Email *</Label>
                     <Input
                       id="register-email"
                       type="email"
@@ -357,17 +359,17 @@ const Auth = () => {
                         setErrors(prev => ({ ...prev, email: '' }));
                       }}
                       required
-                      className={errors.email ? 'border-destructive' : ''}
+                      className={`h-10 sm:h-11 ${errors.email ? 'border-destructive' : ''}`}
                     />
                     {errors.email && (
-                      <p className="text-sm text-destructive flex items-center gap-1">
+                      <p className="text-xs sm:text-sm text-destructive flex items-center gap-1">
                         <AlertCircle className="h-3 w-3" />
                         {errors.email}
                       </p>
                     )}
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-password">Contraseña *</Label>
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label htmlFor="register-password" className="text-sm">Contraseña *</Label>
                     <Input
                       id="register-password"
                       type="password"
@@ -378,10 +380,10 @@ const Auth = () => {
                       }}
                       required
                       minLength={6}
-                      className={errors.password ? 'border-destructive' : ''}
+                      className={`h-10 sm:h-11 ${errors.password ? 'border-destructive' : ''}`}
                     />
                     {errors.password && (
-                      <p className="text-sm text-destructive flex items-center gap-1">
+                      <p className="text-xs sm:text-sm text-destructive flex items-center gap-1">
                         <AlertCircle className="h-3 w-3" />
                         {errors.password}
                       </p>
@@ -390,9 +392,9 @@ const Auth = () => {
                       Mínimo 6 caracteres
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="register-age">Edad</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="register-age" className="text-sm">Edad</Label>
                       <Input
                         id="register-age"
                         type="number"
@@ -401,49 +403,53 @@ const Auth = () => {
                         onChange={(e) => setRegisterAge(e.target.value)}
                         min="1"
                         max="120"
+                        className="h-10 sm:h-11"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="register-nationality">Nacionalidad</Label>
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="register-nationality" className="text-sm">Nacionalidad</Label>
                       <Input
                         id="register-nationality"
                         type="text"
                         placeholder="España"
                         value={registerNationality}
                         onChange={(e) => setRegisterNationality(e.target.value)}
+                        className="h-10 sm:h-11"
                       />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-allergies">Alergias</Label>
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label htmlFor="register-allergies" className="text-sm">Alergias</Label>
                     <Input
                       id="register-allergies"
                       type="text"
                       placeholder="Ninguna"
                       value={registerAllergies}
                       onChange={(e) => setRegisterAllergies(e.target.value)}
+                      className="h-10 sm:h-11"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="register-diet">Preferencias Dietéticas</Label>
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label htmlFor="register-diet" className="text-sm">Preferencias Dietéticas</Label>
                     <Input
                       id="register-diet"
                       type="text"
                       placeholder="Vegetariano"
                       value={registerDiet}
                       onChange={(e) => setRegisterDiet(e.target.value)}
+                      className="h-10 sm:h-11"
                     />
                   </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button type="submit" className="w-full h-10 sm:h-11 touch-target" disabled={loading}>
                     {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
                   </Button>
 
-                  <div className="relative">
+                  <div className="relative my-4">
                     <div className="absolute inset-0 flex items-center">
                       <span className="w-full border-t" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-background px-2 text-muted-foreground">
+                      <span className="bg-card px-2 text-muted-foreground">
                         O continúa con
                       </span>
                     </div>
@@ -452,7 +458,7 @@ const Auth = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="w-full"
+                    className="w-full h-10 sm:h-11 touch-target"
                     onClick={handleGoogleLogin}
                     disabled={loading}
                   >

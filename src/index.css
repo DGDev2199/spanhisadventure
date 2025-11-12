@@ -8,59 +8,65 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Spanish Adventure Brand Colors */
-    --background: 0 0% 100%;
-    --foreground: 220 55% 18%;
+    /* Spanish Adventure Brand Colors - Optimized for mobile and accessibility */
+    --background: 0 0% 98%;
+    --foreground: 220 55% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 55% 18%;
+    --card-foreground: 220 55% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 55% 18%;
+    --popover-foreground: 220 55% 15%;
 
     /* Navy Blue - Primary Brand Color */
-    --primary: 220 75% 25%;
+    --primary: 220 80% 28%;
     --primary-foreground: 0 0% 100%;
-    --primary-light: 220 65% 45%;
+    --primary-light: 220 70% 48%;
+    --primary-dark: 220 85% 18%;
     
     /* Bold Red - Accent */
-    --secondary: 355 85% 50%;
+    --secondary: 355 90% 55%;
     --secondary-foreground: 0 0% 100%;
+    --secondary-light: 355 80% 65%;
 
     /* Bright Yellow - Highlight */
-    --accent: 48 100% 50%;
-    --accent-foreground: 220 55% 18%;
+    --accent: 45 100% 55%;
+    --accent-foreground: 220 55% 15%;
+    --accent-light: 45 100% 65%;
 
-    --muted: 220 20% 96%;
-    --muted-foreground: 220 15% 45%;
+    --muted: 220 15% 95%;
+    --muted-foreground: 220 20% 50%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 20% 88%;
-    --input: 220 20% 88%;
-    --ring: 220 75% 25%;
+    --border: 220 15% 90%;
+    --input: 220 15% 92%;
+    --ring: 220 80% 28%;
 
     --radius: 0.75rem;
 
-    /* Gradients */
-    --gradient-hero: linear-gradient(135deg, hsl(220 75% 25%), hsl(220 65% 45%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(220 20% 98%));
+    /* Gradients - Enhanced for visual impact */
+    --gradient-hero: linear-gradient(135deg, hsl(220 80% 28%), hsl(220 70% 48%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(220 10% 97%));
+    --gradient-accent: linear-gradient(120deg, hsl(355 90% 55%), hsl(355 80% 65%));
+    --gradient-primary: linear-gradient(120deg, hsl(220 80% 28%), hsl(220 70% 48%));
     
-    /* Shadows */
-    --shadow-sm: 0 1px 2px 0 hsl(220 75% 25% / 0.05);
-    --shadow-md: 0 4px 6px -1px hsl(220 75% 25% / 0.1);
-    --shadow-lg: 0 10px 15px -3px hsl(220 75% 25% / 0.15);
-    --shadow-accent: 0 4px 20px hsl(355 85% 50% / 0.25);
+    /* Shadows - Optimized for depth */
+    --shadow-sm: 0 1px 3px 0 hsl(220 80% 28% / 0.08);
+    --shadow-md: 0 4px 8px -2px hsl(220 80% 28% / 0.12);
+    --shadow-lg: 0 10px 20px -5px hsl(220 80% 28% / 0.16);
+    --shadow-xl: 0 20px 30px -10px hsl(220 80% 28% / 0.20);
+    --shadow-accent: 0 4px 20px hsl(355 90% 55% / 0.30);
 
-    --sidebar-background: 220 75% 25%;
+    --sidebar-background: 220 80% 28%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 220 75% 25%;
-    --sidebar-accent: 220 65% 30%;
+    --sidebar-primary-foreground: 220 80% 28%;
+    --sidebar-accent: 220 75% 35%;
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 220 65% 30%;
-    --sidebar-ring: 48 100% 50%;
+    --sidebar-border: 220 70% 35%;
+    --sidebar-ring: 45 100% 55%;
   }
 
   .dark {
@@ -119,5 +125,84 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-size: 16px; /* Prevent iOS zoom on input focus */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Mobile touch optimization */
+  button, a, [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Better mobile input styling */
+  input, textarea, select {
+    font-size: 16px; /* Prevent iOS zoom */
+  }
+}
+
+@layer utilities {
+  /* Mobile-first spacing utilities */
+  .safe-top {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Touch-friendly sizes */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Smooth animations */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Better scrollbars on desktop */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+    border-radius: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 4px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
   }
 }

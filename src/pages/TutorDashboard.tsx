@@ -14,6 +14,7 @@ import { TeacherTutorChatDialog } from '@/components/TeacherTutorChatDialog';
 import { StudentProgressView } from '@/components/StudentProgressView';
 import { MyScheduleDialog } from '@/components/MyScheduleDialog';
 import { AssignMultipleStudentsDialog } from '@/components/AssignMultipleStudentsDialog';
+import { NotificationBell } from '@/components/NotificationBell';
 
 const TutorDashboard = () => {
   const { user, signOut } = useAuth();
@@ -88,6 +89,7 @@ const TutorDashboard = () => {
             </div>
           </div>
           <div className="flex gap-2">
+            <NotificationBell />
             <Button
               onClick={() => setAssignMultipleOpen(true)}
               variant="outline"

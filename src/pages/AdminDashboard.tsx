@@ -19,6 +19,7 @@ import { ManagePlacementTestDialog } from '@/components/ManagePlacementTestDialo
 import { ManageStaffHoursDialog } from '@/components/ManageStaffHoursDialog';
 import { StudentProgressView } from '@/components/StudentProgressView';
 import { ManageStudentScheduleDialog } from '@/components/ManageStudentScheduleDialog';
+import { NotificationBell } from '@/components/NotificationBell';
 
 const AdminDashboard = () => {
   const { signOut } = useAuth();
@@ -270,15 +271,18 @@ const AdminDashboard = () => {
               <p className="text-xs sm:text-sm text-white/80">Admin Dashboard</p>
             </div>
           </div>
-          <Button
-            onClick={signOut}
-            variant="outline"
-            size="sm"
-            className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-          >
-            <LogOut className="h-4 w-4 sm:mr-2" />
-            <span className="hidden sm:inline">Sign Out</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <Button
+              onClick={signOut}
+              variant="outline"
+              size="sm"
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+            >
+              <LogOut className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Sign Out</span>
+            </Button>
+          </div>
         </div>
       </header>
 

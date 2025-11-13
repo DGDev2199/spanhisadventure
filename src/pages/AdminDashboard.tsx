@@ -21,10 +21,12 @@ import { StudentProgressView } from '@/components/StudentProgressView';
 import { ManageStudentScheduleDialog } from '@/components/ManageStudentScheduleDialog';
 import { NotificationBell } from '@/components/NotificationBell';
 import { useSwipeable } from 'react-swipeable';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const AdminDashboard = () => {
   const { signOut } = useAuth();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [roomsDialogOpen, setRoomsDialogOpen] = useState(false);
@@ -405,11 +407,98 @@ const AdminDashboard = () => {
               </div>
             ) : students && students.length > 0 ? (
               <>
-                <p className="text-xs text-muted-foreground px-4 mb-2 md:hidden">
-                  Desliza horizontalmente para ver más información
-                </p>
-                <div className="overflow-x-auto custom-scrollbar">
-                  <Table>
+                {/* Mobile: Card View */}
+                {isMobile ? (
+                  <div className="space-y-4 px-4">
+                    {students.map((student: any) => (
+                      <Card key={student.id} className="shadow-sm">
+                        <CardContent className="p-4 space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h3 className="font-semibold text-base">{student.profiles?.full_name}</h3>
+                              <p className="text-sm text-muted-foreground">{student.profiles?.email}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Nivel:</span>
+                              <p className="font-medium">{student.level || 'Not Set'}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Habitación:</span>
+                              <p className="font-medium">{student.room || 'Not Assigned'}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Estado:</span>
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                student.status === 'active' 
+                                  ? 'bg-green-100 text-green-700' 
+                                  : 'bg-gray-100 text-gray-700'
+                              }`}>
+                                {student.status}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Test:</span>
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                student.placement_test_status === 'completed' 
+                                  ? 'bg-blue-100 text-blue-700' 
+                                  : student.placement_test_status === 'pending'
+                                  ? 'bg-yellow-100 text-yellow-700'
+                                  : 'bg-gray-100 text-gray-700'
+                              }`}>
+                                {student.placement_test_status}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2 pt-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setProgressStudent({ id: student.user_id, name: student.profiles?.full_name });
+                                setProgressDialogOpen(true);
+                              }}
+                              className="flex-1 min-w-[100px]"
+                            >
+                              <TrendingUp className="h-4 w-4 mr-1" />
+                              Progreso
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setScheduleStudent({ id: student.user_id, name: student.profiles?.full_name });
+                                setScheduleDialogOpen(true);
+                              }}
+                              className="flex-1 min-w-[100px]"
+                            >
+                              <Calendar className="h-4 w-4 mr-1" />
+                              Horario
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedStudent(student);
+                                setAssignDialogOpen(true);
+                              }}
+                              className="flex-1 min-w-[100px]"
+                            >
+                              <Settings className="h-4 w-4 mr-1" />
+                              Assign
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  /* Desktop: Table View */
+                  <div className="overflow-x-auto custom-scrollbar">
+                    <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead className="whitespace-nowrap">Name</TableHead>
@@ -490,6 +579,7 @@ const AdminDashboard = () => {
                   </TableBody>
                 </Table>
               </div>
+                )}
               </>
             ) : (
               <p className="text-center text-muted-foreground py-8">No students found</p>

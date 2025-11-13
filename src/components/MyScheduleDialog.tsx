@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock } from "lucide-react";
+import { Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useSwipeable } from "react-swipeable";
 
 interface MyScheduleDialogProps {
   open: boolean;
@@ -43,6 +46,8 @@ export function MyScheduleDialog({
   userId,
   userRole,
 }: MyScheduleDialogProps) {
+  const [currentDayIndex, setCurrentDayIndex] = useState(0);
+
   const { data: schedules, isLoading } = useQuery<ScheduleWithStudent[]>({
     queryKey: ["my-schedule", userId, userRole, open],
     queryFn: async (): Promise<ScheduleWithStudent[]> => {
@@ -83,11 +88,55 @@ export function MyScheduleDialog({
     return acc;
   }, {} as Record<number, ScheduleWithStudent[]>);
 
+  const daysWithSchedules = DAYS.filter(day => schedulesByDay?.[day.value]);
+
+  const handlers = useSwipeable({
+    onSwipedLeft: () => setCurrentDayIndex(prev => 
+      Math.min(daysWithSchedules.length - 1, prev + 1)
+    ),
+    onSwipedRight: () => setCurrentDayIndex(prev => Math.max(0, prev - 1)),
+    trackMouse: false,
+    trackTouch: true,
+    preventScrollOnSwipe: true,
+  });
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Mi Horario de {userRole === "teacher" ? "Clases" : "Tutorías"}</DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Mi Horario de {userRole === "teacher" ? "Clases" : "Tutorías"}</DialogTitle>
+            {daysWithSchedules.length > 1 && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCurrentDayIndex(prev => Math.max(0, prev - 1))}
+                  disabled={currentDayIndex === 0}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  {currentDayIndex + 1} / {daysWithSchedules.length}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setCurrentDayIndex(prev => 
+                    Math.min(daysWithSchedules.length - 1, prev + 1)
+                  )}
+                  disabled={currentDayIndex === daysWithSchedules.length - 1}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+          {daysWithSchedules.length > 1 && (
+            <p className="text-xs text-muted-foreground md:hidden">
+              Desliza para cambiar de día
+            </p>
+          )}
         </DialogHeader>
 
         {isLoading ? (
@@ -97,29 +146,58 @@ export function MyScheduleDialog({
             No tienes horarios asignados
           </p>
         ) : (
-          <div className="space-y-4">
-            {DAYS.filter(day => schedulesByDay?.[day.value]).map((day) => (
-              <Card key={day.value}>
-                <CardHeader>
-                  <CardTitle className="text-lg">{day.label}</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {schedulesByDay?.[day.value]?.map((schedule) => (
-                    <div key={schedule.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <div className="flex-1">
-                        <p className="font-medium">
-                          {schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {schedule.studentName}
-                        </p>
+          <div {...handlers}>
+            {/* Desktop: Mostrar todos los días */}
+            <div className="hidden md:block space-y-4">
+              {daysWithSchedules.map((day) => (
+                <Card key={day.value}>
+                  <CardHeader>
+                    <CardTitle className="text-lg">{day.label}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {schedulesByDay?.[day.value]?.map((schedule) => (
+                      <div key={schedule.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex-1">
+                          <p className="font-medium">
+                            {schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {schedule.studentName}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            ))}
+                    ))}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            
+            {/* Mobile: Mostrar un día a la vez */}
+            <div className="md:hidden">
+              {daysWithSchedules[currentDayIndex] && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">{daysWithSchedules[currentDayIndex].label}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {schedulesByDay?.[daysWithSchedules[currentDayIndex].value]?.map((schedule) => (
+                      <div key={schedule.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex-1">
+                          <p className="font-medium">
+                            {schedule.start_time.slice(0, 5)} - {schedule.end_time.slice(0, 5)}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {schedule.studentName}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
         )}
       </DialogContent>

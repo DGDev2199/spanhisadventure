@@ -3,9 +3,10 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { Clock, Edit } from 'lucide-react';
+import { Clock, Edit, ChevronLeft, ChevronRight } from 'lucide-react';
 import { EditScheduleEventDialog } from '@/components/EditScheduleEventDialog';
 import { Button } from '@/components/ui/button';
+import { useSwipeable } from 'react-swipeable';
 
 interface ScheduleEvent {
   id: string;
@@ -42,6 +43,15 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
   const { user } = useAuth();
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  const handlers = useSwipeable({
+    onSwipedLeft: () => setWeekOffset(prev => prev + 1),
+    onSwipedRight: () => setWeekOffset(prev => Math.max(0, prev - 1)),
+    trackMouse: false,
+    trackTouch: true,
+    preventScrollOnSwipe: true,
+  });
 
   const { data: events, isLoading } = useQuery({
     queryKey: ['schedule-events', user?.id],
@@ -122,15 +132,47 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
     );
   }
 
+  const getWeekLabel = () => {
+    if (weekOffset === 0) return "Semana Actual";
+    return `Semana ${weekOffset > 0 ? '+' : ''}${weekOffset}`;
+  };
+
   return (
     <Card className="shadow-lg">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Clock className="h-5 w-5" />
-          Horario Semanal
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Clock className="h-5 w-5" />
+            Calendario Semanal
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setWeekOffset(prev => Math.max(0, prev - 1))}
+              disabled={weekOffset === 0}
+              className="hidden md:flex"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-muted-foreground min-w-[120px] text-center">
+              {getWeekLabel()}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setWeekOffset(prev => prev + 1)}
+              className="hidden md:flex"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground md:hidden mt-2">
+          Desliza para ver otras semanas
+        </p>
       </CardHeader>
-      <CardContent className="overflow-x-auto">
+      <CardContent className="overflow-x-auto" {...handlers}>
         <div className="min-w-[800px]">
           {/* Header with days */}
           <div className="grid grid-cols-8 gap-2 mb-2">

@@ -20,6 +20,7 @@ import { ManageStaffHoursDialog } from '@/components/ManageStaffHoursDialog';
 import { StudentProgressView } from '@/components/StudentProgressView';
 import { ManageStudentScheduleDialog } from '@/components/ManageStudentScheduleDialog';
 import { NotificationBell } from '@/components/NotificationBell';
+import { useSwipeable } from 'react-swipeable';
 
 const AdminDashboard = () => {
   const { signOut } = useAuth();
@@ -403,8 +404,12 @@ const AdminDashboard = () => {
                 Error loading students. Please check console for details.
               </div>
             ) : students && students.length > 0 ? (
-              <div className="overflow-x-auto">
-                <Table>
+              <>
+                <p className="text-xs text-muted-foreground px-4 mb-2 md:hidden">
+                  Desliza horizontalmente para ver más información
+                </p>
+                <div className="overflow-x-auto custom-scrollbar">
+                  <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead className="whitespace-nowrap">Name</TableHead>
@@ -485,6 +490,7 @@ const AdminDashboard = () => {
                   </TableBody>
                 </Table>
               </div>
+              </>
             ) : (
               <p className="text-center text-muted-foreground py-8">No students found</p>
             )}

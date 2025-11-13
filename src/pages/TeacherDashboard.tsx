@@ -25,6 +25,7 @@ import { StudentProgressView } from '@/components/StudentProgressView';
 import { MyScheduleDialog } from '@/components/MyScheduleDialog';
 import { AssignMultipleStudentsDialog } from '@/components/AssignMultipleStudentsDialog';
 import { NotificationBell } from '@/components/NotificationBell';
+import { useSwipeable } from 'react-swipeable';
 
 const TeacherDashboard = () => {
   const { user, signOut } = useAuth();
@@ -360,7 +361,12 @@ const TeacherDashboard = () => {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : myStudents && myStudents.length > 0 ? (
-              <Table>
+              <>
+                <p className="text-xs text-muted-foreground mb-2 md:hidden">
+                  Desliza horizontalmente para ver más información
+                </p>
+                <div className="overflow-x-auto custom-scrollbar">
+                  <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nombre</TableHead>
@@ -471,6 +477,8 @@ const TeacherDashboard = () => {
                   ))}
                 </TableBody>
               </Table>
+              </div>
+              </>
             ) : (
               <p className="text-center text-muted-foreground py-8">
                 No tienes estudiantes asignados aún

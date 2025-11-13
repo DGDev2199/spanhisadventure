@@ -26,11 +26,13 @@ import { MyScheduleDialog } from '@/components/MyScheduleDialog';
 import { AssignMultipleStudentsDialog } from '@/components/AssignMultipleStudentsDialog';
 import { NotificationBell } from '@/components/NotificationBell';
 import { useSwipeable } from 'react-swipeable';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const TeacherDashboard = () => {
   const { user, signOut } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
   const [isRoomDialogOpen, setIsRoomDialogOpen] = useState(false);
@@ -362,11 +364,114 @@ const TeacherDashboard = () => {
               </div>
             ) : myStudents && myStudents.length > 0 ? (
               <>
-                <p className="text-xs text-muted-foreground mb-2 md:hidden">
-                  Desliza horizontalmente para ver más información
-                </p>
-                <div className="overflow-x-auto custom-scrollbar">
-                  <Table>
+                {/* Mobile: Card View */}
+                {isMobile ? (
+                  <div className="space-y-4">
+                    {myStudents.map((student: any) => (
+                      <Card key={student.id} className="shadow-sm">
+                        <CardContent className="p-4 space-y-3">
+                          <div>
+                            <h3 className="font-semibold text-base">
+                              {student.profiles?.full_name || <span className="text-muted-foreground">Sin nombre</span>}
+                            </h3>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Nivel:</span>
+                              <p className="font-medium">{student.level || <span className="text-muted-foreground">No establecido</span>}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Habitación:</span>
+                              <p className="font-medium">{student.room || <span className="text-muted-foreground">No asignado</span>}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Profesor:</span>
+                              <p className="font-medium text-xs">{student.teacher?.full_name || <span className="text-muted-foreground">No asignado</span>}</p>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Tutor:</span>
+                              <p className="font-medium text-xs">{student.tutor?.full_name || <span className="text-muted-foreground">No asignado</span>}</p>
+                            </div>
+                            <div className="col-span-2">
+                              <span className="text-muted-foreground">Test Status:</span>
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ml-2 ${
+                                student.placement_test_status === 'completed' 
+                                  ? 'bg-green-100 text-green-700' 
+                                  : student.placement_test_status === 'pending'
+                                  ? 'bg-yellow-100 text-yellow-700'
+                                  : 'bg-gray-100 text-gray-700'
+                              }`}>
+                                {student.placement_test_status === 'completed' 
+                                  ? 'Completado' 
+                                  : student.placement_test_status === 'pending'
+                                  ? 'Pendiente'
+                                  : 'No iniciado'}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-2 pt-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setProgressStudent({ id: student.user_id, name: student.profiles?.full_name });
+                                setProgressDialogOpen(true);
+                              }}
+                              className="flex-1 min-w-[90px]"
+                            >
+                              <TrendingUp className="h-4 w-4 mr-1" />
+                              Progreso
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setChatStudent({ id: student.user_id, name: student.profiles?.full_name });
+                                setChatOpen(true);
+                              }}
+                              disabled={!student.tutor_id}
+                              className="flex-1 min-w-[90px]"
+                            >
+                              <MessageSquare className="h-4 w-4 mr-1" />
+                              Chat
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedStudent(student);
+                                setIsRoomDialogOpen(true);
+                              }}
+                              className="flex-1 min-w-[90px]"
+                            >
+                              <Home className="h-4 w-4 mr-1" />
+                              {student.room ? 'Cambiar' : 'Asignar'}
+                            </Button>
+                            {student.placement_test_status === 'pending' && (
+                              <Button
+                                size="sm"
+                                variant="default"
+                                onClick={() => {
+                                  setSelectedStudent(student);
+                                  setIsReviewTestDialogOpen(true);
+                                }}
+                                className="w-full"
+                              >
+                                <FileCheck className="h-4 w-4 mr-1" />
+                                Revisar Test
+                              </Button>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  /* Desktop: Table View */
+                  <div className="overflow-x-auto custom-scrollbar">
+                    <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nombre</TableHead>
@@ -478,6 +583,7 @@ const TeacherDashboard = () => {
                 </TableBody>
               </Table>
               </div>
+                )}
               </>
             ) : (
               <p className="text-center text-muted-foreground py-8">

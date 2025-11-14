@@ -12,6 +12,7 @@ import DashboardRouter from "./components/DashboardRouter";
 import PlacementTest from "./pages/PlacementTest";
 import TakeCustomTest from "./pages/TakeCustomTest";
 import NotFound from "./pages/NotFound";
+import "./i18n/config";
 
 const queryClient = new QueryClient();
 

@@ -3,8 +3,15 @@ import { initReactI18next } from 'react-i18next';
 import es from './locales/es.json';
 import en from './locales/en.json';
 
-const savedLanguage = localStorage.getItem('language') || 'es';
+// Get saved language safely
+let savedLanguage = 'es';
+try {
+  savedLanguage = localStorage.getItem('language') || 'es';
+} catch (e) {
+  console.warn('Could not access localStorage:', e);
+}
 
+// Initialize i18n
 i18n
   .use(initReactI18next)
   .init({
@@ -16,6 +23,9 @@ i18n
     fallbackLng: 'es',
     interpolation: {
       escapeValue: false
+    },
+    react: {
+      useSuspense: false
     }
   });
 

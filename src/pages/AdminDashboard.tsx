@@ -19,6 +19,7 @@ import { ManagePlacementTestDialog } from '@/components/ManagePlacementTestDialo
 import { ManageStaffHoursDialog } from '@/components/ManageStaffHoursDialog';
 import { StudentProgressView } from '@/components/StudentProgressView';
 import { ManageStudentScheduleDialog } from '@/components/ManageStudentScheduleDialog';
+import { AdminAssignMultipleSchedulesDialog } from '@/components/AdminAssignMultipleSchedulesDialog';
 import { NotificationBell } from '@/components/NotificationBell';
 import { useSwipeable } from 'react-swipeable';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -40,6 +41,7 @@ const AdminDashboard = () => {
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [scheduleStudent, setScheduleStudent] = useState<{ id: string; name: string } | null>(null);
   const [resetScheduleDialogOpen, setResetScheduleDialogOpen] = useState(false);
+  const [assignMultipleSchedulesOpen, setAssignMultipleSchedulesOpen] = useState(false);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
@@ -299,6 +301,11 @@ const AdminDashboard = () => {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button onClick={() => setAssignMultipleSchedulesOpen(true)} variant="default" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+              <Users className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Asignar Horarios Múltiples</span>
+              <span className="sm:hidden">Horarios</span>
+            </Button>
             <Button onClick={() => setPlacementTestDialogOpen(true)} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
               <FileCheck className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Gestionar Test</span>
@@ -760,6 +767,12 @@ const AdminDashboard = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Admin Assign Multiple Schedules Dialog */}
+      <AdminAssignMultipleSchedulesDialog
+        open={assignMultipleSchedulesOpen}
+        onOpenChange={setAssignMultipleSchedulesOpen}
+      />
     </div>
   );
 };

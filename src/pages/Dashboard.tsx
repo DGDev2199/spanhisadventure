@@ -7,7 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import logo from '@/assets/logo.png';
-import { EditProfileDialog } from '@/components/EditProfileDialog';
+import { RoleBasedEditProfileDialog } from '@/components/RoleBasedEditProfileDialog';
 import { toast } from 'sonner';
 import { Checkbox } from '@/components/ui/checkbox';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
@@ -580,7 +580,7 @@ const Dashboard = () => {
         </div>
       </main>
 
-      <EditProfileDialog open={editProfileOpen} onOpenChange={setEditProfileOpen} />
+      <RoleBasedEditProfileDialog open={editProfileOpen} onOpenChange={setEditProfileOpen} />
       
       {user?.id && (
         <>

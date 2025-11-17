@@ -18,13 +18,20 @@ const loginSchema = z.object({
 });
 
 const registerSchema = z.object({
+  role: z.enum(['student', 'tutor', 'teacher'], { required_error: 'Selecciona un rol' }),
   fullName: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
   age: z.string().optional(),
-  nationality: z.string().optional(),
+  nationality: z.string().min(1, 'La nacionalidad es requerida'),
+  timezone: z.string().min(1, 'La zona horaria es requerida'),
+  languages: z.string().min(1, 'Indica al menos un idioma'),
   allergies: z.string().optional(),
   diet: z.string().optional(),
+  // Role-specific fields
+  availability: z.string().optional(), // For tutor/teacher
+  experience: z.string().optional(), // For tutor/teacher
+  studyObjectives: z.string().optional(), // For student
 });
 
 const Auth = () => {
@@ -48,13 +55,20 @@ const Auth = () => {
   const [loginPassword, setLoginPassword] = useState('');
 
   // Register state
+  const [registerRole, setRegisterRole] = useState<'student' | 'tutor' | 'teacher'>('student');
   const [registerFullName, setRegisterFullName] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
   const [registerAge, setRegisterAge] = useState('');
   const [registerNationality, setRegisterNationality] = useState('');
+  const [registerTimezone, setRegisterTimezone] = useState('');
+  const [registerLanguages, setRegisterLanguages] = useState('');
   const [registerAllergies, setRegisterAllergies] = useState('');
   const [registerDiet, setRegisterDiet] = useState('');
+  // Role-specific fields
+  const [registerAvailability, setRegisterAvailability] = useState('');
+  const [registerExperience, setRegisterExperience] = useState('');
+  const [registerStudyObjectives, setRegisterStudyObjectives] = useState('');
 
   const handleGoogleLogin = async () => {
     try {
@@ -131,13 +145,19 @@ const Auth = () => {
     try {
       // Validate input
       const validatedData = registerSchema.parse({
+        role: registerRole,
         fullName: registerFullName,
         email: registerEmail,
         password: registerPassword,
         age: registerAge,
         nationality: registerNationality,
+        timezone: registerTimezone,
+        languages: registerLanguages,
         allergies: registerAllergies,
         diet: registerDiet,
+        availability: registerAvailability,
+        experience: registerExperience,
+        studyObjectives: registerStudyObjectives,
       });
 
       const redirectUrl = `${window.location.origin}/dashboard`;
@@ -167,22 +187,42 @@ const Auth = () => {
         // Wait a bit for trigger to complete
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        // Update additional profile data (trigger handles the basics)
-        if (validatedData.age || validatedData.nationality || validatedData.allergies || validatedData.diet) {
-          const { error: updateError } = await supabase
-            .from('profiles')
-            .update({
-              age: validatedData.age ? parseInt(validatedData.age) : null,
-              nationality: validatedData.nationality || null,
-              allergies: validatedData.allergies || null,
-              diet: validatedData.diet || null,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', data.user.id);
+        // Update role in user_roles table
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .update({ role: validatedData.role })
+          .eq('user_id', data.user.id);
 
-          if (updateError) {
-            console.error('Profile update error:', updateError);
-          }
+        if (roleError) {
+          console.error('Role update error:', roleError);
+        }
+
+        // Update additional profile data
+        const profileUpdate: any = {
+          age: validatedData.age ? parseInt(validatedData.age) : null,
+          nationality: validatedData.nationality,
+          timezone: validatedData.timezone,
+          languages_spoken: validatedData.languages.split(',').map(l => l.trim()),
+          allergies: validatedData.allergies || null,
+          diet: validatedData.diet || null,
+          updated_at: new Date().toISOString(),
+        };
+
+        // Add role-specific fields
+        if (validatedData.role === 'teacher' || validatedData.role === 'tutor') {
+          profileUpdate.availability = validatedData.availability;
+          profileUpdate.experience = validatedData.experience;
+        } else if (validatedData.role === 'student') {
+          profileUpdate.study_objectives = validatedData.studyObjectives;
+        }
+
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update(profileUpdate)
+          .eq('id', data.user.id);
+
+        if (updateError) {
+          console.error('Profile update error:', updateError);
         }
 
         toast.success('¡Cuenta creada exitosamente!');

@@ -197,37 +197,52 @@ export type Database = {
         Row: {
           age: number | null
           allergies: string | null
+          availability: string | null
           avatar_url: string | null
           created_at: string
           diet: string | null
           email: string
+          experience: string | null
           full_name: string
           id: string
+          languages_spoken: string[] | null
           nationality: string | null
+          study_objectives: string | null
+          timezone: string | null
           updated_at: string
         }
         Insert: {
           age?: number | null
           allergies?: string | null
+          availability?: string | null
           avatar_url?: string | null
           created_at?: string
           diet?: string | null
           email: string
+          experience?: string | null
           full_name: string
           id: string
+          languages_spoken?: string[] | null
           nationality?: string | null
+          study_objectives?: string | null
+          timezone?: string | null
           updated_at?: string
         }
         Update: {
           age?: number | null
           allergies?: string | null
+          availability?: string | null
           avatar_url?: string | null
           created_at?: string
           diet?: string | null
           email?: string
+          experience?: string | null
           full_name?: string
           id?: string
+          languages_spoken?: string[] | null
           nationality?: string | null
+          study_objectives?: string | null
+          timezone?: string | null
           updated_at?: string
         }
         Relationships: []

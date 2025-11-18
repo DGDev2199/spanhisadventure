@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import { Compass, AlertCircle } from 'lucide-react';
 import { z } from 'zod';
 import logo from '@/assets/logo.png';
+import { TimeZoneSelector } from '@/components/TimeZoneSelector';
+import { AvatarUpload } from '@/components/AvatarUpload';
 
 // Validation schemas
 const loginSchema = z.object({
@@ -69,6 +71,7 @@ const Auth = () => {
   const [registerAvailability, setRegisterAvailability] = useState('');
   const [registerExperience, setRegisterExperience] = useState('');
   const [registerStudyObjectives, setRegisterStudyObjectives] = useState('');
+  const [registerAvatar, setRegisterAvatar] = useState<string | null>(null);
 
   const handleGoogleLogin = async () => {
     try {

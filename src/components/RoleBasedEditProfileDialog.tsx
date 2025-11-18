@@ -8,6 +8,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { TimeZoneSelector } from '@/components/TimeZoneSelector';
+import { AvatarUpload } from '@/components/AvatarUpload';
 
 interface RoleBasedEditProfileDialogProps {
   open: boolean;
@@ -28,6 +30,7 @@ export const RoleBasedEditProfileDialog = ({ open, onOpenChange }: RoleBasedEdit
     availability: '',
     experience: '',
     study_objectives: '',
+    avatar_url: null as string | null,
   });
 
   const { data: profile } = useQuery({
@@ -52,6 +55,7 @@ export const RoleBasedEditProfileDialog = ({ open, onOpenChange }: RoleBasedEdit
         availability: profile.availability || '',
         experience: profile.experience || '',
         study_objectives: profile.study_objectives || '',
+        avatar_url: profile.avatar_url || null,
       });
     }
   }, [profile]);
@@ -66,6 +70,7 @@ export const RoleBasedEditProfileDialog = ({ open, onOpenChange }: RoleBasedEdit
         languages_spoken: formData.languages.split(',').map(l => l.trim()).filter(Boolean),
         diet: formData.diet,
         allergies: formData.allergies,
+        avatar_url: formData.avatar_url,
         updated_at: new Date().toISOString(),
       };
 
@@ -95,6 +100,12 @@ export const RoleBasedEditProfileDialog = ({ open, onOpenChange }: RoleBasedEdit
           <DialogDescription>Actualiza tu información personal</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
+          <AvatarUpload
+            value={profile?.avatar_url || null}
+            onChange={(url) => setFormData({...formData, avatar_url: url})}
+            userId={user?.id}
+            userName={formData.full_name}
+          />
           <div className="space-y-2">
             <Label>Nombre Completo</Label>
             <Input value={formData.full_name} onChange={e => setFormData({...formData, full_name: e.target.value})} />
@@ -109,10 +120,10 @@ export const RoleBasedEditProfileDialog = ({ open, onOpenChange }: RoleBasedEdit
               <Input type="number" value={formData.age} onChange={e => setFormData({...formData, age: e.target.value})} />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label>Zona Horaria</Label>
-            <Input value={formData.timezone} onChange={e => setFormData({...formData, timezone: e.target.value})} />
-          </div>
+          <TimeZoneSelector
+            value={formData.timezone}
+            onChange={(value) => setFormData({...formData, timezone: value})}
+          />
           <div className="space-y-2">
             <Label>Idiomas (separados por comas)</Label>
             <Input value={formData.languages} onChange={e => setFormData({...formData, languages: e.target.value})} />

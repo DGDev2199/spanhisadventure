@@ -25,6 +25,8 @@ import { StudentProgressView } from '@/components/StudentProgressView';
 import { MyScheduleDialog } from '@/components/MyScheduleDialog';
 import { AssignMultipleStudentsDialog } from '@/components/AssignMultipleStudentsDialog';
 import { NotificationBell } from '@/components/NotificationBell';
+import { RoleBasedEditProfileDialog } from '@/components/RoleBasedEditProfileDialog';
+import { Settings } from 'lucide-react';
 import { useSwipeable } from 'react-swipeable';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -53,6 +55,7 @@ const TeacherDashboard = () => {
   const [progressStudent, setProgressStudent] = useState<{ id: string; name: string } | null>(null);
   const [myScheduleOpen, setMyScheduleOpen] = useState(false);
   const [assignMultipleOpen, setAssignMultipleOpen] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
 
   const { data: myStudents, isLoading: studentsLoading } = useQuery({
     queryKey: ['teacher-students', user?.id],
@@ -233,6 +236,14 @@ const TeacherDashboard = () => {
             >
               <CalendarClock className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Horario</span>
+            </Button>
+            <Button
+              onClick={() => setEditProfileOpen(true)}
+              variant="outline"
+              size="sm"
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
+            >
+              <Settings className="h-4 w-4" />
             </Button>
             <Button
               onClick={signOut}
@@ -909,6 +920,12 @@ const TeacherDashboard = () => {
           teacherId={user.id}
         />
       )}
+
+      {/* Edit Profile Dialog */}
+      <RoleBasedEditProfileDialog
+        open={editProfileOpen}
+        onOpenChange={setEditProfileOpen}
+      />
     </div>
   );
 };

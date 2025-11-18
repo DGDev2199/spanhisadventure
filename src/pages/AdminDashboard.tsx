@@ -21,6 +21,7 @@ import { StudentProgressView } from '@/components/StudentProgressView';
 import { ManageStudentScheduleDialog } from '@/components/ManageStudentScheduleDialog';
 import { AdminAssignMultipleSchedulesDialog } from '@/components/AdminAssignMultipleSchedulesDialog';
 import { NotificationBell } from '@/components/NotificationBell';
+import { RoleBasedEditProfileDialog } from '@/components/RoleBasedEditProfileDialog';
 import { useSwipeable } from 'react-swipeable';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -42,6 +43,7 @@ const AdminDashboard = () => {
   const [scheduleStudent, setScheduleStudent] = useState<{ id: string; name: string } | null>(null);
   const [resetScheduleDialogOpen, setResetScheduleDialogOpen] = useState(false);
   const [assignMultipleSchedulesOpen, setAssignMultipleSchedulesOpen] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
@@ -772,6 +774,12 @@ const AdminDashboard = () => {
       <AdminAssignMultipleSchedulesDialog
         open={assignMultipleSchedulesOpen}
         onOpenChange={setAssignMultipleSchedulesOpen}
+      />
+
+      {/* Edit Profile Dialog */}
+      <RoleBasedEditProfileDialog
+        open={editProfileOpen}
+        onOpenChange={setEditProfileOpen}
       />
     </div>
   );

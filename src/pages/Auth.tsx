@@ -211,6 +211,11 @@ const Auth = () => {
           updated_at: new Date().toISOString(),
         };
 
+        // Add avatar URL if provided
+        if (registerAvatar) {
+          profileUpdate.avatar_url = registerAvatar;
+        }
+
         // Add role-specific fields
         if (validatedData.role === 'teacher' || validatedData.role === 'tutor') {
           profileUpdate.availability = validatedData.availability;
@@ -369,6 +374,62 @@ const Auth = () => {
 
               <TabsContent value="register">
                 <form onSubmit={handleRegister} className="space-y-3 sm:space-y-4 max-h-[60vh] sm:max-h-none overflow-y-auto custom-scrollbar pr-1">
+                  {/* Role Selection */}
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label className="text-sm">Selecciona tu rol *</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setRegisterRole('student')}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          registerRole === 'student'
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <div className="text-sm font-medium">Estudiante</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRegisterRole('tutor')}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          registerRole === 'tutor'
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <div className="text-sm font-medium">Tutor</div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRegisterRole('teacher')}
+                        className={`p-3 rounded-lg border-2 transition-all ${
+                          registerRole === 'teacher'
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <div className="text-sm font-medium">Profesor</div>
+                      </button>
+                    </div>
+                    {errors.role && (
+                      <p className="text-xs sm:text-sm text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.role}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Avatar Upload */}
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label className="text-sm">Foto de perfil</Label>
+                    <AvatarUpload
+                      value={registerAvatar}
+                      onChange={setRegisterAvatar}
+                      userName={registerFullName}
+                    />
+                  </div>
+
                   <div className="space-y-1.5 sm:space-y-2">
                     <Label htmlFor="register-name" className="text-sm">Nombre Completo *</Label>
                     <Input
@@ -379,6 +440,11 @@ const Auth = () => {
                       onChange={(e) => {
                         setRegisterFullName(e.target.value);
                         setErrors(prev => ({ ...prev, fullName: '' }));
+                      }}
+                      onBlur={(e) => {
+                        if (e.target.value.length < 2) {
+                          setErrors(prev => ({ ...prev, fullName: 'El nombre debe tener al menos 2 caracteres' }));
+                        }
                       }}
                       required
                       className={`h-10 sm:h-11 ${errors.fullName ? 'border-destructive' : ''}`}
@@ -401,6 +467,12 @@ const Auth = () => {
                         setRegisterEmail(e.target.value);
                         setErrors(prev => ({ ...prev, email: '' }));
                       }}
+                      onBlur={(e) => {
+                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        if (!emailRegex.test(e.target.value)) {
+                          setErrors(prev => ({ ...prev, email: 'Email inválido' }));
+                        }
+                      }}
                       required
                       className={`h-10 sm:h-11 ${errors.email ? 'border-destructive' : ''}`}
                     />
@@ -420,6 +492,11 @@ const Auth = () => {
                       onChange={(e) => {
                         setRegisterPassword(e.target.value);
                         setErrors(prev => ({ ...prev, password: '' }));
+                      }}
+                      onBlur={(e) => {
+                        if (e.target.value.length < 6) {
+                          setErrors(prev => ({ ...prev, password: 'La contraseña debe tener al menos 6 caracteres' }));
+                        }
                       }}
                       required
                       minLength={6}
@@ -443,46 +520,119 @@ const Auth = () => {
                         type="number"
                         placeholder="25"
                         value={registerAge}
-                        onChange={(e) => setRegisterAge(e.target.value)}
+                        onChange={(e) => {
+                          setRegisterAge(e.target.value);
+                          setErrors(prev => ({ ...prev, age: '' }));
+                        }}
+                        onBlur={(e) => {
+                          const age = parseInt(e.target.value);
+                          if (e.target.value && (age < 1 || age > 120)) {
+                            setErrors(prev => ({ ...prev, age: 'Edad inválida' }));
+                          }
+                        }}
                         min="1"
                         max="120"
-                        className="h-10 sm:h-11"
+                        className={`h-10 sm:h-11 ${errors.age ? 'border-destructive' : ''}`}
                       />
+                      {errors.age && (
+                        <p className="text-xs text-destructive flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.age}
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="register-nationality" className="text-sm">Nacionalidad</Label>
+                      <Label htmlFor="register-nationality" className="text-sm">Nacionalidad *</Label>
                       <Input
                         id="register-nationality"
                         type="text"
                         placeholder="España"
                         value={registerNationality}
-                        onChange={(e) => setRegisterNationality(e.target.value)}
-                        className="h-10 sm:h-11"
+                        onChange={(e) => {
+                          setRegisterNationality(e.target.value);
+                          setErrors(prev => ({ ...prev, nationality: '' }));
+                        }}
+                        onBlur={(e) => {
+                          if (!e.target.value.trim()) {
+                            setErrors(prev => ({ ...prev, nationality: 'La nacionalidad es requerida' }));
+                          }
+                        }}
+                        required
+                        className={`h-10 sm:h-11 ${errors.nationality ? 'border-destructive' : ''}`}
                       />
+                      {errors.nationality && (
+                        <p className="text-xs text-destructive flex items-center gap-1">
+                          <AlertCircle className="h-3 w-3" />
+                          {errors.nationality}
+                        </p>
+                      )}
                     </div>
                   </div>
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <Label htmlFor="register-allergies" className="text-sm">Alergias</Label>
-                    <Input
-                      id="register-allergies"
-                      type="text"
-                      placeholder="Ninguna"
-                      value={registerAllergies}
-                      onChange={(e) => setRegisterAllergies(e.target.value)}
-                      className="h-10 sm:h-11"
-                    />
-                  </div>
-                  <div className="space-y-1.5 sm:space-y-2">
-                    <Label htmlFor="register-diet" className="text-sm">Preferencias Dietéticas</Label>
-                    <Input
-                      id="register-diet"
-                      type="text"
-                      placeholder="Vegetariano"
-                      value={registerDiet}
-                      onChange={(e) => setRegisterDiet(e.target.value)}
-                      className="h-10 sm:h-11"
-                    />
-                  </div>
+                  {/* Role-specific fields */}
+                  {(registerRole === 'teacher' || registerRole === 'tutor') && (
+                    <>
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <Label htmlFor="register-availability" className="text-sm">Disponibilidad</Label>
+                        <Input
+                          id="register-availability"
+                          type="text"
+                          placeholder="Lunes a Viernes, 9:00 - 17:00"
+                          value={registerAvailability}
+                          onChange={(e) => setRegisterAvailability(e.target.value)}
+                          className="h-10 sm:h-11"
+                        />
+                      </div>
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <Label htmlFor="register-experience" className="text-sm">Experiencia</Label>
+                        <Input
+                          id="register-experience"
+                          type="text"
+                          placeholder="5 años enseñando español"
+                          value={registerExperience}
+                          onChange={(e) => setRegisterExperience(e.target.value)}
+                          className="h-10 sm:h-11"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {registerRole === 'student' && (
+                    <>
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <Label htmlFor="register-study-objectives" className="text-sm">Objetivos de Estudio</Label>
+                        <Input
+                          id="register-study-objectives"
+                          type="text"
+                          placeholder="Mejorar conversación en español"
+                          value={registerStudyObjectives}
+                          onChange={(e) => setRegisterStudyObjectives(e.target.value)}
+                          className="h-10 sm:h-11"
+                        />
+                      </div>
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <Label htmlFor="register-allergies" className="text-sm">Alergias</Label>
+                        <Input
+                          id="register-allergies"
+                          type="text"
+                          placeholder="Ninguna"
+                          value={registerAllergies}
+                          onChange={(e) => setRegisterAllergies(e.target.value)}
+                          className="h-10 sm:h-11"
+                        />
+                      </div>
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <Label htmlFor="register-diet" className="text-sm">Preferencias Dietéticas</Label>
+                        <Input
+                          id="register-diet"
+                          type="text"
+                          placeholder="Vegetariano"
+                          value={registerDiet}
+                          onChange={(e) => setRegisterDiet(e.target.value)}
+                          className="h-10 sm:h-11"
+                        />
+                      </div>
+                    </>
+                  )}
                   <Button type="submit" className="w-full h-10 sm:h-11 touch-target" disabled={loading}>
                     {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
                   </Button>

@@ -24,16 +24,16 @@ const registerSchema = z.object({
   fullName: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
-  age: z.string().optional(),
-  nationality: z.string().min(1, 'La nacionalidad es requerida'),
-  timezone: z.string().min(1, 'La zona horaria es requerida'),
-  languages: z.string().min(1, 'Indica al menos un idioma'),
-  allergies: z.string().optional(),
-  diet: z.string().optional(),
+  age: z.string().optional().or(z.literal('')),
+  nationality: z.string().optional().or(z.literal('')),
+  timezone: z.string().optional().or(z.literal('')),
+  languages: z.string().optional().or(z.literal('')),
+  allergies: z.string().optional().or(z.literal('')),
+  diet: z.string().optional().or(z.literal('')),
   // Role-specific fields
-  availability: z.string().optional(), // For tutor/teacher
-  experience: z.string().optional(), // For tutor/teacher
-  studyObjectives: z.string().optional(), // For student
+  availability: z.string().optional().or(z.literal('')), // For tutor/teacher
+  experience: z.string().optional().or(z.literal('')), // For tutor/teacher
+  studyObjectives: z.string().optional().or(z.literal('')), // For student
 });
 
 const Auth = () => {
@@ -203,9 +203,9 @@ const Auth = () => {
         // Update additional profile data
         const profileUpdate: any = {
           age: validatedData.age ? parseInt(validatedData.age) : null,
-          nationality: validatedData.nationality,
-          timezone: validatedData.timezone,
-          languages_spoken: validatedData.languages.split(',').map(l => l.trim()),
+          nationality: validatedData.nationality || null,
+          timezone: validatedData.timezone || null,
+          languages_spoken: validatedData.languages ? validatedData.languages.split(',').map(l => l.trim()) : null,
           allergies: validatedData.allergies || null,
           diet: validatedData.diet || null,
           updated_at: new Date().toISOString(),
@@ -245,8 +245,10 @@ const Auth = () => {
           }
         });
         setErrors(fieldErrors);
+        console.log('Errores de validación:', fieldErrors);
         toast.error('Por favor corrige los errores en el formulario');
       } else {
+        console.error('Error al crear cuenta:', error);
         toast.error('Error al crear la cuenta');
       }
     } finally {

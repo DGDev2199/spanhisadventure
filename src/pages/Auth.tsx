@@ -424,7 +424,7 @@ const Auth = () => {
 
                   {/* Avatar Upload */}
                   <div className="space-y-1.5 sm:space-y-2">
-                    <Label className="text-sm">Foto de perfil</Label>
+                    <Label className="text-sm">Foto de perfil (opcional)</Label>
                     <AvatarUpload
                       value={registerAvatar}
                       onChange={setRegisterAvatar}
@@ -516,7 +516,7 @@ const Auth = () => {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="register-age" className="text-sm">Edad</Label>
+                      <Label htmlFor="register-age" className="text-sm">Edad (opcional)</Label>
                       <Input
                         id="register-age"
                         type="number"
@@ -544,7 +544,7 @@ const Auth = () => {
                       )}
                     </div>
                     <div className="space-y-1.5 sm:space-y-2">
-                      <Label htmlFor="register-nationality" className="text-sm">Nacionalidad *</Label>
+                      <Label htmlFor="register-nationality" className="text-sm">Nacionalidad (opcional)</Label>
                       <Input
                         id="register-nationality"
                         type="text"
@@ -554,12 +554,6 @@ const Auth = () => {
                           setRegisterNationality(e.target.value);
                           setErrors(prev => ({ ...prev, nationality: '' }));
                         }}
-                        onBlur={(e) => {
-                          if (!e.target.value.trim()) {
-                            setErrors(prev => ({ ...prev, nationality: 'La nacionalidad es requerida' }));
-                          }
-                        }}
-                        required
                         className={`h-10 sm:h-11 ${errors.nationality ? 'border-destructive' : ''}`}
                       />
                       {errors.nationality && (
@@ -570,11 +564,50 @@ const Auth = () => {
                       )}
                     </div>
                   </div>
+                  
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label htmlFor="register-timezone" className="text-sm">Zona Horaria (opcional)</Label>
+                    <TimeZoneSelector
+                      value={registerTimezone}
+                      onChange={(value) => {
+                        setRegisterTimezone(value);
+                        setErrors(prev => ({ ...prev, timezone: '' }));
+                      }}
+                    />
+                    {errors.timezone && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.timezone}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5 sm:space-y-2">
+                    <Label htmlFor="register-languages" className="text-sm">Idiomas que hablas (opcional)</Label>
+                    <Input
+                      id="register-languages"
+                      type="text"
+                      placeholder="Español, Inglés"
+                      value={registerLanguages}
+                      onChange={(e) => {
+                        setRegisterLanguages(e.target.value);
+                        setErrors(prev => ({ ...prev, languages: '' }));
+                      }}
+                      className={`h-10 sm:h-11 ${errors.languages ? 'border-destructive' : ''}`}
+                    />
+                    {errors.languages && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {errors.languages}
+                      </p>
+                    )}
+                  </div>
+
                   {/* Role-specific fields */}
                   {(registerRole === 'teacher' || registerRole === 'tutor') && (
                     <>
                       <div className="space-y-1.5 sm:space-y-2">
-                        <Label htmlFor="register-availability" className="text-sm">Disponibilidad</Label>
+                        <Label htmlFor="register-availability" className="text-sm">Disponibilidad (opcional)</Label>
                         <Input
                           id="register-availability"
                           type="text"
@@ -585,7 +618,7 @@ const Auth = () => {
                         />
                       </div>
                       <div className="space-y-1.5 sm:space-y-2">
-                        <Label htmlFor="register-experience" className="text-sm">Experiencia</Label>
+                        <Label htmlFor="register-experience" className="text-sm">Experiencia (opcional)</Label>
                         <Input
                           id="register-experience"
                           type="text"
@@ -601,7 +634,7 @@ const Auth = () => {
                   {registerRole === 'student' && (
                     <>
                       <div className="space-y-1.5 sm:space-y-2">
-                        <Label htmlFor="register-study-objectives" className="text-sm">Objetivos de Estudio</Label>
+                        <Label htmlFor="register-study-objectives" className="text-sm">Objetivos de Estudio (opcional)</Label>
                         <Input
                           id="register-study-objectives"
                           type="text"
@@ -612,7 +645,7 @@ const Auth = () => {
                         />
                       </div>
                       <div className="space-y-1.5 sm:space-y-2">
-                        <Label htmlFor="register-allergies" className="text-sm">Alergias</Label>
+                        <Label htmlFor="register-allergies" className="text-sm">Alergias (opcional)</Label>
                         <Input
                           id="register-allergies"
                           type="text"
@@ -623,7 +656,7 @@ const Auth = () => {
                         />
                       </div>
                       <div className="space-y-1.5 sm:space-y-2">
-                        <Label htmlFor="register-diet" className="text-sm">Preferencias Dietéticas</Label>
+                        <Label htmlFor="register-diet" className="text-sm">Preferencias Dietéticas (opcional)</Label>
                         <Input
                           id="register-diet"
                           type="text"

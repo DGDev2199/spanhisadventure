@@ -356,11 +356,6 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
     }
   });
 
-  // Initialize weeks if they don't exist (not used anymore, weeks are created on level assignment)
-  const initializeWeeks = async () => {
-    console.log('⚠️ initializeWeeks called but should not be used - weeks are created on level assignment');
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -370,13 +365,12 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
   }
 
   if (!weeks || weeks.length === 0) {
-    if (isEditable) {
-      initializeWeeks();
-    }
     return (
       <Card>
         <CardContent className="py-8 text-center text-muted-foreground">
-          {isEditable ? 'Inicializando semanas...' : 'No hay progreso registrado aún'}
+          {isEditable 
+            ? 'Las semanas se crearán automáticamente al asignar un nivel al estudiante' 
+            : 'No hay progreso registrado aún. Las semanas se crearán cuando se te asigne un nivel.'}
         </CardContent>
       </Card>
     );

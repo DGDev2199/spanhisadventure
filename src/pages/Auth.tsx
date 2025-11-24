@@ -190,14 +190,33 @@ const Auth = () => {
         // Wait a bit for trigger to complete
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        // Update role in user_roles table
+        // Insert the correct role in user_roles table
         const { error: roleError } = await supabase
           .from('user_roles')
-          .update({ role: validatedData.role })
-          .eq('user_id', data.user.id);
+          .insert({ 
+            user_id: data.user.id,
+            role: validatedData.role 
+          });
 
         if (roleError) {
-          console.error('Role update error:', roleError);
+          console.error('Role insert error:', roleError);
+          toast.error('Error al asignar el rol');
+          return;
+        }
+
+        // Create student_profile only if role is student
+        if (validatedData.role === 'student') {
+          const { error: studentProfileError } = await supabase
+            .from('student_profiles')
+            .insert({
+              user_id: data.user.id,
+              status: 'active',
+              placement_test_status: 'not_started'
+            });
+
+          if (studentProfileError) {
+            console.error('Student profile creation error:', studentProfileError);
+          }
         }
 
         // Update additional profile data

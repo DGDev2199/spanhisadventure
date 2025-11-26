@@ -440,11 +440,13 @@ const Auth = () => {
                         }}
                         className={`p-3 rounded-lg border-2 transition-all ${
                           registerRole === 'student'
-                            ? 'border-primary bg-primary/10'
+                            ? 'border-primary bg-primary text-primary-foreground font-bold'
                             : 'border-border hover:border-primary/50'
                         }`}
                       >
-                        <div className="text-sm font-medium">Estudiante</div>
+                        <div className="text-sm font-medium">
+                          {registerRole === 'student' && '✓ '}Estudiante
+                        </div>
                       </button>
                       <button
                         type="button"
@@ -454,11 +456,13 @@ const Auth = () => {
                         }}
                         className={`p-3 rounded-lg border-2 transition-all ${
                           registerRole === 'tutor'
-                            ? 'border-primary bg-primary/10'
+                            ? 'border-primary bg-primary text-primary-foreground font-bold'
                             : 'border-border hover:border-primary/50'
                         }`}
                       >
-                        <div className="text-sm font-medium">Tutor</div>
+                        <div className="text-sm font-medium">
+                          {registerRole === 'tutor' && '✓ '}Tutor
+                        </div>
                       </button>
                       <button
                         type="button"
@@ -468,13 +472,18 @@ const Auth = () => {
                         }}
                         className={`p-3 rounded-lg border-2 transition-all ${
                           registerRole === 'teacher'
-                            ? 'border-primary bg-primary/10'
+                            ? 'border-primary bg-primary text-primary-foreground font-bold'
                             : 'border-border hover:border-primary/50'
                         }`}
                       >
-                        <div className="text-sm font-medium">Profesor</div>
+                        <div className="text-sm font-medium">
+                          {registerRole === 'teacher' && '✓ '}Profesor
+                        </div>
                       </button>
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      Rol seleccionado: <span className="font-semibold text-foreground">{registerRole === 'student' ? 'Estudiante' : registerRole === 'tutor' ? 'Tutor' : 'Profesor'}</span>
+                    </p>
                     {errors.role && (
                       <p className="text-xs sm:text-sm text-destructive flex items-center gap-1">
                         <AlertCircle className="h-3 w-3" />

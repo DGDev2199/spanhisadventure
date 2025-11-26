@@ -72,6 +72,7 @@ const Auth = () => {
   const [registerExperience, setRegisterExperience] = useState('');
   const [registerStudyObjectives, setRegisterStudyObjectives] = useState('');
   const [registerAvatar, setRegisterAvatar] = useState<string | null>(null);
+  const [registerAvatarFile, setRegisterAvatarFile] = useState<File | null>(null);
 
   const handleGoogleLogin = async () => {
     try {
@@ -219,6 +220,34 @@ const Auth = () => {
           }
         }
 
+        // Upload avatar if provided
+        let avatarUrl: string | null = null;
+        if (registerAvatarFile) {
+          try {
+            const fileExt = registerAvatarFile.name.split('.').pop();
+            const fileName = `${Date.now()}.${fileExt}`;
+            const filePath = `${data.user.id}/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+              .from('avatars')
+              .upload(filePath, registerAvatarFile, {
+                contentType: registerAvatarFile.type,
+                upsert: false
+              });
+
+            if (uploadError) {
+              console.error('Avatar upload error:', uploadError);
+            } else {
+              const { data: { publicUrl } } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(filePath);
+              avatarUrl = publicUrl;
+            }
+          } catch (uploadErr) {
+            console.error('Error uploading avatar:', uploadErr);
+          }
+        }
+
         // Update additional profile data
         const profileUpdate: any = {
           age: validatedData.age ? parseInt(validatedData.age) : null,
@@ -230,9 +259,9 @@ const Auth = () => {
           updated_at: new Date().toISOString(),
         };
 
-        // Add avatar URL if provided
-        if (registerAvatar) {
-          profileUpdate.avatar_url = registerAvatar;
+        // Add avatar URL if uploaded
+        if (avatarUrl) {
+          profileUpdate.avatar_url = avatarUrl;
         }
 
         // Add role-specific fields
@@ -444,11 +473,57 @@ const Auth = () => {
                   {/* Avatar Upload */}
                   <div className="space-y-1.5 sm:space-y-2">
                     <Label className="text-sm">Foto de perfil (opcional)</Label>
-                    <AvatarUpload
-                      value={registerAvatar}
-                      onChange={setRegisterAvatar}
-                      userName={registerFullName}
-                    />
+                    <div className="flex items-center gap-4">
+                      <div className="h-20 w-20 border-2 border-border rounded-full overflow-hidden bg-muted flex items-center justify-center">
+                        {registerAvatar ? (
+                          <img src={registerAvatar} alt="Avatar preview" className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="text-2xl text-muted-foreground">
+                            {registerFullName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              if (!file.type.startsWith('image/')) {
+                                toast.error('Por favor selecciona un archivo de imagen');
+                                return;
+                              }
+                              if (file.size > 5 * 1024 * 1024) {
+                                toast.error('La imagen debe ser menor a 5MB');
+                                return;
+                              }
+                              setRegisterAvatarFile(file);
+                              const reader = new FileReader();
+                              reader.onload = (e) => {
+                                setRegisterAvatar(e.target?.result as string);
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="h-10"
+                        />
+                        {registerAvatar && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setRegisterAvatar(null);
+                              setRegisterAvatarFile(null);
+                            }}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            Eliminar
+                          </Button>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="space-y-1.5 sm:space-y-2">

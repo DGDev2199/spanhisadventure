@@ -166,6 +166,10 @@ const Auth = () => {
 
       const redirectUrl = `${window.location.origin}/dashboard`;
 
+      // Log role before creating user
+      console.log('Registering user with role:', validatedData.role);
+      console.log('Current registerRole state:', registerRole);
+
       // Create user with Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email: validatedData.email,
@@ -430,7 +434,10 @@ const Auth = () => {
                     <div className="grid grid-cols-3 gap-2">
                       <button
                         type="button"
-                        onClick={() => setRegisterRole('student')}
+                        onClick={() => {
+                          console.log('Setting role to: student');
+                          setRegisterRole('student');
+                        }}
                         className={`p-3 rounded-lg border-2 transition-all ${
                           registerRole === 'student'
                             ? 'border-primary bg-primary/10'
@@ -441,7 +448,10 @@ const Auth = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setRegisterRole('tutor')}
+                        onClick={() => {
+                          console.log('Setting role to: tutor');
+                          setRegisterRole('tutor');
+                        }}
                         className={`p-3 rounded-lg border-2 transition-all ${
                           registerRole === 'tutor'
                             ? 'border-primary bg-primary/10'
@@ -452,7 +462,10 @@ const Auth = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setRegisterRole('teacher')}
+                        onClick={() => {
+                          console.log('Setting role to: teacher');
+                          setRegisterRole('teacher');
+                        }}
                         className={`p-3 rounded-lg border-2 transition-all ${
                           registerRole === 'teacher'
                             ? 'border-primary bg-primary/10'

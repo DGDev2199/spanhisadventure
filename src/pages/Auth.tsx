@@ -285,8 +285,8 @@ const Auth = () => {
           console.error('Profile update error:', updateError);
         }
 
-        toast.success('¡Cuenta creada exitosamente!');
-        navigate('/dashboard');
+        toast.success('¡Cuenta creada exitosamente! Verifica tu perfil antes de continuar.');
+        navigate('/profile-verification');
       }
     } catch (error: any) {
       if (error instanceof z.ZodError) {

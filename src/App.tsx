@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import DashboardRouter from "./components/DashboardRouter";
 import PlacementTest from "./pages/PlacementTest";
 import TakeCustomTest from "./pages/TakeCustomTest";
+import ProfileVerification from "./pages/ProfileVerification";
 import NotFound from "./pages/NotFound";
 import "./i18n/config";
 
@@ -26,6 +27,14 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route
+              path="/profile-verification"
+              element={
+                <ProtectedRoute>
+                  <ProfileVerification />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/dashboard"
               element={

@@ -577,7 +577,7 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                     <div className="text-left">
                       <p className="font-semibold">
                         {isSpecialWeek(week.week_number) 
-                          ? `${formatWeekName(week.week_number)} - ${week.week_theme}` 
+                          ? week.week_theme 
                           : `Semana ${week.week_number} - ${week.week_theme}`}
                       </p>
                       {isCurrent && !week.is_completed && (
@@ -595,7 +595,10 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                           onClick={(e) => {
                             e.stopPropagation();
                             setRenamingWeekId(week.id);
-                            setNewWeekTheme(week.week_theme);
+                            // For special weeks, use full name; for regular, just the theme
+                            setNewWeekTheme(isSpecialWeek(week.week_number) 
+                              ? week.week_theme 
+                              : week.week_theme);
                           }}
                         >
                           <Pencil className="h-4 w-4" />
@@ -631,7 +634,9 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                     <Input
                       value={newWeekTheme}
                       onChange={(e) => setNewWeekTheme(e.target.value)}
-                      placeholder="Nuevo nombre de la semana"
+                      placeholder={isSpecialWeek(week.week_number) 
+                        ? "Ej: Semana 7-1+ Refuerzo" 
+                        : "Nuevo tema de la semana"}
                       className="flex-1"
                     />
                     <Button

@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
-import { Clock, User, ChevronLeft, ChevronRight, Calendar, LayoutGrid, List } from "lucide-react";
+import { Clock, User, ChevronLeft, ChevronRight, Calendar, LayoutGrid, List, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSwipeable } from "react-swipeable";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import html2canvas from "html2canvas";
+import { toast } from "sonner";
 
 interface MyScheduleDialogProps {
   open: boolean;
@@ -65,6 +68,30 @@ export function MyScheduleDialog({
 }: MyScheduleDialogProps) {
   const [currentStudentIndex, setCurrentStudentIndex] = useState(0);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [isExporting, setIsExporting] = useState(false);
+  const calendarRef = useRef<HTMLDivElement>(null);
+
+  const handleExport = async () => {
+    if (!calendarRef.current) return;
+    
+    setIsExporting(true);
+    try {
+      const canvas = await html2canvas(calendarRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+      });
+      
+      const link = document.createElement('a');
+      link.download = `mi-horario-${userRole === "teacher" ? "clases" : "tutorias"}-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      toast.success("Horario exportado exitosamente");
+    } catch (error) {
+      toast.error("Error al exportar el horario");
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const { data: schedules, isLoading } = useQuery<ScheduleWithStudent[]>({
     queryKey: ["my-schedule", userId, userRole, open],
@@ -190,6 +217,17 @@ export function MyScheduleDialog({
                   <LayoutGrid className="h-4 w-4" />
                 </Button>
               </div>
+              {viewMode === 'calendar' && schedules && schedules.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExport}
+                  disabled={isExporting}
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  {isExporting ? "..." : "Exportar"}
+                </Button>
+              )}
               {viewMode === 'list' && studentSchedules.length > 1 && (
                 <div className="flex items-center gap-2 md:hidden">
                   <Button

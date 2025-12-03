@@ -23,6 +23,7 @@ const PlacementTest = () => {
   const [testComplete, setTestComplete] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [signedAudioUrl, setSignedAudioUrl] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
@@ -38,6 +39,42 @@ const PlacementTest = () => {
       return data;
     }
   });
+
+  // Get current question for the useEffect - must be defined before conditional returns
+  const currentQuestionData = questions?.[currentQuestion];
+
+  useEffect(() => {
+    const setup = async () => {
+      if (!currentQuestionData) return setSignedAudioUrl(null);
+      if (currentQuestionData.question_type !== 'audio_listen' || !currentQuestionData.audio_url) {
+        setSignedAudioUrl(null);
+        return;
+      }
+      const extractPath = (urlOrPath: string) => {
+        if (!urlOrPath) return null;
+        if (!urlOrPath.startsWith('http')) return urlOrPath;
+        const marker = '/student-audio-responses/';
+        const idx = urlOrPath.indexOf(marker);
+        if (idx === -1) return null;
+        return urlOrPath.substring(idx + marker.length);
+      };
+      const path = extractPath(currentQuestionData.audio_url);
+      if (!path) {
+        setSignedAudioUrl(currentQuestionData.audio_url);
+        return;
+      }
+      const { data, error } = await supabase.storage
+        .from('student-audio-responses')
+        .createSignedUrl(path, 3600);
+      if (error || !data) {
+        console.warn('Audio signed URL error:', error);
+        setSignedAudioUrl(currentQuestionData.audio_url);
+      } else {
+        setSignedAudioUrl(data.signedUrl);
+      }
+    };
+    setup();
+  }, [currentQuestionData?.id, currentQuestionData?.audio_url, currentQuestionData?.question_type]);
 
   const submitTestMutation = useMutation({
     mutationFn: async ({ score, answers }: { score: number; answers: Record<string, string> }) => {
@@ -247,40 +284,6 @@ const PlacementTest = () => {
 
   const question = questions[currentQuestion];
   const progress = ((currentQuestion + 1) / questions.length) * 100;
-
-  const [signedAudioUrl, setSignedAudioUrl] = useState<string | null>(null);
-  useEffect(() => {
-    const setup = async () => {
-      if (!question) return setSignedAudioUrl(null);
-      if (question.question_type !== 'audio_listen' || !question.audio_url) {
-        setSignedAudioUrl(null);
-        return;
-      }
-      const extractPath = (urlOrPath: string) => {
-        if (!urlOrPath) return null;
-        if (!urlOrPath.startsWith('http')) return urlOrPath;
-        const marker = '/student-audio-responses/';
-        const idx = urlOrPath.indexOf(marker);
-        if (idx === -1) return null;
-        return urlOrPath.substring(idx + marker.length);
-      };
-      const path = extractPath(question.audio_url);
-      if (!path) {
-        setSignedAudioUrl(question.audio_url);
-        return;
-      }
-      const { data, error } = await supabase.storage
-        .from('student-audio-responses')
-        .createSignedUrl(path, 3600);
-      if (error || !data) {
-        console.warn('Audio signed URL error:', error);
-        setSignedAudioUrl(question.audio_url);
-      } else {
-        setSignedAudioUrl(data.signedUrl);
-      }
-    };
-    setup();
-  }, [question?.id, question?.audio_url, question?.question_type]);
 
   return (
     <div className="min-h-screen bg-background">

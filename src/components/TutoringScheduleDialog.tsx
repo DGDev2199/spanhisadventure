@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
-import { Clock, User, Calendar, LayoutGrid, List } from "lucide-react";
+import { Clock, User, Calendar, LayoutGrid, List, Download } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import html2canvas from "html2canvas";
+import { toast } from "sonner";
 
 interface TutoringScheduleDialogProps {
   open: boolean;
@@ -33,6 +36,8 @@ export function TutoringScheduleDialog({
   studentId,
 }: TutoringScheduleDialogProps) {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [isExporting, setIsExporting] = useState(false);
+  const calendarRef = useRef<HTMLDivElement>(null);
 
   const { data: schedules, isLoading } = useQuery({
     queryKey: ["tutoring-schedule", studentId, open],
@@ -99,6 +104,28 @@ export function TutoringScheduleDialog({
     }) || [];
   };
 
+  const handleExport = async () => {
+    if (!calendarRef.current) return;
+    
+    setIsExporting(true);
+    try {
+      const canvas = await html2canvas(calendarRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+      });
+      
+      const link = document.createElement('a');
+      link.download = `horario-tutorias-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      toast.success("Horario exportado exitosamente");
+    } catch (error) {
+      toast.error("Error al exportar el horario");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
@@ -108,21 +135,34 @@ export function TutoringScheduleDialog({
               <Calendar className="h-5 w-5 text-primary" />
               Mi Horario de Tutorías
             </DialogTitle>
-            <div className="flex items-center gap-1">
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-              >
-                <List className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === 'calendar' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('calendar')}
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </Button>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+                <Button
+                  variant={viewMode === 'list' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('list')}
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setViewMode('calendar')}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+              </div>
+              {viewMode === 'calendar' && schedules && schedules.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExport}
+                  disabled={isExporting}
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  {isExporting ? "Exportando..." : "Exportar"}
+                </Button>
+              )}
             </div>
           </div>
           {totalSessions > 0 && (
@@ -169,36 +209,69 @@ export function TutoringScheduleDialog({
           </ScrollArea>
         ) : (
           <ScrollArea className="flex-1 min-h-0 h-[55vh]">
-            <div className="min-w-[600px]">
-              <div className="grid grid-cols-8 gap-1 mb-2">
-                <div className="p-2 text-xs font-medium text-muted-foreground">Hora</div>
-                {DAYS.slice(1, 7).concat(DAYS[0]).map((day) => (
-                  <div key={day.value} className={cn("p-2 text-xs font-medium text-center rounded", day.color)}>
-                    {day.label}
+            <TooltipProvider>
+              <div ref={calendarRef} className="min-w-[600px] p-2 bg-background">
+                <div className="grid grid-cols-8 gap-1 mb-2">
+                  <div className="p-2 text-xs font-medium text-muted-foreground">Hora</div>
+                  {DAYS.slice(1, 7).concat(DAYS[0]).map((day) => (
+                    <div key={day.value} className={cn("p-2 text-xs font-medium text-center rounded", day.color)}>
+                      {day.label}
+                    </div>
+                  ))}
+                </div>
+                {TIME_SLOTS.map((timeSlot) => (
+                  <div key={timeSlot} className="grid grid-cols-8 gap-1 mb-1">
+                    <div className="p-1 text-xs text-muted-foreground">{timeSlot}</div>
+                    {DAYS.slice(1, 7).concat(DAYS[0]).map((day) => {
+                      const slotSchedules = getScheduleForSlot(day.value, timeSlot);
+                      const hasSchedule = slotSchedules.length > 0;
+                      
+                      const cell = (
+                        <div className={cn(
+                          "p-1 min-h-[32px] rounded text-xs border cursor-default",
+                          hasSchedule ? day.color : "bg-muted/30"
+                        )}>
+                          {hasSchedule && (
+                            <div className="truncate font-medium">
+                              {slotSchedules[0].tutorName?.split(' ')[0]}
+                            </div>
+                          )}
+                        </div>
+                      );
+                      
+                      if (!hasSchedule) {
+                        return <div key={day.value}>{cell}</div>;
+                      }
+                      
+                      return (
+                        <Tooltip key={day.value}>
+                          <TooltipTrigger asChild>
+                            {cell}
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <div className="space-y-1">
+                              <p className="font-semibold">{day.fullLabel}</p>
+                              {slotSchedules.map((s, i) => (
+                                <div key={i} className="text-sm">
+                                  <p className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {s.start_time.slice(0, 5)} - {s.end_time.slice(0, 5)}
+                                  </p>
+                                  <p className="flex items-center gap-1">
+                                    <User className="h-3 w-3" />
+                                    {s.tutorName}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    })}
                   </div>
                 ))}
               </div>
-              {TIME_SLOTS.map((timeSlot) => (
-                <div key={timeSlot} className="grid grid-cols-8 gap-1 mb-1">
-                  <div className="p-1 text-xs text-muted-foreground">{timeSlot}</div>
-                  {DAYS.slice(1, 7).concat(DAYS[0]).map((day) => {
-                    const slotSchedules = getScheduleForSlot(day.value, timeSlot);
-                    return (
-                      <div key={day.value} className={cn(
-                        "p-1 min-h-[32px] rounded text-xs border",
-                        slotSchedules.length > 0 ? day.color : "bg-muted/30"
-                      )}>
-                        {slotSchedules.length > 0 && (
-                          <div className="truncate font-medium">
-                            {slotSchedules[0].tutorName?.split(' ')[0]}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
+            </TooltipProvider>
           </ScrollArea>
         )}
       </DialogContent>

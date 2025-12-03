@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, Lock, BookOpen } from 'lucide-react';
+import { CheckCircle, Lock, BookOpen, Trash2, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface StudentProgressViewProps {
@@ -27,12 +27,27 @@ const DAY_LABELS = {
   weaknesses: 'Debilidades'
 };
 
+// Helper function to format week display name
+const formatWeekName = (weekNumber: number): string => {
+  if (weekNumber >= 100) {
+    const baseWeek = Math.floor(weekNumber / 100);
+    const specialNumber = weekNumber % 100;
+    return `Semana ${baseWeek}-${specialNumber}+`;
+  }
+  return `Semana ${weekNumber}`;
+};
+
+// Helper to check if week is special
+const isSpecialWeek = (weekNumber: number): boolean => weekNumber >= 100;
+
 export const StudentProgressView = ({ studentId, isEditable }: StudentProgressViewProps) => {
   const queryClient = useQueryClient();
   const [editingWeek, setEditingWeek] = useState<number | null>(null);
   const [weekTheme, setWeekTheme] = useState('');
   const [weekObjectives, setWeekObjectives] = useState('');
   const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
+  const [renamingWeekId, setRenamingWeekId] = useState<string | null>(null);
+  const [newWeekTheme, setNewWeekTheme] = useState('');
 
   // Fetch current user to determine role
   const { data: currentUser } = useQuery({
@@ -257,6 +272,55 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
     onError: (error: any) => {
       console.error('❌ Special week mutation error:', error);
       toast.error('Error al crear semana especial');
+    }
+  });
+
+  // Delete week mutation
+  const deleteWeekMutation = useMutation({
+    mutationFn: async (weekId: string) => {
+      // First delete all notes for this week
+      const { error: notesError } = await supabase
+        .from('student_progress_notes')
+        .delete()
+        .eq('week_id', weekId);
+      
+      if (notesError) throw notesError;
+      
+      // Then delete the week
+      const { error } = await supabase
+        .from('student_progress_weeks')
+        .delete()
+        .eq('id', weekId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student-progress-weeks', studentId] });
+      toast.success('Semana eliminada');
+    },
+    onError: () => {
+      toast.error('Error al eliminar la semana');
+    }
+  });
+
+  // Rename week mutation
+  const renameWeekMutation = useMutation({
+    mutationFn: async ({ weekId, theme }: { weekId: string; theme: string }) => {
+      const { error } = await supabase
+        .from('student_progress_weeks')
+        .update({ week_theme: theme })
+        .eq('id', weekId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student-progress-weeks', studentId] });
+      toast.success('Nombre de semana actualizado');
+      setRenamingWeekId(null);
+      setNewWeekTheme('');
+    },
+    onError: () => {
+      toast.error('Error al renombrar la semana');
     }
   });
 
@@ -512,8 +576,8 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                     )}
                     <div className="text-left">
                       <p className="font-semibold">
-                        {week.week_number >= 100 
-                          ? week.week_theme 
+                        {isSpecialWeek(week.week_number) 
+                          ? `${formatWeekName(week.week_number)} - ${week.week_theme}` 
                           : `Semana ${week.week_number} - ${week.week_theme}`}
                       </p>
                       {isCurrent && !week.is_completed && (
@@ -522,12 +586,73 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {isEditable && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setRenamingWeekId(week.id);
+                            setNewWeekTheme(week.week_theme);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        {isSpecialWeek(week.week_number) && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (confirm('¿Estás seguro de eliminar esta semana especial?')) {
+                                deleteWeekMutation.mutate(week.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </>
+                    )}
                     {week.is_completed && (
                       <span className="text-sm text-green-600 font-medium">Completada</span>
                     )}
                   </div>
                 </div>
               </AccordionTrigger>
+
+              {/* Rename Dialog */}
+              {renamingWeekId === week.id && (
+                <div className="px-4 py-3 bg-muted/50 border-b">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={newWeekTheme}
+                      onChange={(e) => setNewWeekTheme(e.target.value)}
+                      placeholder="Nuevo nombre de la semana"
+                      className="flex-1"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => renameWeekMutation.mutate({ weekId: week.id, theme: newWeekTheme })}
+                    >
+                      Guardar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setRenamingWeekId(null);
+                        setNewWeekTheme('');
+                      }}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <AccordionContent className="px-4 pb-4">
                 <div className="space-y-4">

@@ -216,26 +216,30 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
       
       console.log('✅ Week marked as completed');
       
-      // Create special week - use a decimal-like identifier in the theme
+      // Create special week - use a unique week number (base week * 100 + count)
       console.log('📝 Creating special week for week:', currentWeekData.week_number);
       
-      // Check how many special weeks exist for this week number
+      // Check how many special weeks exist for this base week (week numbers 100+)
+      const baseSpecialNumber = currentWeekData.week_number * 100;
       const { data: existingSpecialWeeks } = await supabase
         .from('student_progress_weeks')
-        .select('week_number, week_theme')
+        .select('week_number')
         .eq('student_id', studentId)
-        .eq('week_number', currentWeekData.week_number)
-        .ilike('week_theme', '%Especial%');
+        .gte('week_number', baseSpecialNumber)
+        .lt('week_number', baseSpecialNumber + 100);
       
       const specialCount = (existingSpecialWeeks?.length || 0) + 1;
+      const specialWeekNumber = baseSpecialNumber + specialCount;
+      
+      console.log('📝 Special week number:', specialWeekNumber, 'count:', specialCount);
       
       const { error: insertError } = await supabase
         .from('student_progress_weeks')
         .insert({
           student_id: studentId,
-          week_number: currentWeekData.week_number, // Same week number
-          week_theme: `${currentWeekData.week_theme} - Semana Especial ${specialCount}`,
-          week_objectives: `Objetivos especiales de refuerzo para semana ${currentWeekData.week_number} (Especial ${specialCount})`,
+          week_number: specialWeekNumber, // Unique number for special weeks (e.g., 101, 102 for week 1 specials)
+          week_theme: `Semana ${currentWeekData.week_number} - Especial ${specialCount}`,
+          week_objectives: `Objetivos especiales de refuerzo para semana ${currentWeekData.week_number}`,
           is_completed: false
         });
       

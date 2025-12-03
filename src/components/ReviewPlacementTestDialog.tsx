@@ -121,31 +121,57 @@ export function ReviewPlacementTestDialog({
   // Generate signed URLs for student audio responses
   useEffect(() => {
     const generate = async () => {
-      if (!studentAnswers || !open) return;
+      if (!studentAnswers || !open || !questions) return;
       const entries: Record<string, string> = {};
+      
+      // Get question IDs that are audio_response type
+      const audioResponseQuestionIds = new Set(
+        questions
+          .filter(q => q.question_type === 'audio_response')
+          .map(q => q.id)
+      );
+      
       for (const [questionId, answer] of Object.entries(studentAnswers)) {
-        if (answer && typeof answer === 'string' && answer.includes('student-audio-responses')) {
+        // Check if this is an audio response question and has a valid answer
+        if (audioResponseQuestionIds.has(questionId) && answer && typeof answer === 'string') {
+          // The answer could be a full URL or just a path - extract the path
           const extractPath = (urlOrPath: string) => {
             if (!urlOrPath) return null;
-            if (!urlOrPath.startsWith('http')) return urlOrPath;
-            const marker = '/student-audio-responses/';
-            const idx = urlOrPath.indexOf(marker);
-            if (idx === -1) return null;
-            return urlOrPath.substring(idx + marker.length);
+            // If it's already just a path (contains .webm or similar audio extension)
+            if (!urlOrPath.startsWith('http') && (urlOrPath.includes('.webm') || urlOrPath.includes('.mp3') || urlOrPath.includes('.wav') || urlOrPath.includes('.m4a'))) {
+              return urlOrPath;
+            }
+            // If it's a full URL, extract the path
+            if (urlOrPath.startsWith('http')) {
+              const marker = '/student-audio-responses/';
+              const idx = urlOrPath.indexOf(marker);
+              if (idx !== -1) {
+                return urlOrPath.substring(idx + marker.length);
+              }
+            }
+            return null;
           };
+          
           const path = extractPath(answer);
+          console.log('🎵 Processing audio answer for question', questionId, '- path:', path);
+          
           if (path) {
-            const { data } = await supabase.storage
+            const { data, error } = await supabase.storage
               .from('student-audio-responses')
               .createSignedUrl(path, 3600);
-            if (data?.signedUrl) entries[questionId] = data.signedUrl;
+            if (data?.signedUrl) {
+              entries[questionId] = data.signedUrl;
+              console.log('✅ Signed URL generated for', questionId);
+            } else if (error) {
+              console.error('❌ Error generating signed URL for', questionId, error);
+            }
           }
         }
       }
       setSignedStudentAudio(entries);
     };
     generate();
-  }, [studentAnswers, open]);
+  }, [studentAnswers, open, questions]);
 
   const assignLevelMutation = useMutation({
     mutationFn: async ({ level, week, feedback }: { level: string; week: number; feedback: string }) => {

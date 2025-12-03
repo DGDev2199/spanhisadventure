@@ -253,7 +253,7 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
         .insert({
           student_id: studentId,
           week_number: specialWeekNumber, // Unique number for special weeks (e.g., 701, 702 for week 7 specials)
-          week_theme: 'Refuerzo',
+          week_theme: `Semana ${currentWeekData.week_number}-${specialCount}+`,
           week_objectives: `Objetivos de refuerzo para semana ${currentWeekData.week_number}`,
           is_completed: false
         });

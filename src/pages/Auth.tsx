@@ -225,6 +225,7 @@ const Auth = () => {
 
           if (studentProfileError) {
             console.error('Student profile creation error:', studentProfileError);
+            toast.error('Error al crear el perfil de estudiante. El trigger de respaldo debería crearlo automáticamente.');
           }
         }
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, User, BookOpen, Calendar, MessageSquare, Award, CheckCircle, ClipboardList, Download, Users, Search, Globe } from 'lucide-react';
+import { LogOut, User, BookOpen, Calendar, MessageSquare, Award, CheckCircle, ClipboardList, Download, Users, Search, Globe, Video } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -16,6 +16,10 @@ import { ClassScheduleDialog } from '@/components/ClassScheduleDialog';
 import { TutoringScheduleDialog } from '@/components/TutoringScheduleDialog';
 import { NotificationBell } from '@/components/NotificationBell';
 import { Badge } from '@/components/ui/badge';
+import { StudentChatDialog } from '@/components/StudentChatDialog';
+import { BookingDialog } from '@/components/BookingDialog';
+import { VideoCallDialog } from '@/components/VideoCallDialog';
+import { MyBookingsPanel } from '@/components/MyBookingsPanel';
 
 const Dashboard = () => {
   const { user, userRole, signOut } = useAuth();
@@ -24,6 +28,12 @@ const Dashboard = () => {
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [classScheduleOpen, setClassScheduleOpen] = useState(false);
   const [tutoringScheduleOpen, setTutoringScheduleOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatStaff, setChatStaff] = useState<{ id: string; name: string; avatar?: string | null; role: 'teacher' | 'tutor' } | null>(null);
+  const [bookingOpen, setBookingOpen] = useState(false);
+  const [bookingStaff, setBookingStaff] = useState<{ id: string; name: string; avatar?: string | null; role: 'teacher' | 'tutor' } | null>(null);
+  const [videoCallOpen, setVideoCallOpen] = useState(false);
+  const [videoCallStaff, setVideoCallStaff] = useState<{ id: string; name: string; avatar?: string | null; role: 'teacher' | 'tutor' } | null>(null);
 
   const { data: studentProfile, isLoading: profileLoading } = useQuery({
     queryKey: ['student-profile', user?.id],
@@ -299,15 +309,57 @@ const Dashboard = () => {
                 {teacherProfile ? 'Tu profesor' : 'Contacta al admin'}
               </p>
               {teacherProfile && user?.id && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full mt-3"
-                  onClick={() => setClassScheduleOpen(true)}
-                >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Ver Horario de Clases
-                </Button>
+                <div className="space-y-2 mt-3">
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => {
+                        setChatStaff({ id: teacherProfile.id, name: teacherProfile.full_name, avatar: null, role: 'teacher' });
+                        setChatOpen(true);
+                      }}
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => {
+                        setVideoCallStaff({ id: teacherProfile.id, name: teacherProfile.full_name, avatar: null, role: 'teacher' });
+                        setVideoCallOpen(true);
+                      }}
+                    >
+                      <Video className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {studentProfile?.student_type === 'online' && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => {
+                        setBookingStaff({ id: teacherProfile.id, name: teacherProfile.full_name, avatar: null, role: 'teacher' });
+                        setBookingOpen(true);
+                      }}
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Reservar Clase
+                    </Button>
+                  )}
+                  {studentProfile?.student_type !== 'online' && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => setClassScheduleOpen(true)}
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Ver Horario de Clases
+                    </Button>
+                  )}
+                </div>
               )}
             </CardContent>
           </Card>
@@ -334,15 +386,57 @@ const Dashboard = () => {
                 {tutorProfile ? 'Tu tutor' : 'Contacta al admin'}
               </p>
               {tutorProfile && user?.id && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full mt-3"
-                  onClick={() => setTutoringScheduleOpen(true)}
-                >
-                  <Calendar className="h-4 w-4 mr-2" />
-                  Ver Horario de Tutorías
-                </Button>
+                <div className="space-y-2 mt-3">
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => {
+                        setChatStaff({ id: tutorProfile.id, name: tutorProfile.full_name, avatar: null, role: 'tutor' });
+                        setChatOpen(true);
+                      }}
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={() => {
+                        setVideoCallStaff({ id: tutorProfile.id, name: tutorProfile.full_name, avatar: null, role: 'tutor' });
+                        setVideoCallOpen(true);
+                      }}
+                    >
+                      <Video className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  {studentProfile?.student_type === 'online' && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => {
+                        setBookingStaff({ id: tutorProfile.id, name: tutorProfile.full_name, avatar: null, role: 'tutor' });
+                        setBookingOpen(true);
+                      }}
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Reservar Tutoría
+                    </Button>
+                  )}
+                  {studentProfile?.student_type !== 'online' && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full"
+                      onClick={() => setTutoringScheduleOpen(true)}
+                    >
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Ver Horario de Tutorías
+                    </Button>
+                  )}
+                </div>
               )}
             </CardContent>
           </Card>
@@ -627,10 +721,19 @@ const Dashboard = () => {
           </Card>
         )}
 
-        {/* Weekly Calendar */}
-        <div id="weekly-calendar" className="mt-6">
-          <WeeklyCalendar />
-        </div>
+        {/* My Bookings Panel - Online Students Only */}
+        {studentProfile?.student_type === 'online' && (
+          <div className="mt-6">
+            <MyBookingsPanel />
+          </div>
+        )}
+
+        {/* Weekly Calendar - Presencial Students Only */}
+        {studentProfile?.student_type !== 'online' && (
+          <div id="weekly-calendar" className="mt-6">
+            <WeeklyCalendar />
+          </div>
+        )}
       </main>
 
       <RoleBasedEditProfileDialog open={editProfileOpen} onOpenChange={setEditProfileOpen} />
@@ -648,6 +751,51 @@ const Dashboard = () => {
             studentId={user.id}
           />
         </>
+      )}
+
+      {/* Chat Dialog */}
+      {chatStaff && (
+        <StudentChatDialog
+          open={chatOpen}
+          onOpenChange={setChatOpen}
+          staffId={chatStaff.id}
+          staffName={chatStaff.name}
+          staffAvatar={chatStaff.avatar}
+          staffRole={chatStaff.role}
+          onStartVideoCall={() => {
+            setChatOpen(false);
+            setVideoCallStaff(chatStaff);
+            setVideoCallOpen(true);
+          }}
+          onBookClass={() => {
+            setChatOpen(false);
+            setBookingStaff(chatStaff);
+            setBookingOpen(true);
+          }}
+        />
+      )}
+
+      {/* Booking Dialog */}
+      {bookingStaff && (
+        <BookingDialog
+          open={bookingOpen}
+          onOpenChange={setBookingOpen}
+          staffId={bookingStaff.id}
+          staffName={bookingStaff.name}
+          staffAvatar={bookingStaff.avatar}
+          staffRole={bookingStaff.role}
+        />
+      )}
+
+      {/* Video Call Dialog */}
+      {videoCallStaff && (
+        <VideoCallDialog
+          open={videoCallOpen}
+          onOpenChange={setVideoCallOpen}
+          participantName={videoCallStaff.name}
+          participantAvatar={videoCallStaff.avatar}
+          participantRole={videoCallStaff.role}
+        />
       )}
     </div>
   );

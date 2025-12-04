@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Trash2, Download, FileIcon, Edit2, MoreHorizontal } from 'lucide-react';
 import {
   DropdownMenu,
@@ -34,8 +35,48 @@ interface PostCardProps {
       full_name: string;
       avatar_url: string | null;
     } | null;
+    role?: string | null;
   };
 }
+
+const getRoleBadgeStyles = (role: string | null | undefined) => {
+  switch (role) {
+    case 'admin':
+      return 'bg-red-100 text-red-700 border-red-200';
+    case 'coordinator':
+      return 'bg-purple-100 text-purple-700 border-purple-200';
+    case 'teacher':
+      return 'bg-blue-100 text-blue-700 border-blue-200';
+    case 'tutor':
+      return 'bg-green-100 text-green-700 border-green-200';
+    case 'student':
+      return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+    default:
+      return 'bg-gray-100 text-gray-700 border-gray-200';
+  }
+};
+
+const getRoleLabel = (role: string | null | undefined) => {
+  switch (role) {
+    case 'admin': return 'Admin';
+    case 'coordinator': return 'Coordinador';
+    case 'teacher': return 'Profesor';
+    case 'tutor': return 'Tutor';
+    case 'student': return 'Estudiante';
+    default: return 'Usuario';
+  }
+};
+
+const getAvatarBgColor = (role: string | null | undefined) => {
+  switch (role) {
+    case 'admin': return 'bg-red-500';
+    case 'coordinator': return 'bg-purple-500';
+    case 'teacher': return 'bg-blue-500';
+    case 'tutor': return 'bg-green-500';
+    case 'student': return 'bg-yellow-500';
+    default: return 'bg-gray-500';
+  }
+};
 
 export const PostCard = ({ post }: PostCardProps) => {
   const { user } = useAuth();
@@ -116,16 +157,23 @@ export const PostCard = ({ post }: PostCardProps) => {
 
   return (
     <>
-      <Card className="shadow-md">
+      <Card className="shadow-md hover:shadow-lg transition-shadow">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <Avatar>
+              <Avatar className="h-10 w-10">
                 <AvatarImage src={post.profiles?.avatar_url || undefined} />
-                <AvatarFallback>{initials}</AvatarFallback>
+                <AvatarFallback className={`${getAvatarBgColor(post.role)} text-white font-medium`}>
+                  {initials}
+                </AvatarFallback>
               </Avatar>
               <div>
-                <p className="font-semibold">{authorName}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-semibold">{authorName}</p>
+                  <Badge variant="outline" className={`text-xs ${getRoleBadgeStyles(post.role)}`}>
+                    {getRoleLabel(post.role)}
+                  </Badge>
+                </div>
                 <p className="text-xs text-muted-foreground">
                   {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: es })}
                   {wasEdited && ' · editado'}

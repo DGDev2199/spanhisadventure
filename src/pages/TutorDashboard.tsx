@@ -18,6 +18,7 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { RoleBasedEditProfileDialog } from '@/components/RoleBasedEditProfileDialog';
 import { ClassRequestsPanel } from '@/components/ClassRequestsPanel';
 import { AvailabilityCalendar } from '@/components/AvailabilityCalendar';
+import { StaffBookingsPanel } from '@/components/StaffBookingsPanel';
 import { useNavigate } from 'react-router-dom';
 
 const TutorDashboard = () => {
@@ -188,6 +189,11 @@ const TutorDashboard = () => {
         {/* Class Requests from Online Students */}
         <div className="mb-8">
           <ClassRequestsPanel />
+        </div>
+
+        {/* Class Bookings from Online Students */}
+        <div className="mb-8">
+          <StaffBookingsPanel />
         </div>
 
         {/* Availability Calendar */}

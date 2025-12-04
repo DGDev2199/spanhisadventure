@@ -28,6 +28,7 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { RoleBasedEditProfileDialog } from '@/components/RoleBasedEditProfileDialog';
 import { ClassRequestsPanel } from '@/components/ClassRequestsPanel';
 import { AvailabilityCalendar } from '@/components/AvailabilityCalendar';
+import { StaffBookingsPanel } from '@/components/StaffBookingsPanel';
 import { Settings } from 'lucide-react';
 import { useSwipeable } from 'react-swipeable';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -332,6 +333,11 @@ const TeacherDashboard = () => {
         {/* Class Requests from Online Students */}
         <div className="mb-8">
           <ClassRequestsPanel />
+        </div>
+
+        {/* Class Bookings from Online Students */}
+        <div className="mb-8">
+          <StaffBookingsPanel />
         </div>
 
         {/* Availability Calendar */}

@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { Clock, Edit, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, Edit, ChevronLeft, ChevronRight, Download, FileImage, FileText } from 'lucide-react';
 import { EditScheduleEventDialog } from '@/components/EditScheduleEventDialog';
 import { Button } from '@/components/ui/button';
 import { useSwipeable } from 'react-swipeable';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import { toast } from 'sonner';
 
 interface ScheduleEvent {
   id: string;
@@ -44,6 +47,59 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [isExporting, setIsExporting] = useState(false);
+  const calendarRef = useRef<HTMLDivElement>(null);
+
+  const exportToPNG = async () => {
+    if (!calendarRef.current) return;
+    setIsExporting(true);
+    try {
+      const canvas = await html2canvas(calendarRef.current, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+      });
+      const link = document.createElement('a');
+      link.download = `horario-semanal-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      toast.success('Horario exportado como PNG');
+    } catch (error) {
+      toast.error('Error al exportar horario');
+    }
+    setIsExporting(false);
+  };
+
+  const exportToPDF = async () => {
+    if (!calendarRef.current) return;
+    setIsExporting(true);
+    try {
+      const canvas = await html2canvas(calendarRef.current, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+      });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4',
+      });
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      const imgY = 10;
+      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      pdf.save(`horario-semanal-${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success('Horario exportado como PDF');
+    } catch (error) {
+      toast.error('Error al exportar horario');
+    }
+    setIsExporting(false);
+  };
 
   const handlers = useSwipeable({
     onSwipedLeft: () => setWeekOffset(prev => prev + 1),
@@ -140,12 +196,32 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
   return (
     <Card className="shadow-lg">
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
             Calendario Semanal
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportToPNG}
+              disabled={isExporting}
+              className="gap-1"
+            >
+              <FileImage className="h-4 w-4" />
+              <span className="hidden sm:inline">PNG</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportToPDF}
+              disabled={isExporting}
+              className="gap-1"
+            >
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">PDF</span>
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -155,7 +231,7 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm text-muted-foreground min-w-[120px] text-center">
+            <span className="text-sm text-muted-foreground min-w-[100px] text-center">
               {getWeekLabel()}
             </span>
             <Button
@@ -173,7 +249,7 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
         </p>
       </CardHeader>
       <CardContent className="overflow-x-auto" {...handlers}>
-        <div className="min-w-[800px]">
+        <div className="min-w-[800px]" ref={calendarRef}>
           {/* Header with days */}
           <div className="grid grid-cols-8 gap-2 mb-2">
             <div className="text-xs font-medium text-muted-foreground p-2">Hora</div>

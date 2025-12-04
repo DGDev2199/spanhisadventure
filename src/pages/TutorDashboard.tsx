@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, GraduationCap, MessageSquare, TrendingUp, CalendarClock, Users, Settings } from 'lucide-react';
+import { LogOut, GraduationCap, MessageSquare, TrendingUp, CalendarClock, Users, Settings, UsersRound } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useState } from 'react';
@@ -16,9 +16,11 @@ import { MyScheduleDialog } from '@/components/MyScheduleDialog';
 import { AssignMultipleStudentsDialog } from '@/components/AssignMultipleStudentsDialog';
 import { NotificationBell } from '@/components/NotificationBell';
 import { RoleBasedEditProfileDialog } from '@/components/RoleBasedEditProfileDialog';
+import { useNavigate } from 'react-router-dom';
 
 const TutorDashboard = () => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string } | null>(null);
   const [progressDialogOpen, setProgressDialogOpen] = useState(false);
@@ -91,6 +93,15 @@ const TutorDashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            <Button
+              onClick={() => navigate('/feed')}
+              variant="outline"
+              size="sm"
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
+            >
+              <UsersRound className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Comunidad</span>
+            </Button>
             <NotificationBell />
             <Button
               onClick={() => setAssignMultipleOpen(true)}

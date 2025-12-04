@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, User, BookOpen, Calendar, MessageSquare, Award, CheckCircle, ClipboardList, Download, Users } from 'lucide-react';
+import { LogOut, User, BookOpen, Calendar, MessageSquare, Award, CheckCircle, ClipboardList, Download, Users, Search, Globe } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -15,6 +15,7 @@ import { StudentProgressView } from '@/components/StudentProgressView';
 import { ClassScheduleDialog } from '@/components/ClassScheduleDialog';
 import { TutoringScheduleDialog } from '@/components/TutoringScheduleDialog';
 import { NotificationBell } from '@/components/NotificationBell';
+import { Badge } from '@/components/ui/badge';
 
 const Dashboard = () => {
   const { user, userRole, signOut } = useAuth();
@@ -195,28 +196,71 @@ const Dashboard = () => {
       {/* Main Content */}
       <main className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 safe-bottom">
         <div className="mb-4 sm:mb-6 lg:mb-8 animate-fade-in">
-          <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-1 sm:mb-2">¡Bienvenido de vuelta!</h2>
+          <div className="flex items-center gap-2 mb-1">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold">¡Bienvenido de vuelta!</h2>
+            {studentProfile?.student_type && (
+              <Badge variant={studentProfile.student_type === 'online' ? 'secondary' : 'default'}>
+                {studentProfile.student_type === 'online' ? '🌐 Online' : '📍 Presencial'}
+              </Badge>
+            )}
+          </div>
           <p className="text-sm sm:text-base text-muted-foreground">
-            Continúa tu viaje de aprendizaje del español
+            {studentProfile?.student_type === 'online' 
+              ? 'Gestiona tus clases online y conecta con profesores' 
+              : 'Continúa tu viaje de aprendizaje del español'}
           </p>
         </div>
 
-        {/* Quick Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
-          <Card className="shadow-md hover:shadow-lg transition-all duration-300 animate-fade-in">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-xs sm:text-sm font-medium">Mi Cuarto</CardTitle>
-              <Award className="h-4 w-4 text-accent" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg sm:text-2xl font-bold text-primary truncate">
-                {profileLoading ? '...' : studentProfile?.room || 'Sin Asignar'}
+        {/* Online Student: Browse Teachers Button */}
+        {studentProfile?.student_type === 'online' && (
+          <Card className="mb-6 border-primary/20 bg-primary/5">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Search className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Encuentra tu Profesor o Tutor</h3>
+                    <p className="text-sm text-muted-foreground">
+                      {teacherProfile && tutorProfile 
+                        ? 'Ya tienes profesor y tutor asignados'
+                        : 'Explora perfiles y solicita clases'}
+                    </p>
+                  </div>
+                </div>
+                <Button onClick={() => navigate('/browse-teachers')}>
+                  <Globe className="h-4 w-4 mr-2" />
+                  Buscar Profesores
+                </Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {studentProfile?.room ? 'Tu cuarto asignado' : 'Contacta a tu profesor'}
-              </p>
             </CardContent>
           </Card>
+        )}
+
+        {/* Quick Stats Grid - Different for Online vs Presencial */}
+        <div className={`grid gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8 ${
+          studentProfile?.student_type === 'online' 
+            ? 'grid-cols-2 lg:grid-cols-3' 
+            : 'grid-cols-2 lg:grid-cols-4'
+        }`}>
+          {/* Room - Only for Presencial */}
+          {studentProfile?.student_type !== 'online' && (
+            <Card className="shadow-md hover:shadow-lg transition-all duration-300 animate-fade-in">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                <CardTitle className="text-xs sm:text-sm font-medium">Mi Cuarto</CardTitle>
+                <Award className="h-4 w-4 text-accent" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-lg sm:text-2xl font-bold text-primary truncate">
+                  {profileLoading ? '...' : studentProfile?.room || 'Sin Asignar'}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {studentProfile?.room ? 'Tu cuarto asignado' : 'Contacta a tu profesor'}
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="shadow-md hover:shadow-lg transition-all duration-300 animate-fade-in">
             <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">

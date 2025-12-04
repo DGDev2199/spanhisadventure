@@ -16,6 +16,8 @@ import { MyScheduleDialog } from '@/components/MyScheduleDialog';
 import { AssignMultipleStudentsDialog } from '@/components/AssignMultipleStudentsDialog';
 import { NotificationBell } from '@/components/NotificationBell';
 import { RoleBasedEditProfileDialog } from '@/components/RoleBasedEditProfileDialog';
+import { ClassRequestsPanel } from '@/components/ClassRequestsPanel';
+import { AvailabilityCalendar } from '@/components/AvailabilityCalendar';
 import { useNavigate } from 'react-router-dom';
 
 const TutorDashboard = () => {
@@ -182,6 +184,16 @@ const TutorDashboard = () => {
             <StaffHoursCard userId={user.id} />
           </div>
         )}
+
+        {/* Class Requests from Online Students */}
+        <div className="mb-8">
+          <ClassRequestsPanel />
+        </div>
+
+        {/* Availability Calendar */}
+        <div className="mb-8">
+          <AvailabilityCalendar />
+        </div>
 
         {/* Students Table */}
         <Card className="shadow-md mb-6">

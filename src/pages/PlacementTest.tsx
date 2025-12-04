@@ -151,21 +151,41 @@ const PlacementTest = () => {
   const uploadAudioAnswer = async (questionId: string) => {
     if (!audioBlob || !user?.id) return null;
 
+    // Validate file size (10MB limit)
+    const MAX_SIZE = 10 * 1024 * 1024;
+    if (audioBlob.size > MAX_SIZE) {
+      toast.error('El archivo de audio es demasiado grande (máximo 10MB)');
+      return null;
+    }
+
+    // Validate MIME type
+    const validTypes = ['audio/webm', 'audio/wav', 'audio/mp3', 'audio/ogg', 'audio/mpeg'];
+    if (!validTypes.includes(audioBlob.type)) {
+      toast.error('Formato de audio no válido');
+      return null;
+    }
+
     try {
-      const fileName = `${user.id}/${questionId}_${Date.now()}.webm`;
+      // Sanitize questionId (extra safety even though UUIDs are safe)
+      const safeQuestionId = questionId.replace(/[^a-zA-Z0-9-]/g, '');
+      const fileName = `${user.id}/${safeQuestionId}_${Date.now()}.webm`;
+      
       const { error: uploadError } = await supabase.storage
         .from('student-audio-responses')
-        .upload(fileName, audioBlob);
+        .upload(fileName, audioBlob, {
+          contentType: audioBlob.type,
+          upsert: false
+        });
 
       if (uploadError) {
-        console.error('Audio upload error:', uploadError);
+        toast.error('Error al subir el audio');
         return null;
       }
 
       // Return the storage path; we'll generate signed URLs when needed
       return fileName;
     } catch (error) {
-      console.error('Audio upload exception:', error);
+      toast.error('Error al subir el audio');
       return null;
     }
   };

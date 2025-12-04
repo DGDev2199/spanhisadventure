@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      class_requests: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string | null
+          request_type: string
+          responded_at: string | null
+          status: string
+          student_id: string
+          teacher_id: string | null
+          tutor_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          request_type: string
+          responded_at?: string | null
+          status?: string
+          student_id: string
+          teacher_id?: string | null
+          tutor_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string | null
+          request_type?: string
+          responded_at?: string | null
+          status?: string
+          student_id?: string
+          teacher_id?: string | null
+          tutor_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_requests_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_requests_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_tests: {
         Row: {
           created_at: string
@@ -307,6 +358,8 @@ export type Database = {
         Row: {
           age: number | null
           allergies: string | null
+          approved_at: string | null
+          approved_by: string | null
           availability: string | null
           avatar_url: string | null
           created_at: string
@@ -315,6 +368,7 @@ export type Database = {
           experience: string | null
           full_name: string
           id: string
+          is_approved: boolean | null
           languages_spoken: string[] | null
           nationality: string | null
           study_objectives: string | null
@@ -324,6 +378,8 @@ export type Database = {
         Insert: {
           age?: number | null
           allergies?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           availability?: string | null
           avatar_url?: string | null
           created_at?: string
@@ -332,6 +388,7 @@ export type Database = {
           experience?: string | null
           full_name: string
           id: string
+          is_approved?: boolean | null
           languages_spoken?: string[] | null
           nationality?: string | null
           study_objectives?: string | null
@@ -341,6 +398,8 @@ export type Database = {
         Update: {
           age?: number | null
           allergies?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           availability?: string | null
           avatar_url?: string | null
           created_at?: string
@@ -349,6 +408,7 @@ export type Database = {
           experience?: string | null
           full_name?: string
           id?: string
+          is_approved?: boolean | null
           languages_spoken?: string[] | null
           nationality?: string | null
           study_objectives?: string | null
@@ -591,6 +651,7 @@ export type Database = {
           placement_test_written_score: number | null
           room: string | null
           status: Database["public"]["Enums"]["student_status"]
+          student_type: Database["public"]["Enums"]["student_modality"]
           teacher_id: string | null
           tutor_id: string | null
           updated_at: string
@@ -607,6 +668,7 @@ export type Database = {
           placement_test_written_score?: number | null
           room?: string | null
           status?: Database["public"]["Enums"]["student_status"]
+          student_type?: Database["public"]["Enums"]["student_modality"]
           teacher_id?: string | null
           tutor_id?: string | null
           updated_at?: string
@@ -623,6 +685,7 @@ export type Database = {
           placement_test_written_score?: number | null
           room?: string | null
           status?: Database["public"]["Enums"]["student_status"]
+          student_type?: Database["public"]["Enums"]["student_modality"]
           teacher_id?: string | null
           tutor_id?: string | null
           updated_at?: string
@@ -1172,6 +1235,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "teacher" | "tutor" | "student" | "coordinator"
       cefr_level: "A1" | "A2" | "B1" | "B2" | "C1" | "C2"
+      student_modality: "presencial" | "online"
       student_status: "active" | "out_of_school"
       test_status: "not_started" | "pending" | "completed"
     }
@@ -1303,6 +1367,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "teacher", "tutor", "student", "coordinator"],
       cefr_level: ["A1", "A2", "B1", "B2", "C1", "C2"],
+      student_modality: ["presencial", "online"],
       student_status: ["active", "out_of_school"],
       test_status: ["not_started", "pending", "completed"],
     },

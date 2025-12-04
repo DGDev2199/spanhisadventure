@@ -21,6 +21,7 @@ const loginSchema = z.object({
 
 const registerSchema = z.object({
   role: z.enum(['student', 'tutor', 'teacher'], { required_error: 'Selecciona un rol' }),
+  studentType: z.enum(['presencial', 'online']).optional(),
   fullName: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
@@ -73,6 +74,7 @@ const Auth = () => {
   const [registerStudyObjectives, setRegisterStudyObjectives] = useState('');
   const [registerAvatar, setRegisterAvatar] = useState<string | null>(null);
   const [registerAvatarFile, setRegisterAvatarFile] = useState<File | null>(null);
+  const [registerStudentType, setRegisterStudentType] = useState<'presencial' | 'online'>('presencial');
 
   const handleGoogleLogin = async () => {
     try {
@@ -150,6 +152,7 @@ const Auth = () => {
       // Validate input
       const validatedData = registerSchema.parse({
         role: registerRole,
+        studentType: registerRole === 'student' ? registerStudentType : undefined,
         fullName: registerFullName,
         email: registerEmail,
         password: registerPassword,
@@ -216,7 +219,8 @@ const Auth = () => {
             .insert({
               user_id: data.user.id,
               status: 'active',
-              placement_test_status: 'not_started'
+              placement_test_status: 'not_started',
+              student_type: validatedData.studentType || 'presencial'
             });
 
           if (studentProfileError) {
@@ -285,8 +289,8 @@ const Auth = () => {
           console.error('Profile update error:', updateError);
         }
 
-        toast.success('¡Cuenta creada exitosamente! Verifica tu perfil antes de continuar.');
-        navigate('/profile-verification');
+        toast.success('¡Cuenta creada! Tu registro está pendiente de aprobación.');
+        navigate('/pending-approval');
       }
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -749,6 +753,43 @@ const Auth = () => {
 
                   {registerRole === 'student' && (
                     <>
+                      {/* Student Type Selection */}
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <Label className="text-sm">¿Dónde tomarás clases? *</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setRegisterStudentType('presencial')}
+                            className={`p-3 rounded-lg border-2 transition-all ${
+                              registerStudentType === 'presencial'
+                                ? 'border-primary bg-primary text-primary-foreground'
+                                : 'border-border hover:border-primary/50'
+                            }`}
+                          >
+                            <div className="text-center">
+                              <div className="text-lg mb-1">📍</div>
+                              <div className="text-sm font-medium">Presencial</div>
+                              <p className="text-xs opacity-80 mt-1">En la escuela física</p>
+                            </div>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setRegisterStudentType('online')}
+                            className={`p-3 rounded-lg border-2 transition-all ${
+                              registerStudentType === 'online'
+                                ? 'border-primary bg-primary text-primary-foreground'
+                                : 'border-border hover:border-primary/50'
+                            }`}
+                          >
+                            <div className="text-center">
+                              <div className="text-lg mb-1">🌐</div>
+                              <div className="text-sm font-medium">Online</div>
+                              <p className="text-xs opacity-80 mt-1">Desde mi hogar</p>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                      
                       <div className="space-y-1.5 sm:space-y-2">
                         <Label htmlFor="register-study-objectives" className="text-sm">Objetivos de Estudio (opcional)</Label>
                         <Input
@@ -760,28 +801,34 @@ const Auth = () => {
                           className="h-10 sm:h-11"
                         />
                       </div>
-                      <div className="space-y-1.5 sm:space-y-2">
-                        <Label htmlFor="register-allergies" className="text-sm">Alergias (opcional)</Label>
-                        <Input
-                          id="register-allergies"
-                          type="text"
-                          placeholder="Ninguna"
-                          value={registerAllergies}
-                          onChange={(e) => setRegisterAllergies(e.target.value)}
-                          className="h-10 sm:h-11"
-                        />
-                      </div>
-                      <div className="space-y-1.5 sm:space-y-2">
-                        <Label htmlFor="register-diet" className="text-sm">Preferencias Dietéticas (opcional)</Label>
-                        <Input
-                          id="register-diet"
-                          type="text"
-                          placeholder="Vegetariano"
-                          value={registerDiet}
-                          onChange={(e) => setRegisterDiet(e.target.value)}
-                          className="h-10 sm:h-11"
-                        />
-                      </div>
+                      
+                      {/* Only show for presencial students */}
+                      {registerStudentType === 'presencial' && (
+                        <>
+                          <div className="space-y-1.5 sm:space-y-2">
+                            <Label htmlFor="register-allergies" className="text-sm">Alergias (opcional)</Label>
+                            <Input
+                              id="register-allergies"
+                              type="text"
+                              placeholder="Ninguna"
+                              value={registerAllergies}
+                              onChange={(e) => setRegisterAllergies(e.target.value)}
+                              className="h-10 sm:h-11"
+                            />
+                          </div>
+                          <div className="space-y-1.5 sm:space-y-2">
+                            <Label htmlFor="register-diet" className="text-sm">Preferencias Dietéticas (opcional)</Label>
+                            <Input
+                              id="register-diet"
+                              type="text"
+                              placeholder="Vegetariano"
+                              value={registerDiet}
+                              onChange={(e) => setRegisterDiet(e.target.value)}
+                              className="h-10 sm:h-11"
+                            />
+                          </div>
+                        </>
+                      )}
                     </>
                   )}
                   <Button type="submit" className="w-full h-10 sm:h-11 touch-target" disabled={loading}>

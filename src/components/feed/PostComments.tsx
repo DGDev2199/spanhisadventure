@@ -14,13 +14,27 @@ interface PostCommentsProps {
   postAuthorId: string;
 }
 
+interface Comment {
+  id: string;
+  content: string;
+  author_id: string;
+  created_at: string;
+  updated_at?: string;
+  parent_id?: string | null;
+  profiles?: {
+    full_name: string;
+    avatar_url: string | null;
+  } | null;
+  role?: string | null;
+}
+
 export const PostComments = ({ postId, postAuthorId }: PostCommentsProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
   const [newComment, setNewComment] = useState('');
 
-  const { data: comments, isLoading } = useQuery({
+  const { data: comments, isLoading, refetch } = useQuery({
     queryKey: ['post-comments', postId],
     queryFn: async () => {
       const { data: commentsData, error } = await supabase
@@ -32,15 +46,26 @@ export const PostComments = ({ postId, postAuthorId }: PostCommentsProps) => {
 
       if (commentsData && commentsData.length > 0) {
         const authorIds = [...new Set(commentsData.map(c => c.author_id))];
+        
+        // Fetch profiles
         const { data: profilesData } = await supabase
           .from('profiles')
           .select('id, full_name, avatar_url')
           .in('id', authorIds);
 
+        // Fetch roles
+        const { data: rolesData } = await supabase
+          .from('user_roles')
+          .select('user_id, role')
+          .in('user_id', authorIds);
+
         const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+        const rolesMap = new Map(rolesData?.map(r => [r.user_id, r.role]) || []);
+        
         return commentsData.map(comment => ({
           ...comment,
           profiles: profilesMap.get(comment.author_id) || null,
+          role: rolesMap.get(comment.author_id) || null,
         }));
       }
       return commentsData || [];
@@ -123,7 +148,29 @@ export const PostComments = ({ postId, postAuthorId }: PostCommentsProps) => {
     }
   };
 
-  const commentsCount = comments?.length || 0;
+  // Organize comments into threads
+  const organizeComments = (commentsList: Comment[]) => {
+    const rootComments: Comment[] = [];
+    const repliesMap = new Map<string, Comment[]>();
+
+    commentsList.forEach(comment => {
+      if (!comment.parent_id) {
+        rootComments.push(comment);
+      } else {
+        const parentReplies = repliesMap.get(comment.parent_id) || [];
+        parentReplies.push(comment);
+        repliesMap.set(comment.parent_id, parentReplies);
+      }
+    });
+
+    return { rootComments, repliesMap };
+  };
+
+  const { rootComments, repliesMap } = comments 
+    ? organizeComments(comments) 
+    : { rootComments: [], repliesMap: new Map() };
+
+  const totalCount = comments?.length || 0;
 
   return (
     <div className="border-t pt-3">
@@ -134,17 +181,25 @@ export const PostComments = ({ postId, postAuthorId }: PostCommentsProps) => {
         className="gap-2 text-muted-foreground"
       >
         <MessageCircle className="h-4 w-4" />
-        {isExpanded ? 'Ocultar' : commentsCount > 0 ? `Ver ${commentsCount} comentarios` : 'Comentar'}
+        {isExpanded ? 'Ocultar' : totalCount > 0 ? `Ver ${totalCount} comentarios` : 'Comentar'}
       </Button>
 
       {isExpanded && (
         <div className="mt-3 space-y-2">
           {isLoading ? (
             <div className="text-sm text-muted-foreground py-2">Cargando...</div>
-          ) : comments && comments.length > 0 ? (
-            <div className="space-y-1 max-h-[300px] overflow-y-auto">
-              {comments.map((comment) => (
-                <CommentItem key={comment.id} comment={comment} postId={postId} />
+          ) : rootComments.length > 0 ? (
+            <div className="space-y-1 max-h-[400px] overflow-y-auto">
+              {rootComments.map((comment) => (
+                <CommentItem 
+                  key={comment.id} 
+                  comment={comment} 
+                  postId={postId}
+                  postAuthorId={postAuthorId}
+                  replies={repliesMap.get(comment.id) || []}
+                  depth={0}
+                  onReplyAdded={() => refetch()}
+                />
               ))}
             </div>
           ) : (

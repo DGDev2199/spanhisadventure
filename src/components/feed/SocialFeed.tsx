@@ -53,15 +53,26 @@ export const SocialFeed = () => {
 
       if (postsData && postsData.length > 0) {
         const authorIds = [...new Set(postsData.map(p => p.author_id))];
+        
+        // Fetch profiles
         const { data: profilesData } = await supabase
           .from('profiles')
           .select('id, full_name, avatar_url')
           .in('id', authorIds);
 
+        // Fetch roles
+        const { data: rolesData } = await supabase
+          .from('user_roles')
+          .select('user_id, role')
+          .in('user_id', authorIds);
+
         const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+        const rolesMap = new Map(rolesData?.map(r => [r.user_id, r.role]) || []);
+        
         return postsData.map(post => ({
           ...post,
           profiles: profilesMap.get(post.author_id) || null,
+          role: rolesMap.get(post.author_id) || null,
         }));
       }
       return postsData || [];

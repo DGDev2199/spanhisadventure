@@ -292,6 +292,14 @@ const AdminDashboard = () => {
             </Button>
             <NotificationBell />
             <Button
+              onClick={() => setEditProfileOpen(true)}
+              variant="outline"
+              size="sm"
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+            <Button
               onClick={signOut}
               variant="outline"
               size="sm"

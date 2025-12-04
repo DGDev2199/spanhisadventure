@@ -88,17 +88,21 @@ export const SocialFeed = () => {
     if (!user?.id) return;
 
     const channel = supabase
-      .channel('posts-realtime')
+      .channel('feed-realtime')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'posts',
-        },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['posts'] });
-        }
+        { event: '*', schema: 'public', table: 'posts' },
+        () => queryClient.invalidateQueries({ queryKey: ['posts'] })
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'post_comments' },
+        () => queryClient.invalidateQueries({ queryKey: ['post-comments'] })
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'post_reactions' },
+        () => queryClient.invalidateQueries({ queryKey: ['post-reactions'] })
       )
       .subscribe();
 

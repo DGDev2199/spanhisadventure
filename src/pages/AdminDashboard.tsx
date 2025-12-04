@@ -22,6 +22,7 @@ import { ManageStudentScheduleDialog } from '@/components/ManageStudentScheduleD
 import { AdminAssignMultipleSchedulesDialog } from '@/components/AdminAssignMultipleSchedulesDialog';
 import { NotificationBell } from '@/components/NotificationBell';
 import { RoleBasedEditProfileDialog } from '@/components/RoleBasedEditProfileDialog';
+import { AdminApprovalPanel } from '@/components/AdminApprovalPanel';
 import { useSwipeable } from 'react-swipeable';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
@@ -418,6 +419,11 @@ const AdminDashboard = () => {
               </p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Approval Panel */}
+        <div className="mb-8">
+          <AdminApprovalPanel />
         </div>
 
         {/* Students Table */}

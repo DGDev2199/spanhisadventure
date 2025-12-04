@@ -12,6 +12,8 @@ import DashboardRouter from "./components/DashboardRouter";
 import PlacementTest from "./pages/PlacementTest";
 import TakeCustomTest from "./pages/TakeCustomTest";
 import ProfileVerification from "./pages/ProfileVerification";
+import PendingApproval from "./pages/PendingApproval";
+import BrowseTeachers from "./pages/BrowseTeachers";
 import Feed from "./pages/Feed";
 import NotFound from "./pages/NotFound";
 import "./i18n/config";
@@ -37,10 +39,26 @@ const App = () => (
               }
             />
             <Route
+              path="/pending-approval"
+              element={
+                <ProtectedRoute>
+                  <PendingApproval />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/dashboard"
               element={
                 <ProtectedRoute>
                   <DashboardRouter />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/browse-teachers"
+              element={
+                <ProtectedRoute requiredRole={['student']}>
+                  <BrowseTeachers />
                 </ProtectedRoute>
               }
             />

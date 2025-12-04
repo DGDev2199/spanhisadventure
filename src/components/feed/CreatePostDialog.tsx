@@ -10,11 +10,11 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Plus, Image, Video, File, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { MentionInput, extractMentions } from './MentionInput';
 
 export const CreatePostDialog = () => {
   const { user } = useAuth();
@@ -37,7 +37,6 @@ export const CreatePostDialog = () => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
-    // Max 50MB
     if (selectedFile.size > 50 * 1024 * 1024) {
       toast.error('El archivo es demasiado grande. Máximo 50MB.');
       return;
@@ -45,7 +44,6 @@ export const CreatePostDialog = () => {
 
     setFile(selectedFile);
 
-    // Determine media type
     if (selectedFile.type.startsWith('image/')) {
       setMediaType('image');
       const reader = new FileReader();
@@ -60,6 +58,36 @@ export const CreatePostDialog = () => {
     }
   };
 
+  const notifyMentionedUsers = async (postContent: string, postId: string) => {
+    if (!user?.id) return;
+    
+    const mentions = extractMentions(postContent);
+    if (mentions.length === 0) return;
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single();
+
+    const { data: mentionedUsers } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('full_name', mentions);
+
+    for (const mentionedUser of mentionedUsers || []) {
+      if (mentionedUser.id !== user.id) {
+        await supabase.rpc('create_notification', {
+          p_user_id: mentionedUser.id,
+          p_title: 'Te mencionaron',
+          p_message: `${profile?.full_name || 'Alguien'} te mencionó en una publicación`,
+          p_type: 'mention',
+          p_related_id: postId,
+        });
+      }
+    }
+  };
+
   const createPostMutation = useMutation({
     mutationFn: async () => {
       if (!user?.id) throw new Error('Not authenticated');
@@ -68,12 +96,11 @@ export const CreatePostDialog = () => {
       let mediaUrl = null;
       let fileName = null;
 
-      // Upload file if exists
       if (file) {
         const fileExt = file.name.split('.').pop();
         const filePath = `${user.id}/${Date.now()}.${fileExt}`;
         
-        const { error: uploadError, data } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('post-media')
           .upload(filePath, file);
 
@@ -87,7 +114,7 @@ export const CreatePostDialog = () => {
         fileName = file.name;
       }
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('posts')
         .insert({
           author_id: user.id,
@@ -95,13 +122,19 @@ export const CreatePostDialog = () => {
           media_type: mediaType,
           media_url: mediaUrl,
           file_name: fileName,
-        });
+        })
+        .select()
+        .single();
 
       if (error) throw error;
+      return { postId: data.id, content: content.trim() };
     },
-    onSuccess: () => {
+    onSuccess: async (result) => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       toast.success('Publicación creada');
+      if (result?.content) {
+        await notifyMentionedUsers(result.content, result.postId);
+      }
       resetForm();
       setOpen(false);
     },
@@ -134,11 +167,10 @@ export const CreatePostDialog = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="content">Contenido</Label>
-            <Textarea
-              id="content"
-              placeholder="¿Qué quieres compartir?"
+            <MentionInput
               value={content}
-              onChange={(e) => setContent(e.target.value)}
+              onChange={setContent}
+              placeholder="¿Qué quieres compartir? Usa @ para mencionar"
               rows={4}
             />
           </div>

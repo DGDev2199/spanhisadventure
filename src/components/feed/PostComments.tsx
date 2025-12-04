@@ -7,12 +7,14 @@ import { Input } from '@/components/ui/input';
 import { MessageCircle, Send } from 'lucide-react';
 import { CommentItem } from './CommentItem';
 import { toast } from 'sonner';
+import { extractMentions } from './MentionInput';
 
 interface PostCommentsProps {
   postId: string;
+  postAuthorId: string;
 }
 
-export const PostComments = ({ postId }: PostCommentsProps) => {
+export const PostComments = ({ postId, postAuthorId }: PostCommentsProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -28,7 +30,6 @@ export const PostComments = ({ postId }: PostCommentsProps) => {
         .order('created_at', { ascending: true });
       if (error) throw error;
 
-      // Fetch profiles for authors
       if (commentsData && commentsData.length > 0) {
         const authorIds = [...new Set(commentsData.map(c => c.author_id))];
         const { data: profilesData } = await supabase
@@ -47,6 +48,48 @@ export const PostComments = ({ postId }: PostCommentsProps) => {
     enabled: isExpanded,
   });
 
+  const createNotifications = async (content: string) => {
+    if (!user?.id) return;
+    
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', user.id)
+      .single();
+
+    // Notify post author
+    if (user.id !== postAuthorId) {
+      await supabase.rpc('create_notification', {
+        p_user_id: postAuthorId,
+        p_title: 'Nuevo comentario',
+        p_message: `${profile?.full_name || 'Alguien'} comentó en tu publicación`,
+        p_type: 'comment',
+        p_related_id: postId,
+      });
+    }
+
+    // Notify mentioned users
+    const mentions = extractMentions(content);
+    if (mentions.length > 0) {
+      const { data: mentionedUsers } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('full_name', mentions);
+
+      for (const mentionedUser of mentionedUsers || []) {
+        if (mentionedUser.id !== user.id) {
+          await supabase.rpc('create_notification', {
+            p_user_id: mentionedUser.id,
+            p_title: 'Te mencionaron',
+            p_message: `${profile?.full_name || 'Alguien'} te mencionó en un comentario`,
+            p_type: 'mention',
+            p_related_id: postId,
+          });
+        }
+      }
+    }
+  };
+
   const addCommentMutation = useMutation({
     mutationFn: async () => {
       if (!user?.id || !newComment.trim()) return;
@@ -58,11 +101,15 @@ export const PostComments = ({ postId }: PostCommentsProps) => {
           content: newComment.trim(),
         });
       if (error) throw error;
+      return newComment.trim();
     },
-    onSuccess: () => {
+    onSuccess: async (content) => {
       setNewComment('');
       queryClient.invalidateQueries({ queryKey: ['post-comments', postId] });
       toast.success('Comentario añadido');
+      if (content) {
+        await createNotifications(content);
+      }
     },
     onError: () => {
       toast.error('Error al añadir comentario');
@@ -76,6 +123,8 @@ export const PostComments = ({ postId }: PostCommentsProps) => {
     }
   };
 
+  const commentsCount = comments?.length || 0;
+
   return (
     <div className="border-t pt-3">
       <Button
@@ -85,7 +134,7 @@ export const PostComments = ({ postId }: PostCommentsProps) => {
         className="gap-2 text-muted-foreground"
       >
         <MessageCircle className="h-4 w-4" />
-        {isExpanded ? 'Ocultar comentarios' : 'Ver comentarios'}
+        {isExpanded ? 'Ocultar' : commentsCount > 0 ? `Ver ${commentsCount} comentarios` : 'Comentar'}
       </Button>
 
       {isExpanded && (
@@ -104,7 +153,7 @@ export const PostComments = ({ postId }: PostCommentsProps) => {
 
           <form onSubmit={handleSubmit} className="flex gap-2 mt-3">
             <Input
-              placeholder="Escribe un comentario..."
+              placeholder="Escribe un comentario... (usa @ para mencionar)"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               className="flex-1"

@@ -1,18 +1,22 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, Loader2 } from 'lucide-react';
+import { Users, Loader2, Image, FileText, Type, LayoutGrid } from 'lucide-react';
 import { CreatePostDialog } from './CreatePostDialog';
 import { PostCard } from './PostCard';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 const PAGE_SIZE = 10;
+
+type FilterType = 'all' | 'text' | 'image' | 'file';
 
 export const SocialFeed = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [filter, setFilter] = useState<FilterType>('all');
 
   const {
     data,
@@ -21,21 +25,32 @@ export const SocialFeed = () => {
     isFetchingNextPage,
     isLoading,
     isError,
+    refetch,
   } = useInfiniteQuery({
-    queryKey: ['posts'],
+    queryKey: ['posts', filter],
     queryFn: async ({ pageParam = 0 }) => {
       const from = pageParam * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
-      const { data: postsData, error } = await supabase
+      let query = supabase
         .from('posts')
         .select('*')
         .order('created_at', { ascending: false })
         .range(from, to);
 
+      // Apply filters
+      if (filter === 'text') {
+        query = query.is('media_type', null);
+      } else if (filter === 'image') {
+        query = query.in('media_type', ['image', 'video']);
+      } else if (filter === 'file') {
+        query = query.eq('media_type', 'file');
+      }
+
+      const { data: postsData, error } = await query;
+
       if (error) throw error;
 
-      // Fetch profiles for authors
       if (postsData && postsData.length > 0) {
         const authorIds = [...new Set(postsData.map(p => p.author_id))];
         const { data: profilesData } = await supabase
@@ -58,7 +73,6 @@ export const SocialFeed = () => {
     enabled: !!user?.id,
   });
 
-  // Realtime subscription
   useEffect(() => {
     if (!user?.id) return;
 
@@ -84,6 +98,12 @@ export const SocialFeed = () => {
 
   const posts = data?.pages.flat() || [];
 
+  const handleFilterChange = (value: string) => {
+    if (value) {
+      setFilter(value as FilterType);
+    }
+  };
+
   return (
     <Card className="shadow-lg">
       <CardHeader>
@@ -93,6 +113,28 @@ export const SocialFeed = () => {
             Muro de la Comunidad
           </CardTitle>
           <CreatePostDialog />
+        </div>
+        
+        {/* Filters */}
+        <div className="mt-4">
+          <ToggleGroup type="single" value={filter} onValueChange={handleFilterChange} className="justify-start">
+            <ToggleGroupItem value="all" aria-label="Mostrar todo" className="gap-1">
+              <LayoutGrid className="h-4 w-4" />
+              <span className="hidden sm:inline">Todo</span>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="text" aria-label="Solo texto" className="gap-1">
+              <Type className="h-4 w-4" />
+              <span className="hidden sm:inline">Texto</span>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="image" aria-label="Imágenes y videos" className="gap-1">
+              <Image className="h-4 w-4" />
+              <span className="hidden sm:inline">Media</span>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="file" aria-label="Archivos" className="gap-1">
+              <FileText className="h-4 w-4" />
+              <span className="hidden sm:inline">Archivos</span>
+            </ToggleGroupItem>
+          </ToggleGroup>
         </div>
       </CardHeader>
       <CardContent>
@@ -106,7 +148,7 @@ export const SocialFeed = () => {
           </div>
         ) : posts.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            <p>No hay publicaciones aún.</p>
+            <p>No hay publicaciones{filter !== 'all' ? ' de este tipo' : ''} aún.</p>
             <p className="text-sm mt-2">¡Sé el primero en publicar!</p>
           </div>
         ) : (

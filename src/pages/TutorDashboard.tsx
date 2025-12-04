@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, GraduationCap, MessageSquare, TrendingUp, CalendarClock, Users, Settings, UsersRound } from 'lucide-react';
+import { LogOut, GraduationCap, MessageSquare, TrendingUp, CalendarClock, Users, Settings, UsersRound, Video } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useState } from 'react';
@@ -19,6 +19,7 @@ import { RoleBasedEditProfileDialog } from '@/components/RoleBasedEditProfileDia
 import { ClassRequestsPanel } from '@/components/ClassRequestsPanel';
 import { AvailabilityCalendar } from '@/components/AvailabilityCalendar';
 import { StaffBookingsPanel } from '@/components/StaffBookingsPanel';
+import { VideoCallDialog } from '@/components/VideoCallDialog';
 import { useNavigate } from 'react-router-dom';
 
 const TutorDashboard = () => {
@@ -31,6 +32,8 @@ const TutorDashboard = () => {
   const [myScheduleOpen, setMyScheduleOpen] = useState(false);
   const [assignMultipleOpen, setAssignMultipleOpen] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [videoCallOpen, setVideoCallOpen] = useState(false);
+  const [videoCallStudent, setVideoCallStudent] = useState<{ id: string; name: string } | null>(null);
 
   const { data: myStudents } = useQuery({
     queryKey: ['tutor-students', user?.id],
@@ -249,10 +252,20 @@ const TutorDashboard = () => {
                             size="sm" 
                             variant="outline"
                             onClick={() => openChat(student.user_id, student.profiles?.full_name)}
-                            disabled={!student.teacher_id}
                           >
                             <MessageSquare className="h-4 w-4 mr-1" />
                             Chat
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => {
+                              setVideoCallStudent({ id: student.user_id, name: student.profiles?.full_name });
+                              setVideoCallOpen(true);
+                            }}
+                          >
+                            <Video className="h-4 w-4 mr-1" />
+                            Llamar
                           </Button>
                         </div>
                       </TableCell>
@@ -320,6 +333,18 @@ const TutorDashboard = () => {
         open={editProfileOpen}
         onOpenChange={setEditProfileOpen}
       />
+
+      {/* Video Call Dialog */}
+      {videoCallStudent && (
+        <VideoCallDialog
+          open={videoCallOpen}
+          onOpenChange={setVideoCallOpen}
+          participantName={videoCallStudent.name}
+          participantAvatar={null}
+          participantRole="student"
+          roomId={`tutor-${user?.id}-student-${videoCallStudent.id}`}
+        />
+      )}
     </div>
   );
 };

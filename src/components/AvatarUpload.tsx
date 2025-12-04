@@ -77,9 +77,10 @@ export const AvatarUpload = ({ value, onChange, userId, userName }: AvatarUpload
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       
-      // Validate file type
-      if (!file.type.startsWith('image/')) {
-        toast.error('Por favor selecciona un archivo de imagen');
+      // Validate file type - only allow specific image formats
+      const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      if (!validImageTypes.includes(file.type)) {
+        toast.error('Formato de imagen no válido. Use JPG, PNG, GIF o WebP');
         return;
       }
 

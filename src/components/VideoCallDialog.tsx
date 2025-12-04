@@ -2,9 +2,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Video, VideoOff, Mic, MicOff, PhoneOff, ExternalLink, Copy, Check } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface VideoCallDialogProps {
   open: boolean;
@@ -13,6 +15,7 @@ interface VideoCallDialogProps {
   participantAvatar?: string | null;
   participantRole: 'teacher' | 'tutor' | 'student';
   roomId?: string;
+  studentId?: string; // Add studentId to log calls
 }
 
 export const VideoCallDialog = ({
@@ -21,16 +24,17 @@ export const VideoCallDialog = ({
   participantName,
   participantAvatar,
   participantRole,
-  roomId
+  roomId,
+  studentId
 }: VideoCallDialogProps) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isJoining, setIsJoining] = useState(false);
   const [copied, setCopied] = useState(false);
 
   // Generate a unique room name based on participants
   const generateRoomName = () => {
     if (roomId) return roomId;
-    // Create a deterministic room name based on user IDs
     const baseRoom = `spanish-adventure-${user?.id?.slice(0, 8)}`;
     return baseRoom;
   };
@@ -38,9 +42,29 @@ export const VideoCallDialog = ({
   const jitsiRoomName = generateRoomName();
   const jitsiUrl = `https://meet.jit.si/${jitsiRoomName}`;
 
+  // Mutation to log video call
+  const logCallMutation = useMutation({
+    mutationFn: async () => {
+      if (!user?.id || !studentId) return;
+      const { error } = await supabase.from('video_calls').insert({
+        caller_id: user.id,
+        student_id: studentId,
+        room_id: jitsiRoomName,
+        started_at: new Date().toISOString()
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['video-calls'] });
+    }
+  });
+
   const handleJoinCall = () => {
     setIsJoining(true);
-    // Open Jitsi in a new window
+    // Log the call if studentId is provided (staff calling student)
+    if (studentId && participantRole === 'student') {
+      logCallMutation.mutate();
+    }
     window.open(jitsiUrl, '_blank', 'width=1200,height=800');
     setTimeout(() => setIsJoining(false), 2000);
   };

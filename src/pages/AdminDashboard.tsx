@@ -23,6 +23,7 @@ import { AdminAssignMultipleSchedulesDialog } from '@/components/AdminAssignMult
 import { NotificationBell } from '@/components/NotificationBell';
 import { RoleBasedEditProfileDialog } from '@/components/RoleBasedEditProfileDialog';
 import { AdminApprovalPanel } from '@/components/AdminApprovalPanel';
+import { VideoCallHistoryAdmin } from '@/components/VideoCallHistoryAdmin';
 import { useSwipeable } from 'react-swipeable';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
@@ -424,6 +425,11 @@ const AdminDashboard = () => {
         {/* Approval Panel */}
         <div className="mb-8">
           <AdminApprovalPanel />
+        </div>
+
+        {/* Video Call History */}
+        <div className="mb-8">
+          <VideoCallHistoryAdmin />
         </div>
 
         {/* Students Table */}

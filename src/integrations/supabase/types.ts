@@ -1352,6 +1352,39 @@ export type Database = {
         }
         Relationships: []
       }
+      video_calls: {
+        Row: {
+          caller_id: string
+          created_at: string
+          duration_minutes: number | null
+          ended_at: string | null
+          id: string
+          room_id: string
+          started_at: string
+          student_id: string
+        }
+        Insert: {
+          caller_id: string
+          created_at?: string
+          duration_minutes?: number | null
+          ended_at?: string | null
+          id?: string
+          room_id: string
+          started_at?: string
+          student_id: string
+        }
+        Update: {
+          caller_id?: string
+          created_at?: string
+          duration_minutes?: number | null
+          ended_at?: string | null
+          id?: string
+          room_id?: string
+          started_at?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

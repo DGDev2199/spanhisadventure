@@ -20,6 +20,7 @@ import { ClassRequestsPanel } from '@/components/ClassRequestsPanel';
 import { AvailabilityCalendar } from '@/components/AvailabilityCalendar';
 import { StaffBookingsPanel } from '@/components/StaffBookingsPanel';
 import { VideoCallDialog } from '@/components/VideoCallDialog';
+import { VideoCallHistoryPanel } from '@/components/VideoCallHistoryPanel';
 import { useNavigate } from 'react-router-dom';
 
 const TutorDashboard = () => {
@@ -204,6 +205,11 @@ const TutorDashboard = () => {
           <AvailabilityCalendar />
         </div>
 
+        {/* Video Call History */}
+        <div className="mb-8">
+          <VideoCallHistoryPanel />
+        </div>
+
         {/* Students Table */}
         <Card className="shadow-md mb-6">
           <CardHeader>
@@ -343,6 +349,7 @@ const TutorDashboard = () => {
           participantAvatar={null}
           participantRole="student"
           roomId={`tutor-${user?.id}-student-${videoCallStudent.id}`}
+          studentId={videoCallStudent.id}
         />
       )}
     </div>

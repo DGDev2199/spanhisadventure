@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -25,6 +26,7 @@ export const ChangeRoleDialog = ({
   currentUserRole
 }: ChangeRoleDialogProps) => {
   const [role, setRole] = useState(currentRole || '');
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const changeRoleMutation = useMutation({
@@ -100,11 +102,11 @@ export const ChangeRoleDialog = ({
       queryClient.invalidateQueries({ queryKey: ['all-users'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
-      toast.success('User role updated successfully');
+      toast.success('Rol de usuario actualizado exitosamente');
       onOpenChange(false);
     },
     onError: (error) => {
-      toast.error('Failed to update user role');
+      toast.error('Error al actualizar el rol del usuario');
       console.error(error);
     }
   });
@@ -112,45 +114,114 @@ export const ChangeRoleDialog = ({
   // Determine which roles can be assigned based on current user's role
   const canAssignAdmin = currentUserRole === 'admin';
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-lg sm:text-xl">Change User Role</DialogTitle>
-          <DialogDescription className="text-sm">
-            Change the role for {userName}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto px-1">
-          <div className="space-y-2">
-            <Label>Role</Label>
-            <Select value={role} onValueChange={setRole}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a role" />
-              </SelectTrigger>
-              <SelectContent>
-                {canAssignAdmin && (
-                  <SelectItem value="admin">Admin</SelectItem>
-                )}
-                <SelectItem value="coordinator">Coordinator</SelectItem>
-                <SelectItem value="teacher">Teacher</SelectItem>
-                <SelectItem value="tutor">Tutor</SelectItem>
-                <SelectItem value="student">Student</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+  // Check if changing from student to non-student role
+  const isChangingFromStudent = currentRole === 'student' && role !== 'student' && role !== '';
 
-        <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
-            Cancel
-          </Button>
-          <Button onClick={() => changeRoleMutation.mutate()} disabled={changeRoleMutation.isPending || !role} className="w-full sm:w-auto">
-            {changeRoleMutation.isPending ? 'Updating...' : 'Update Role'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+  const handleUpdateRole = () => {
+    if (isChangingFromStudent) {
+      setConfirmDialogOpen(true);
+    } else {
+      changeRoleMutation.mutate();
+    }
+  };
+
+  const handleConfirmChange = () => {
+    setConfirmDialogOpen(false);
+    changeRoleMutation.mutate();
+  };
+
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-lg sm:text-xl">Cambiar Rol de Usuario</DialogTitle>
+            <DialogDescription className="text-sm">
+              Cambiar el rol de {userName}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto px-1">
+            <div className="space-y-2">
+              <Label>Rol</Label>
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar un rol" />
+                </SelectTrigger>
+                <SelectContent>
+                  {canAssignAdmin && (
+                    <SelectItem value="admin">Administrador</SelectItem>
+                  )}
+                  <SelectItem value="coordinator">Coordinador</SelectItem>
+                  <SelectItem value="teacher">Profesor</SelectItem>
+                  <SelectItem value="tutor">Tutor</SelectItem>
+                  <SelectItem value="student">Estudiante</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {isChangingFromStudent && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                <p className="text-sm text-destructive font-medium">
+                  ⚠️ Advertencia: Al cambiar el rol de estudiante a otro rol, se eliminarán todos los datos de estudiante incluyendo:
+                </p>
+                <ul className="text-sm text-destructive/80 mt-2 list-disc list-inside">
+                  <li>Horarios de clases y tutorías</li>
+                  <li>Progreso semanal y notas</li>
+                  <li>Asignaciones de eventos</li>
+                  <li>Perfil de estudiante</li>
+                </ul>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleUpdateRole} 
+              disabled={changeRoleMutation.isPending || !role || role === currentRole} 
+              className="w-full sm:w-auto"
+              variant={isChangingFromStudent ? "destructive" : "default"}
+            >
+              {changeRoleMutation.isPending ? 'Actualizando...' : 'Actualizar Rol'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Dialog for changing from student */}
+      <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Confirmar cambio de rol?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Estás a punto de cambiar el rol de <strong>{userName}</strong> de <strong>Estudiante</strong> a <strong>{
+                role === 'admin' ? 'Administrador' :
+                role === 'coordinator' ? 'Coordinador' :
+                role === 'teacher' ? 'Profesor' :
+                role === 'tutor' ? 'Tutor' : role
+              }</strong>.
+              <br /><br />
+              <span className="text-destructive font-medium">
+                Esta acción eliminará permanentemente todos los datos de estudiante asociados a este usuario.
+              </span>
+              <br /><br />
+              ¿Deseas continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmChange}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Sí, cambiar rol
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };

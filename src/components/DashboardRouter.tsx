@@ -16,7 +16,7 @@ const DashboardRouter = () => {
     );
   }
 
-  if (userRole === 'admin') {
+  if (userRole === 'admin' || userRole === 'coordinator') {
     return <AdminDashboard />;
   }
 

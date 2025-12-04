@@ -81,6 +81,13 @@
     "chat": "Chat",
     "notAssigned": "Not assigned"
   },
+  "roles": {
+    "admin": "Admin",
+    "coordinator": "Coordinator",
+    "teacher": "Teacher",
+    "tutor": "Tutor",
+    "student": "Student"
+  },
   "common": {
     "logout": "Logout",
     "editProfile": "Edit Profile",

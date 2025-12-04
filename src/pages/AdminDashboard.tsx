@@ -26,7 +26,7 @@ import { useSwipeable } from 'react-swipeable';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const AdminDashboard = () => {
-  const { signOut } = useAuth();
+  const { signOut, userRole } = useAuth();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
@@ -275,7 +275,7 @@ const AdminDashboard = () => {
             <img src={logo} alt="Spanish Adventure" className="h-10 sm:h-12 lg:h-14" />
             <div className="min-w-0">
               <h1 className="text-base sm:text-xl lg:text-2xl font-bold text-white truncate">Spanish Adventure</h1>
-              <p className="text-xs sm:text-sm text-white/90">Administrador</p>
+              <p className="text-xs sm:text-sm text-white/90">{userRole === 'coordinator' ? 'Coordinador' : 'Administrador'}</p>
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">
@@ -323,11 +323,13 @@ const AdminDashboard = () => {
               <span className="hidden sm:inline">Gestionar Horas</span>
               <span className="sm:hidden">Horas</span>
             </Button>
-            <Button onClick={() => setResetScheduleDialogOpen(true)} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm border-destructive text-destructive hover:bg-destructive/10">
-              <RotateCcw className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Reiniciar Horarios</span>
-              <span className="sm:hidden">Reiniciar</span>
-            </Button>
+            {userRole === 'admin' && (
+              <Button onClick={() => setResetScheduleDialogOpen(true)} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm border-destructive text-destructive hover:bg-destructive/10">
+                <RotateCcw className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Reiniciar Horarios</span>
+                <span className="sm:hidden">Reiniciar</span>
+              </Button>
+            )}
             <Button onClick={() => setCreateEventDialogOpen(true)} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
               <Calendar className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Crear Evento</span>
@@ -649,17 +651,19 @@ const AdminDashboard = () => {
                               <Settings className="h-4 w-4 sm:mr-1" />
                               <span className="hidden sm:inline">Change</span>
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => {
-                                if (window.confirm(`¿Estás seguro de eliminar a ${user.full_name}? Esta acción no se puede deshacer y eliminará:\n\n- Perfil del usuario\n- Todos sus roles\n- Datos de estudiante (si aplica)\n- Todas sus asignaciones\n\n¿Continuar?`)) {
-                                  handleDeleteUser(user.id, user.full_name);
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            {userRole === 'admin' && (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => {
+                                  if (window.confirm(`¿Estás seguro de eliminar a ${user.full_name}? Esta acción no se puede deshacer y eliminará:\n\n- Perfil del usuario\n- Todos sus roles\n- Datos de estudiante (si aplica)\n- Todas sus asignaciones\n\n¿Continuar?`)) {
+                                    handleDeleteUser(user.id, user.full_name);
+                                  }
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -699,6 +703,7 @@ const AdminDashboard = () => {
           userId={selectedUser.id}
           userName={selectedUser.full_name}
           currentRole={selectedUser.user_roles?.[0]?.role}
+          currentUserRole={userRole}
         />
       )}
 

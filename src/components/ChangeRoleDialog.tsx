@@ -13,6 +13,7 @@ interface ChangeRoleDialogProps {
   userId: string;
   userName: string;
   currentRole?: string;
+  currentUserRole?: string | null;
 }
 
 export const ChangeRoleDialog = ({
@@ -20,7 +21,8 @@ export const ChangeRoleDialog = ({
   onOpenChange,
   userId,
   userName,
-  currentRole
+  currentRole,
+  currentUserRole
 }: ChangeRoleDialogProps) => {
   const [role, setRole] = useState(currentRole || '');
   const queryClient = useQueryClient();
@@ -68,6 +70,9 @@ export const ChangeRoleDialog = ({
     }
   });
 
+  // Determine which roles can be assigned based on current user's role
+  const canAssignAdmin = currentUserRole === 'admin';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -86,7 +91,10 @@ export const ChangeRoleDialog = ({
                 <SelectValue placeholder="Select a role" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="admin">Admin</SelectItem>
+                {canAssignAdmin && (
+                  <SelectItem value="admin">Admin</SelectItem>
+                )}
+                <SelectItem value="coordinator">Coordinator</SelectItem>
                 <SelectItem value="teacher">Teacher</SelectItem>
                 <SelectItem value="tutor">Tutor</SelectItem>
                 <SelectItem value="student">Student</SelectItem>

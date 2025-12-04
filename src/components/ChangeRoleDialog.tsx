@@ -55,6 +55,45 @@ export const ChangeRoleDialog = ({
             .from('student_profiles')
             .insert({ user_id: userId });
         }
+      } else {
+        // If role is NOT student, delete student profile and related data
+        // First delete student class schedules
+        await supabase
+          .from('student_class_schedules')
+          .delete()
+          .eq('student_id', userId);
+
+        // Delete student schedule assignments
+        await supabase
+          .from('student_schedule_assignments')
+          .delete()
+          .eq('student_id', userId);
+
+        // Delete student progress notes (via weeks)
+        const { data: weeks } = await supabase
+          .from('student_progress_weeks')
+          .select('id')
+          .eq('student_id', userId);
+
+        if (weeks && weeks.length > 0) {
+          const weekIds = weeks.map(w => w.id);
+          await supabase
+            .from('student_progress_notes')
+            .delete()
+            .in('week_id', weekIds);
+        }
+
+        // Delete student progress weeks
+        await supabase
+          .from('student_progress_weeks')
+          .delete()
+          .eq('student_id', userId);
+
+        // Finally delete student profile
+        await supabase
+          .from('student_profiles')
+          .delete()
+          .eq('user_id', userId);
       }
     },
     onSuccess: () => {

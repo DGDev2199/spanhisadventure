@@ -12,6 +12,7 @@ import DashboardRouter from "./components/DashboardRouter";
 import PlacementTest from "./pages/PlacementTest";
 import TakeCustomTest from "./pages/TakeCustomTest";
 import ProfileVerification from "./pages/ProfileVerification";
+import Feed from "./pages/Feed";
 import NotFound from "./pages/NotFound";
 import "./i18n/config";
 
@@ -56,6 +57,14 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole={['student']}>
                   <TakeCustomTest />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/feed"
+              element={
+                <ProtectedRoute>
+                  <Feed />
                 </ProtectedRoute>
               }
             />

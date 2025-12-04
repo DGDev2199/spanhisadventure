@@ -232,28 +232,40 @@ const Auth = () => {
         // Upload avatar if provided
         let avatarUrl: string | null = null;
         if (registerAvatarFile) {
-          try {
-            const fileExt = registerAvatarFile.name.split('.').pop();
-            const fileName = `${Date.now()}.${fileExt}`;
-            const filePath = `${data.user.id}/${fileName}`;
-
-            const { error: uploadError } = await supabase.storage
-              .from('avatars')
-              .upload(filePath, registerAvatarFile, {
-                contentType: registerAvatarFile.type,
-                upsert: false
-              });
-
-            if (uploadError) {
-              console.error('Avatar upload error:', uploadError);
+          // Validate file size (5MB limit for avatars)
+          const MAX_AVATAR_SIZE = 5 * 1024 * 1024;
+          if (registerAvatarFile.size > MAX_AVATAR_SIZE) {
+            toast.error('La imagen es demasiado grande (máximo 5MB)');
+          } else {
+            // Validate MIME type
+            const validImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!validImageTypes.includes(registerAvatarFile.type)) {
+              toast.error('Formato de imagen no válido. Use JPG, PNG, GIF o WebP');
             } else {
-              const { data: { publicUrl } } = supabase.storage
-                .from('avatars')
-                .getPublicUrl(filePath);
-              avatarUrl = publicUrl;
+              try {
+                const fileExt = registerAvatarFile.name.split('.').pop()?.toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+                const fileName = `${Date.now()}.${fileExt}`;
+                const filePath = `${data.user.id}/${fileName}`;
+
+                const { error: uploadError } = await supabase.storage
+                  .from('avatars')
+                  .upload(filePath, registerAvatarFile, {
+                    contentType: registerAvatarFile.type,
+                    upsert: false
+                  });
+
+                if (uploadError) {
+                  toast.error('Error al subir la imagen de perfil');
+                } else {
+                  const { data: { publicUrl } } = supabase.storage
+                    .from('avatars')
+                    .getPublicUrl(filePath);
+                  avatarUrl = publicUrl;
+                }
+              } catch (uploadErr) {
+                toast.error('Error al subir la imagen de perfil');
+              }
             }
-          } catch (uploadErr) {
-            console.error('Error uploading avatar:', uploadErr);
           }
         }
 

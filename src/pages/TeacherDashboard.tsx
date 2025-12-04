@@ -26,6 +26,8 @@ import { MyScheduleDialog } from '@/components/MyScheduleDialog';
 import { AssignMultipleStudentsDialog } from '@/components/AssignMultipleStudentsDialog';
 import { NotificationBell } from '@/components/NotificationBell';
 import { RoleBasedEditProfileDialog } from '@/components/RoleBasedEditProfileDialog';
+import { ClassRequestsPanel } from '@/components/ClassRequestsPanel';
+import { AvailabilityCalendar } from '@/components/AvailabilityCalendar';
 import { Settings } from 'lucide-react';
 import { useSwipeable } from 'react-swipeable';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -326,6 +328,16 @@ const TeacherDashboard = () => {
             <StaffHoursCard userId={user.id} />
           </div>
         )}
+
+        {/* Class Requests from Online Students */}
+        <div className="mb-8">
+          <ClassRequestsPanel />
+        </div>
+
+        {/* Availability Calendar */}
+        <div className="mb-8">
+          <AvailabilityCalendar />
+        </div>
 
         {/* Students Table */}
         <Card className="shadow-md mb-6">

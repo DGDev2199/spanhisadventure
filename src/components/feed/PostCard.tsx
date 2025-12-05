@@ -20,6 +20,7 @@ import { PostReactions } from './PostReactions';
 import { PostComments } from './PostComments';
 import { EditPostDialog } from './EditPostDialog';
 import { renderContentWithMentions } from './MentionInput';
+import { UserProfileDialog } from '@/components/UserProfileDialog';
 
 interface PostCardProps {
   post: {
@@ -83,6 +84,7 @@ export const PostCard = ({ post }: PostCardProps) => {
   const queryClient = useQueryClient();
   const isOwner = user?.id === post.author_id;
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -161,15 +163,19 @@ export const PostCard = ({ post }: PostCardProps) => {
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={post.profiles?.avatar_url || undefined} />
-                <AvatarFallback className={`${getAvatarBgColor(post.role)} text-white font-medium`}>
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
+              <button onClick={() => setProfileOpen(true)} className="cursor-pointer hover:opacity-80 transition-opacity">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={post.profiles?.avatar_url || undefined} />
+                  <AvatarFallback className={`${getAvatarBgColor(post.role)} text-white font-medium`}>
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+              </button>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-semibold">{authorName}</p>
+                  <button onClick={() => setProfileOpen(true)} className="font-semibold hover:underline cursor-pointer">
+                    {authorName}
+                  </button>
                   <Badge variant="outline" className={`text-xs ${getRoleBadgeStyles(post.role)}`}>
                     {getRoleLabel(post.role)}
                   </Badge>
@@ -223,6 +229,12 @@ export const PostCard = ({ post }: PostCardProps) => {
         open={isEditOpen}
         onOpenChange={setIsEditOpen}
         post={post}
+      />
+
+      <UserProfileDialog
+        open={profileOpen}
+        onOpenChange={setProfileOpen}
+        userId={post.author_id}
       />
     </>
   );

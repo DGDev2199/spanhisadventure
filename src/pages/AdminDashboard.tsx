@@ -25,6 +25,7 @@ import { RoleBasedEditProfileDialog } from '@/components/RoleBasedEditProfileDia
 import { AdminApprovalPanel } from '@/components/AdminApprovalPanel';
 import { VideoCallHistoryAdmin } from '@/components/VideoCallHistoryAdmin';
 import { EarningsPanel } from '@/components/EarningsPanel';
+import { ModalityRequestsPanel } from '@/components/ModalityRequestsPanel';
 import { useSwipeable } from 'react-swipeable';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
@@ -426,6 +427,11 @@ const AdminDashboard = () => {
         {/* Approval Panel */}
         <div className="mb-8">
           <AdminApprovalPanel />
+        </div>
+
+        {/* Modality Requests Panel */}
+        <div className="mb-8">
+          <ModalityRequestsPanel />
         </div>
 
         {/* Video Call History */}

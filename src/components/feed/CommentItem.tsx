@@ -11,6 +11,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { renderContentWithMentions, extractMentions } from './MentionInput';
+import { UserProfileDialog } from '@/components/UserProfileDialog';
 
 interface CommentItemProps {
   comment: {
@@ -81,6 +82,7 @@ export const CommentItem = ({ comment, postId, postAuthorId, replies = [], depth
   const [isReplying, setIsReplying] = useState(false);
   const [replyContent, setReplyContent] = useState('');
   const [showReplies, setShowReplies] = useState(true);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const maxDepth = 2;
 
@@ -207,17 +209,22 @@ export const CommentItem = ({ comment, postId, postAuthorId, replies = [], depth
   };
 
   return (
+    <>
     <div className={`${depth > 0 ? 'ml-6 pl-3 border-l-2 border-muted' : ''}`}>
       <div className="flex gap-3 py-2">
-        <Avatar className="h-8 w-8">
-          <AvatarImage src={comment.profiles?.avatar_url || undefined} />
-          <AvatarFallback className={`text-xs text-white ${getAvatarBgColor(comment.role)}`}>
-            {initials}
-          </AvatarFallback>
-        </Avatar>
+        <button onClick={() => setProfileOpen(true)} className="cursor-pointer hover:opacity-80 transition-opacity">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={comment.profiles?.avatar_url || undefined} />
+            <AvatarFallback className={`text-xs text-white ${getAvatarBgColor(comment.role)}`}>
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+        </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-medium text-sm">{authorName}</span>
+            <button onClick={() => setProfileOpen(true)} className="font-medium text-sm hover:underline cursor-pointer">
+              {authorName}
+            </button>
             {comment.role && (
               <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${getRoleBadgeStyles(comment.role)}`}>
                 {getRoleLabel(comment.role)}
@@ -353,5 +360,12 @@ export const CommentItem = ({ comment, postId, postAuthorId, replies = [], depth
         </div>
       )}
     </div>
+
+    <UserProfileDialog
+      open={profileOpen}
+      onOpenChange={setProfileOpen}
+      userId={comment.author_id}
+    />
+    </>
   );
 };

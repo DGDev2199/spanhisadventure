@@ -576,6 +576,7 @@ export type Database = {
           approved_by: string | null
           availability: string | null
           avatar_url: string | null
+          bio: string | null
           created_at: string
           currency: string | null
           diet: string | null
@@ -585,8 +586,12 @@ export type Database = {
           hourly_rate: number | null
           id: string
           is_approved: boolean | null
+          is_public_profile: boolean | null
           languages_spoken: string[] | null
           nationality: string | null
+          show_followers: boolean | null
+          show_following: boolean | null
+          social_links: Json | null
           staff_type: string | null
           study_objectives: string | null
           timezone: string | null
@@ -599,6 +604,7 @@ export type Database = {
           approved_by?: string | null
           availability?: string | null
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           currency?: string | null
           diet?: string | null
@@ -608,8 +614,12 @@ export type Database = {
           hourly_rate?: number | null
           id: string
           is_approved?: boolean | null
+          is_public_profile?: boolean | null
           languages_spoken?: string[] | null
           nationality?: string | null
+          show_followers?: boolean | null
+          show_following?: boolean | null
+          social_links?: Json | null
           staff_type?: string | null
           study_objectives?: string | null
           timezone?: string | null
@@ -622,6 +632,7 @@ export type Database = {
           approved_by?: string | null
           availability?: string | null
           avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           currency?: string | null
           diet?: string | null
@@ -631,8 +642,12 @@ export type Database = {
           hourly_rate?: number | null
           id?: string
           is_approved?: boolean | null
+          is_public_profile?: boolean | null
           languages_spoken?: string[] | null
           nationality?: string | null
+          show_followers?: boolean | null
+          show_following?: boolean | null
+          social_links?: Json | null
           staff_type?: string | null
           study_objectives?: string | null
           timezone?: string | null
@@ -816,6 +831,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      staff_modality_requests: {
+        Row: {
+          created_at: string | null
+          current_modality: string
+          id: string
+          reason: string | null
+          requested_modality: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          current_modality: string
+          id?: string
+          reason?: string | null
+          requested_modality: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          current_modality?: string
+          id?: string
+          reason?: string | null
+          requested_modality?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       student_class_schedules: {
         Row: {
@@ -1390,6 +1441,27 @@ export type Database = {
           student_id?: string
           topic?: string
           tutor_id?: string
+        }
+        Relationships: []
+      }
+      user_follows: {
+        Row: {
+          created_at: string | null
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string | null
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string | null
+          follower_id?: string
+          following_id?: string
+          id?: string
         }
         Relationships: []
       }

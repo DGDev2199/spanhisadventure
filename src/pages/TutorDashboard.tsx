@@ -22,6 +22,7 @@ import { StaffBookingsPanel } from '@/components/StaffBookingsPanel';
 import { VideoCallDialog } from '@/components/VideoCallDialog';
 import { VideoCallHistoryPanel } from '@/components/VideoCallHistoryPanel';
 import { StaffEarningsPanel } from '@/components/StaffEarningsPanel';
+import { StaffMessagesPanel } from '@/components/StaffMessagesPanel';
 import { useNavigate } from 'react-router-dom';
 
 const TutorDashboard = () => {
@@ -199,6 +200,11 @@ const TutorDashboard = () => {
         {/* Class Bookings from Online Students */}
         <div className="mb-8">
           <StaffBookingsPanel />
+        </div>
+
+        {/* Unified Messages Panel */}
+        <div className="mb-8">
+          <StaffMessagesPanel />
         </div>
 
         {/* Availability Calendar */}

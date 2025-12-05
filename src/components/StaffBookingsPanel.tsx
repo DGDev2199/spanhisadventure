@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Calendar, Clock, Video, Check, X, Loader2, MessageSquare } from 'lucide-react';
+import { Calendar, Clock, Video, Check, X, Loader2, MessageSquare, Users } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +12,7 @@ import { format, parseISO, isAfter } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { VideoCallDialog } from './VideoCallDialog';
 import { StaffToStudentChatDialog } from './StaffToStudentChatDialog';
+import { TeacherTutorChatDialog } from './TeacherTutorChatDialog';
 
 interface Booking {
   id: string;
@@ -29,6 +30,7 @@ export const StaffBookingsPanel = () => {
   const queryClient = useQueryClient();
   const [videoCallOpen, setVideoCallOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [staffChatOpen, setStaffChatOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   // Fetch bookings for teacher/tutor
@@ -120,6 +122,11 @@ export const StaffBookingsPanel = () => {
   const handleChat = (booking: Booking) => {
     setSelectedBooking(booking);
     setChatOpen(true);
+  };
+
+  const handleStaffChat = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setStaffChatOpen(true);
   };
 
   if (isLoading) {
@@ -251,13 +258,23 @@ export const StaffBookingsPanel = () => {
                         variant="outline" 
                         size="sm"
                         onClick={() => handleChat(booking)}
+                        title="Chat con estudiante"
                       >
                         <MessageSquare className="h-4 w-4" />
                       </Button>
                       <Button 
                         variant="outline" 
                         size="sm"
+                        onClick={() => handleStaffChat(booking)}
+                        title={`Chat con ${userRole === 'teacher' ? 'Tutor' : 'Profesor'}`}
+                      >
+                        <Users className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
                         onClick={() => handleVideoCall(booking)}
+                        title="Videollamada"
                       >
                         <Video className="h-4 w-4" />
                       </Button>
@@ -287,6 +304,16 @@ export const StaffBookingsPanel = () => {
         <StaffToStudentChatDialog
           open={chatOpen}
           onOpenChange={setChatOpen}
+          studentId={selectedBooking.student_id}
+          studentName={selectedBooking.student.full_name}
+        />
+      )}
+
+      {/* Staff Chat Dialog - Chat with other staff about student */}
+      {selectedBooking && selectedBooking.student && (
+        <TeacherTutorChatDialog
+          open={staffChatOpen}
+          onOpenChange={setStaffChatOpen}
           studentId={selectedBooking.student_id}
           studentName={selectedBooking.student.full_name}
         />

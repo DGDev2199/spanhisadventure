@@ -1,5 +1,6 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureFlag } from '@/contexts/FeatureFlagsContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -44,6 +45,15 @@ const TeacherDashboard = () => {
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  
+  // Feature flags
+  const isCommunityEnabled = useFeatureFlag('community_feed');
+  const isOnlineEnabled = useFeatureFlag('online_students');
+  const isBookingEnabled = useFeatureFlag('booking_system');
+  const isAvailabilityEnabled = useFeatureFlag('availability_calendar');
+  const isVideoCallsEnabled = useFeatureFlag('video_calls');
+  const isEarningsEnabled = useFeatureFlag('earnings_panel');
+  const isCustomTestsEnabled = useFeatureFlag('custom_tests');
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
   const [isRoomDialogOpen, setIsRoomDialogOpen] = useState(false);
@@ -229,15 +239,17 @@ const TeacherDashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-            <Button
-              onClick={() => navigate('/feed')}
-              variant="outline"
-              size="sm"
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
-            >
-              <UsersRound className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Comunidad</span>
-            </Button>
+            {isCommunityEnabled && (
+              <Button
+                onClick={() => navigate('/feed')}
+                variant="outline"
+                size="sm"
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
+              >
+                <UsersRound className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Comunidad</span>
+              </Button>
+            )}
             <NotificationBell />
             <Button
               onClick={() => setAssignMultipleOpen(true)}
@@ -337,14 +349,18 @@ const TeacherDashboard = () => {
         )}
 
         {/* Class Requests from Online Students */}
-        <div className="mb-8">
-          <ClassRequestsPanel />
-        </div>
+        {isOnlineEnabled && (
+          <div className="mb-8">
+            <ClassRequestsPanel />
+          </div>
+        )}
 
         {/* Class Bookings from Online Students */}
-        <div className="mb-8">
-          <StaffBookingsPanel />
-        </div>
+        {isOnlineEnabled && isBookingEnabled && (
+          <div className="mb-8">
+            <StaffBookingsPanel />
+          </div>
+        )}
 
         {/* Unified Messages Panel */}
         <div className="mb-8">
@@ -352,19 +368,25 @@ const TeacherDashboard = () => {
         </div>
 
         {/* Availability Calendar */}
-        <div className="mb-8">
-          <AvailabilityCalendar />
-        </div>
+        {isOnlineEnabled && isAvailabilityEnabled && (
+          <div className="mb-8">
+            <AvailabilityCalendar />
+          </div>
+        )}
 
         {/* Video Call History */}
-        <div className="mb-8">
-          <VideoCallHistoryPanel />
-        </div>
+        {isVideoCallsEnabled && (
+          <div className="mb-8">
+            <VideoCallHistoryPanel />
+          </div>
+        )}
 
         {/* Staff Earnings Panel */}
-        <div className="mb-8">
-          <StaffEarningsPanel />
-        </div>
+        {isEarningsEnabled && (
+          <div className="mb-8">
+            <StaffEarningsPanel />
+          </div>
+        )}
 
         {/* Students Table */}
         <Card className="shadow-md mb-6">

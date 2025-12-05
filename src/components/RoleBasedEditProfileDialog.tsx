@@ -33,6 +33,8 @@ export const RoleBasedEditProfileDialog = ({ open, onOpenChange }: RoleBasedEdit
     study_objectives: '',
     avatar_url: null as string | null,
     staff_type: 'presencial' as 'presencial' | 'online',
+    hourly_rate: '',
+    currency: 'USD',
   });
 
   const { data: profile } = useQuery({
@@ -59,6 +61,8 @@ export const RoleBasedEditProfileDialog = ({ open, onOpenChange }: RoleBasedEdit
         study_objectives: profile.study_objectives || '',
         avatar_url: profile.avatar_url || null,
         staff_type: (profile as any).staff_type || 'presencial',
+        hourly_rate: (profile as any).hourly_rate?.toString() || '',
+        currency: (profile as any).currency || 'USD',
       });
     }
   }, [profile]);
@@ -81,6 +85,8 @@ export const RoleBasedEditProfileDialog = ({ open, onOpenChange }: RoleBasedEdit
         updates.availability = formData.availability;
         updates.experience = formData.experience;
         updates.staff_type = formData.staff_type;
+        updates.hourly_rate = formData.hourly_rate ? parseFloat(formData.hourly_rate) : null;
+        updates.currency = formData.currency;
       } else if (userRole === 'student') {
         updates.study_objectives = formData.study_objectives;
       }
@@ -161,6 +167,36 @@ export const RoleBasedEditProfileDialog = ({ open, onOpenChange }: RoleBasedEdit
                     : 'Atiendes estudiantes de forma presencial en la escuela'}
                 </p>
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Tarifa por Hora</Label>
+                  <Input 
+                    type="number" 
+                    step="0.01"
+                    placeholder="25.00"
+                    value={formData.hourly_rate} 
+                    onChange={e => setFormData({...formData, hourly_rate: e.target.value})} 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Moneda</Label>
+                  <Select value={formData.currency} onValueChange={(v) => setFormData({...formData, currency: v})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Moneda" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">🇺🇸 USD</SelectItem>
+                      <SelectItem value="EUR">🇪🇺 EUR</SelectItem>
+                      <SelectItem value="MXN">🇲🇽 MXN</SelectItem>
+                      <SelectItem value="COP">🇨🇴 COP</SelectItem>
+                      <SelectItem value="ARS">🇦🇷 ARS</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Esta tarifa se mostrará a estudiantes online. El 15% va como comisión de la plataforma.
+              </p>
               <div className="space-y-2">
                 <Label>Disponibilidad</Label>
                 <Textarea value={formData.availability} onChange={e => setFormData({...formData, availability: e.target.value})} />

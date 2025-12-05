@@ -31,6 +31,7 @@ import { AvailabilityCalendar } from '@/components/AvailabilityCalendar';
 import { StaffBookingsPanel } from '@/components/StaffBookingsPanel';
 import { VideoCallDialog } from '@/components/VideoCallDialog';
 import { VideoCallHistoryPanel } from '@/components/VideoCallHistoryPanel';
+import { StaffEarningsPanel } from '@/components/StaffEarningsPanel';
 import { Settings } from 'lucide-react';
 import { useSwipeable } from 'react-swipeable';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -352,6 +353,11 @@ const TeacherDashboard = () => {
         {/* Video Call History */}
         <div className="mb-8">
           <VideoCallHistoryPanel />
+        </div>
+
+        {/* Staff Earnings Panel */}
+        <div className="mb-8">
+          <StaffEarningsPanel />
         </div>
 
         {/* Students Table */}

@@ -26,6 +26,8 @@ interface StaffMember {
   availability: string | null;
   experience: string | null;
   role: 'teacher' | 'tutor';
+  hourly_rate: number | null;
+  currency: string | null;
 }
 
 const BrowseTeachers = () => {
@@ -50,7 +52,7 @@ const BrowseTeachers = () => {
       const teacherIds = rolesData.map(r => r.user_id);
       const { data: profilesData, error } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, timezone, languages_spoken, availability, experience, is_approved')
+        .select('id, full_name, avatar_url, timezone, languages_spoken, availability, experience, is_approved, hourly_rate, currency')
         .in('id', teacherIds)
         .eq('is_approved', true);
 
@@ -73,7 +75,7 @@ const BrowseTeachers = () => {
       const tutorIds = rolesData.map(r => r.user_id);
       const { data: profilesData, error } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, timezone, languages_spoken, availability, experience, is_approved')
+        .select('id, full_name, avatar_url, timezone, languages_spoken, availability, experience, is_approved, hourly_rate, currency')
         .in('id', tutorIds)
         .eq('is_approved', true);
 
@@ -164,7 +166,7 @@ const BrowseTeachers = () => {
     return (
       <Card className="hover:shadow-lg transition-shadow">
         <CardContent className="p-4">
-          <div className="flex items-start gap-4">
+            <div className="flex items-start gap-4">
             <Avatar className="h-16 w-16 border-2 border-primary/20">
               <AvatarImage src={staff.avatar_url || undefined} />
               <AvatarFallback className="bg-primary/10 text-primary text-lg">
@@ -172,11 +174,16 @@ const BrowseTeachers = () => {
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
                 <h3 className="font-semibold truncate">{staff.full_name}</h3>
                 <Badge variant={staff.role === 'teacher' ? 'default' : 'secondary'} className="text-xs">
                   {staff.role === 'teacher' ? 'Profesor' : 'Tutor'}
                 </Badge>
+                {staff.hourly_rate && (
+                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                    {staff.currency || 'USD'} ${staff.hourly_rate}/hora
+                  </Badge>
+                )}
               </div>
 
               {staff.experience && (

@@ -547,27 +547,29 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="shadow-md">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-secondary" />
-                Horario Semanal
-              </CardTitle>
-              <CardDescription>
-                Ve tu horario de clases y actividades
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                Consulta el horario completo más abajo o en la sección de horarios.
-              </p>
-              <Button variant="outline" className="w-full" onClick={() => {
-                document.getElementById('weekly-calendar')?.scrollIntoView({ behavior: 'smooth' });
-              }}>
-                Ver Horario Completo
-              </Button>
-            </CardContent>
-          </Card>
+          {studentProfile?.student_type !== 'online' && (
+            <Card className="shadow-md">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-secondary" />
+                  Horario Semanal
+                </CardTitle>
+                <CardDescription>
+                  Ve tu horario de clases y actividades
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Consulta el horario completo más abajo o en la sección de horarios.
+                </p>
+                <Button variant="outline" className="w-full" onClick={() => {
+                  document.getElementById('weekly-calendar')?.scrollIntoView({ behavior: 'smooth' });
+                }}>
+                  Ver Horario Completo
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Student Progress Section */}
           <Card className="shadow-md lg:col-span-2">

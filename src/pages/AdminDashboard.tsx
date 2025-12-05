@@ -24,6 +24,7 @@ import { NotificationBell } from '@/components/NotificationBell';
 import { RoleBasedEditProfileDialog } from '@/components/RoleBasedEditProfileDialog';
 import { AdminApprovalPanel } from '@/components/AdminApprovalPanel';
 import { VideoCallHistoryAdmin } from '@/components/VideoCallHistoryAdmin';
+import { EarningsPanel } from '@/components/EarningsPanel';
 import { useSwipeable } from 'react-swipeable';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
@@ -430,6 +431,23 @@ const AdminDashboard = () => {
         {/* Video Call History */}
         <div className="mb-8">
           <VideoCallHistoryAdmin />
+        </div>
+
+        {/* Earnings Panel */}
+        <div className="mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                💰 Ingresos de la Plataforma
+              </CardTitle>
+              <CardDescription>
+                Resumen de pagos de clases online (15% comisión)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <EarningsPanel />
+            </CardContent>
+          </Card>
         </div>
 
         {/* Students Table */}

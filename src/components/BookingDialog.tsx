@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { CalendarIcon, Clock, Loader2, Check } from 'lucide-react';
+import { CalendarIcon, Clock, Loader2, Check, DollarSign } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,6 +30,8 @@ interface TimeSlot {
   dayOfWeek: number;
 }
 
+const PLATFORM_FEE_PERCENTAGE = 0.15; // 15%
+
 export const BookingDialog = ({
   open,
   onOpenChange,
@@ -44,13 +46,13 @@ export const BookingDialog = ({
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [notes, setNotes] = useState('');
 
-  // Fetch staff availability
+  // Fetch staff availability and rates
   const { data: staffProfile } = useQuery({
     queryKey: ['staff-availability', staffId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('availability')
+        .select('availability, hourly_rate, currency')
         .eq('id', staffId)
         .single();
       
@@ -75,6 +77,13 @@ export const BookingDialog = ({
     },
     enabled: open
   });
+
+  // Calculate price breakdown
+  const hourlyRate = (staffProfile as any)?.hourly_rate || 0;
+  const currency = (staffProfile as any)?.currency || 'USD';
+  const price = hourlyRate;
+  const platformFee = price * PLATFORM_FEE_PERCENTAGE;
+  const staffEarnings = price - platformFee;
 
   // Parse availability JSON
   const getAvailableSlots = (date: Date): TimeSlot[] => {
@@ -117,7 +126,7 @@ export const BookingDialog = ({
         throw new Error('Missing booking details');
       }
 
-      const { error } = await supabase
+      const { data: booking, error } = await supabase
         .from('class_bookings')
         .insert({
           student_id: user.id,
@@ -127,8 +136,14 @@ export const BookingDialog = ({
           start_time: selectedSlot.start + ':00',
           end_time: selectedSlot.end + ':00',
           notes: notes || null,
-          status: 'pending'
-        });
+          status: 'pending',
+          price: price,
+          platform_fee: platformFee,
+          staff_earnings: staffEarnings,
+          payment_status: 'pending'
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
@@ -136,10 +151,12 @@ export const BookingDialog = ({
       await supabase.rpc('create_notification', {
         p_user_id: staffId,
         p_title: 'Nueva Reserva de Clase',
-        p_message: `Tienes una nueva solicitud de reserva para el ${format(selectedDate, 'dd/MM/yyyy')} a las ${selectedSlot.start}`,
+        p_message: `Tienes una nueva solicitud de reserva para el ${format(selectedDate, 'dd/MM/yyyy')} a las ${selectedSlot.start}${price > 0 ? ` - ${currency} $${price.toFixed(2)}` : ''}`,
         p_type: 'booking_request',
         p_related_id: user.id
       });
+
+      return booking;
     },
     onSuccess: () => {
       toast.success('Reserva creada correctamente');
@@ -191,12 +208,17 @@ export const BookingDialog = ({
                 {staffName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            <div>
+            <div className="flex-1">
               <p className="font-medium">{staffName}</p>
               <p className="text-sm text-muted-foreground">
                 {staffRole === 'teacher' ? 'Profesor' : 'Tutor'}
               </p>
             </div>
+            {hourlyRate > 0 && (
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                {currency} ${hourlyRate}/hora
+              </Badge>
+            )}
           </div>
 
           {/* Calendar */}
@@ -246,6 +268,27 @@ export const BookingDialog = ({
             </div>
           )}
 
+          {/* Price Summary */}
+          {selectedSlot && hourlyRate > 0 && (
+            <Card className="p-4 bg-muted/50">
+              <div className="flex items-center gap-2 mb-3">
+                <DollarSign className="h-4 w-4 text-green-600" />
+                <span className="font-medium">Resumen del Pago</span>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Clase con {staffName} (1 hora)</span>
+                  <span className="font-medium">{currency} ${price.toFixed(2)}</span>
+                </div>
+                <hr className="border-border" />
+                <div className="flex justify-between font-semibold text-base">
+                  <span>Total a pagar</span>
+                  <span className="text-green-600">{currency} ${price.toFixed(2)}</span>
+                </div>
+              </div>
+            </Card>
+          )}
+
           {/* Notes */}
           {selectedSlot && (
             <div className="space-y-2">
@@ -274,7 +317,7 @@ export const BookingDialog = ({
             ) : (
               <Check className="h-4 w-4 mr-2" />
             )}
-            Confirmar Reserva
+            {hourlyRate > 0 ? `Pagar ${currency} $${price.toFixed(2)}` : 'Confirmar Reserva'}
           </Button>
         </DialogFooter>
       </DialogContent>

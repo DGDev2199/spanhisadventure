@@ -22,6 +22,11 @@ export type Database = {
           id: string
           meeting_url: string | null
           notes: string | null
+          paid_at: string | null
+          payment_status: string | null
+          platform_fee: number | null
+          price: number | null
+          staff_earnings: number | null
           start_time: string
           status: string
           student_id: string
@@ -36,6 +41,11 @@ export type Database = {
           id?: string
           meeting_url?: string | null
           notes?: string | null
+          paid_at?: string | null
+          payment_status?: string | null
+          platform_fee?: number | null
+          price?: number | null
+          staff_earnings?: number | null
           start_time: string
           status?: string
           student_id: string
@@ -50,6 +60,11 @@ export type Database = {
           id?: string
           meeting_url?: string | null
           notes?: string | null
+          paid_at?: string | null
+          payment_status?: string | null
+          platform_fee?: number | null
+          price?: number | null
+          staff_earnings?: number | null
           start_time?: string
           status?: string
           student_id?: string
@@ -405,6 +420,44 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_earnings: {
+        Row: {
+          booking_id: string | null
+          created_at: string | null
+          id: string
+          platform_fee: number
+          staff_earnings: number
+          staff_id: string
+          total_amount: number
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string | null
+          id?: string
+          platform_fee: number
+          staff_earnings: number
+          staff_id: string
+          total_amount: number
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string | null
+          id?: string
+          platform_fee?: number
+          staff_earnings?: number
+          staff_id?: string
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_earnings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "class_bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_comments: {
         Row: {
           author_id: string
@@ -524,10 +577,12 @@ export type Database = {
           availability: string | null
           avatar_url: string | null
           created_at: string
+          currency: string | null
           diet: string | null
           email: string
           experience: string | null
           full_name: string
+          hourly_rate: number | null
           id: string
           is_approved: boolean | null
           languages_spoken: string[] | null
@@ -545,10 +600,12 @@ export type Database = {
           availability?: string | null
           avatar_url?: string | null
           created_at?: string
+          currency?: string | null
           diet?: string | null
           email: string
           experience?: string | null
           full_name: string
+          hourly_rate?: number | null
           id: string
           is_approved?: boolean | null
           languages_spoken?: string[] | null
@@ -566,10 +623,12 @@ export type Database = {
           availability?: string | null
           avatar_url?: string | null
           created_at?: string
+          currency?: string | null
           diet?: string | null
           email?: string
           experience?: string | null
           full_name?: string
+          hourly_rate?: number | null
           id?: string
           is_approved?: boolean | null
           languages_spoken?: string[] | null

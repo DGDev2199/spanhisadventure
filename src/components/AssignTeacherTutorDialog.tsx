@@ -15,6 +15,7 @@ interface AssignTeacherTutorDialogProps {
   currentTeacherId?: string;
   currentTutorId?: string;
   currentRoom?: string;
+  currentStudentType?: 'presencial' | 'online';
 }
 
 export const AssignTeacherTutorDialog = ({
@@ -24,11 +25,13 @@ export const AssignTeacherTutorDialog = ({
   studentName,
   currentTeacherId,
   currentTutorId,
-  currentRoom
+  currentRoom,
+  currentStudentType
 }: AssignTeacherTutorDialogProps) => {
   const [teacherId, setTeacherId] = useState(currentTeacherId || '');
   const [tutorId, setTutorId] = useState(currentTutorId || '');
   const [room, setRoom] = useState(currentRoom || '');
+  const [studentType, setStudentType] = useState<'presencial' | 'online'>(currentStudentType || 'presencial');
   const queryClient = useQueryClient();
 
   const { data: teachers } = useQuery({
@@ -91,7 +94,8 @@ export const AssignTeacherTutorDialog = ({
         .update({
           teacher_id: teacherId || null,
           tutor_id: tutorId || null,
-          room: room || null
+          room: room || null,
+          student_type: studentType
         })
         .eq('user_id', studentId);
       
@@ -114,11 +118,24 @@ export const AssignTeacherTutorDialog = ({
         <DialogHeader>
           <DialogTitle className="text-lg sm:text-xl">Manage Student</DialogTitle>
           <DialogDescription className="text-sm">
-            Assign teacher, tutor, and room to {studentName}
+            Assign teacher, tutor, room and type to {studentName}
           </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto px-1">
+          <div className="space-y-2">
+            <Label>Tipo de Estudiante</Label>
+            <Select value={studentType} onValueChange={(v) => setStudentType(v as 'presencial' | 'online')}>
+              <SelectTrigger>
+                <SelectValue placeholder="Seleccionar tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="presencial">📍 Presencial</SelectItem>
+                <SelectItem value="online">🌐 Online</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-2">
             <Label>Teacher</Label>
             <Select value={teacherId} onValueChange={setTeacherId}>

@@ -2,7 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Calendar, Clock, Video, X, Loader2, MessageSquare } from 'lucide-react';
+import { Calendar, Clock, Video, X, Loader2, MessageSquare, Star, CheckCircle } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +12,8 @@ import { format, parseISO, isAfter } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { VideoCallDialog } from './VideoCallDialog';
 import { StudentChatDialog } from './StudentChatDialog';
+import { ReviewClassDialog } from './ReviewClassDialog';
+import { StarRating } from './StarRating';
 
 interface Booking {
   id: string;
@@ -32,6 +34,7 @@ export const MyBookingsPanel = () => {
   const queryClient = useQueryClient();
   const [videoCallOpen, setVideoCallOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   // Fetch bookings
@@ -55,6 +58,29 @@ export const MyBookingsPanel = () => {
     },
     enabled: !!user?.id
   });
+
+  // Fetch existing reviews for user's bookings
+  const { data: existingReviews } = useQuery({
+    queryKey: ['booking-reviews', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from('class_reviews')
+        .select('booking_id, rating')
+        .eq('student_id', user.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id
+  });
+
+  const hasReview = (bookingId: string) => {
+    return existingReviews?.some(r => r.booking_id === bookingId);
+  };
+
+  const getReviewRating = (bookingId: string) => {
+    return existingReviews?.find(r => r.booking_id === bookingId)?.rating;
+  };
 
   // Cancel booking mutation
   const cancelMutation = useMutation({
@@ -103,6 +129,11 @@ export const MyBookingsPanel = () => {
   const handleChat = (booking: Booking) => {
     setSelectedBooking(booking);
     setChatOpen(true);
+  };
+
+  const handleReview = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setReviewOpen(true);
   };
 
   const getStaffInfo = (booking: Booking) => {
@@ -188,6 +219,23 @@ export const MyBookingsPanel = () => {
                           </Button>
                         </>
                       )}
+                      {booking.status === 'completed' && (
+                        hasReview(booking.id) ? (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <CheckCircle className="h-3 w-3 text-green-500" />
+                            <StarRating rating={getReviewRating(booking.id) || 0} size="sm" />
+                          </div>
+                        ) : (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleReview(booking)}
+                          >
+                            <Star className="h-4 w-4 mr-1" />
+                            Reseña
+                          </Button>
+                        )
+                      )}
                       {booking.status === 'pending' && (
                         <Button 
                           variant="ghost" 
@@ -228,6 +276,20 @@ export const MyBookingsPanel = () => {
           staffName={getStaffInfo(selectedBooking)!.full_name}
           staffAvatar={getStaffInfo(selectedBooking)!.avatar_url}
           staffRole={getStaffInfo(selectedBooking)!.role}
+        />
+      )}
+
+      {/* Review Dialog */}
+      {selectedBooking && getStaffInfo(selectedBooking) && (
+        <ReviewClassDialog
+          open={reviewOpen}
+          onOpenChange={setReviewOpen}
+          bookingId={selectedBooking.id}
+          staffId={getStaffInfo(selectedBooking)!.id}
+          staffName={getStaffInfo(selectedBooking)!.full_name}
+          staffAvatar={getStaffInfo(selectedBooking)!.avatar_url}
+          staffRole={getStaffInfo(selectedBooking)!.role}
+          bookingDate={selectedBooking.booking_date}
         />
       )}
     </>

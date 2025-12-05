@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ interface ChangeRoleDialogProps {
   userName: string;
   currentRole?: string;
   currentUserRole?: string | null;
+  currentStaffType?: string | null;
 }
 
 export const ChangeRoleDialog = ({
@@ -23,11 +24,23 @@ export const ChangeRoleDialog = ({
   userId,
   userName,
   currentRole,
-  currentUserRole
+  currentUserRole,
+  currentStaffType
 }: ChangeRoleDialogProps) => {
   const [role, setRole] = useState(currentRole || '');
+  const [staffType, setStaffType] = useState<'presencial' | 'online'>(currentStaffType as 'presencial' | 'online' || 'presencial');
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const queryClient = useQueryClient();
+
+  // Update staffType when currentStaffType changes
+  useEffect(() => {
+    if (currentStaffType) {
+      setStaffType(currentStaffType as 'presencial' | 'online');
+    }
+  }, [currentStaffType]);
+
+  // Check if selected role is staff (teacher/tutor)
+  const isStaffRole = role === 'teacher' || role === 'tutor';
 
   const changeRoleMutation = useMutation({
     mutationFn: async () => {
@@ -43,6 +56,14 @@ export const ChangeRoleDialog = ({
         .insert([{ user_id: userId, role: role as any }]);
       
       if (error) throw error;
+
+      // Update staff_type in profiles if role is teacher/tutor
+      if (role === 'teacher' || role === 'tutor') {
+        await supabase
+          .from('profiles')
+          .update({ staff_type: staffType })
+          .eq('id', userId);
+      }
 
       // If role is student, create/update student profile
       if (role === 'student') {
@@ -159,6 +180,26 @@ export const ChangeRoleDialog = ({
                 </SelectContent>
               </Select>
             </div>
+
+            {isStaffRole && (
+              <div className="space-y-2">
+                <Label>Tipo de {role === 'teacher' ? 'Profesor' : 'Tutor'}</Label>
+                <Select value={staffType} onValueChange={(v) => setStaffType(v as 'presencial' | 'online')}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="presencial">📍 Presencial</SelectItem>
+                    <SelectItem value="online">🌐 Online</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {staffType === 'online' 
+                    ? 'Atiende estudiantes de forma remota por videollamada' 
+                    : 'Atiende estudiantes de forma presencial en la escuela'}
+                </p>
+              </div>
+            )}
 
             {isChangingFromStudent && (
               <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-md">

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureFlag } from '@/contexts/FeatureFlagsContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -35,6 +36,12 @@ const AdminDashboard = () => {
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  
+  // Feature flags
+  const isCommunityEnabled = useFeatureFlag('community_feed');
+  const isEarningsEnabled = useFeatureFlag('earnings_panel');
+  const isModalityRequestsEnabled = useFeatureFlag('modality_requests');
+  const isVideoCallsEnabled = useFeatureFlag('video_calls');
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [roomsDialogOpen, setRoomsDialogOpen] = useState(false);
@@ -285,15 +292,17 @@ const AdminDashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <Button
-              onClick={() => navigate('/feed')}
-              variant="outline"
-              size="sm"
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
-            >
-              <UsersRound className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Comunidad</span>
-            </Button>
+            {isCommunityEnabled && (
+              <Button
+                onClick={() => navigate('/feed')}
+                variant="outline"
+                size="sm"
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
+              >
+                <UsersRound className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Comunidad</span>
+              </Button>
+            )}
             <NotificationBell />
             <Button
               onClick={() => setEditProfileOpen(true)}

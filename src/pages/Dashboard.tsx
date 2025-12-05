@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureFlag } from '@/contexts/FeatureFlagsContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogOut, User, BookOpen, Calendar, MessageSquare, Award, CheckCircle, ClipboardList, Download, Users, Search, Globe, Video } from 'lucide-react';
@@ -25,6 +26,14 @@ const Dashboard = () => {
   const { user, userRole, signOut } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  
+  // Feature flags
+  const isCommunityEnabled = useFeatureFlag('community_feed');
+  const isOnlineEnabled = useFeatureFlag('online_students');
+  const isBrowseTeachersEnabled = useFeatureFlag('browse_teachers');
+  const isBookingEnabled = useFeatureFlag('booking_system');
+  const isVideoCallsEnabled = useFeatureFlag('video_calls');
+  const isBasicChatEnabled = useFeatureFlag('basic_chat');
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [classScheduleOpen, setClassScheduleOpen] = useState(false);
   const [tutoringScheduleOpen, setTutoringScheduleOpen] = useState(false);
@@ -180,15 +189,17 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <Button
-              onClick={() => navigate('/feed')}
-              variant="outline"
-              size="sm"
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
-            >
-              <Users className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Comunidad</span>
-            </Button>
+            {isCommunityEnabled && (
+              <Button
+                onClick={() => navigate('/feed')}
+                variant="outline"
+                size="sm"
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
+              >
+                <Users className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Comunidad</span>
+              </Button>
+            )}
             <NotificationBell />
             <Button
               onClick={signOut}
@@ -222,7 +233,7 @@ const Dashboard = () => {
         </div>
 
         {/* Online Student: Browse Teachers Button */}
-        {studentProfile?.student_type === 'online' && (
+        {isOnlineEnabled && isBrowseTeachersEnabled && studentProfile?.student_type === 'online' && (
           <Card className="mb-6 border-primary/20 bg-primary/5">
             <CardContent className="p-4">
               <div className="flex items-center justify-between flex-wrap gap-4">

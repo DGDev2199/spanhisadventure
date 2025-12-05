@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { format, parseISO, isAfter } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { VideoCallDialog } from './VideoCallDialog';
-import { TeacherTutorChatDialog } from './TeacherTutorChatDialog';
+import { StaffToStudentChatDialog } from './StaffToStudentChatDialog';
 
 interface Booking {
   id: string;
@@ -282,9 +282,9 @@ export const StaffBookingsPanel = () => {
         />
       )}
 
-      {/* Chat Dialog */}
+      {/* Chat Dialog - Direct chat with student */}
       {selectedBooking && selectedBooking.student && (
-        <TeacherTutorChatDialog
+        <StaffToStudentChatDialog
           open={chatOpen}
           onOpenChange={setChatOpen}
           studentId={selectedBooking.student_id}

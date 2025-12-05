@@ -225,6 +225,7 @@ const TutorDashboard = () => {
                   <TableRow>
                     <TableHead>Nombre</TableHead>
                     <TableHead>Nivel</TableHead>
+                    <TableHead>Tipo</TableHead>
                     <TableHead>Sala</TableHead>
                     <TableHead>Profesor Asignado</TableHead>
                     <TableHead>Acciones</TableHead>
@@ -235,6 +236,15 @@ const TutorDashboard = () => {
                     <TableRow key={student.id}>
                       <TableCell className="font-medium">{student.profiles?.full_name || 'Sin nombre'}</TableCell>
                       <TableCell>{student.level || 'No asignado'}</TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          student.student_type === 'online' 
+                            ? 'bg-blue-100 text-blue-700' 
+                            : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {student.student_type === 'online' ? '🌐 Online' : '📍 Presencial'}
+                        </span>
+                      </TableCell>
                       <TableCell>{student.room || 'No asignado'}</TableCell>
                       <TableCell>
                         {student.teacher?.full_name || (
@@ -262,17 +272,19 @@ const TutorDashboard = () => {
                             <MessageSquare className="h-4 w-4 mr-1" />
                             Chat
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => {
-                              setVideoCallStudent({ id: student.user_id, name: student.profiles?.full_name });
-                              setVideoCallOpen(true);
-                            }}
-                          >
-                            <Video className="h-4 w-4 mr-1" />
-                            Llamar
-                          </Button>
+                          {student.student_type === 'online' && (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => {
+                                setVideoCallStudent({ id: student.user_id, name: student.profiles?.full_name });
+                                setVideoCallOpen(true);
+                              }}
+                            >
+                              <Video className="h-4 w-4 mr-1" />
+                              Llamar
+                            </Button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

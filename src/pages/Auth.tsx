@@ -198,21 +198,7 @@ const Auth = () => {
         // Wait a bit for trigger to complete
         await new Promise(resolve => setTimeout(resolve, 500));
 
-        // Insert the correct role in user_roles table
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert({ 
-            user_id: data.user.id,
-            role: validatedData.role 
-          });
-
-        if (roleError) {
-          console.error('Role insert error:', roleError);
-          toast.error('Error al asignar el rol');
-          return;
-        }
-
-        // Create student_profile only if role is student
+        // Create student_profile FIRST if role is student (before user_roles)
         if (validatedData.role === 'student') {
           const { error: studentProfileError } = await supabase
             .from('student_profiles')
@@ -225,8 +211,23 @@ const Auth = () => {
 
           if (studentProfileError) {
             console.error('Student profile creation error:', studentProfileError);
-            toast.error('Error al crear el perfil de estudiante. El trigger de respaldo debería crearlo automáticamente.');
+            toast.error('Error al crear el perfil de estudiante');
+            return;
           }
+        }
+
+        // Insert the correct role in user_roles table
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({ 
+            user_id: data.user.id,
+            role: validatedData.role 
+          });
+
+        if (roleError) {
+          console.error('Role insert error:', roleError);
+          toast.error('Error al asignar el rol');
+          return;
         }
 
         // Upload avatar if provided

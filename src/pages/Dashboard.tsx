@@ -322,17 +322,19 @@ const Dashboard = () => {
                     >
                       <MessageSquare className="h-4 w-4" />
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1"
-                      onClick={() => {
-                        setVideoCallStaff({ id: teacherProfile.id, name: teacherProfile.full_name, avatar: null, role: 'teacher' });
-                        setVideoCallOpen(true);
-                      }}
-                    >
-                      <Video className="h-4 w-4" />
-                    </Button>
+                    {studentProfile?.student_type === 'online' && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => {
+                          setVideoCallStaff({ id: teacherProfile.id, name: teacherProfile.full_name, avatar: null, role: 'teacher' });
+                          setVideoCallOpen(true);
+                        }}
+                      >
+                        <Video className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                   {studentProfile?.student_type === 'online' && (
                     <Button 
@@ -399,17 +401,19 @@ const Dashboard = () => {
                     >
                       <MessageSquare className="h-4 w-4" />
                     </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1"
-                      onClick={() => {
-                        setVideoCallStaff({ id: tutorProfile.id, name: tutorProfile.full_name, avatar: null, role: 'tutor' });
-                        setVideoCallOpen(true);
-                      }}
-                    >
-                      <Video className="h-4 w-4" />
-                    </Button>
+                    {studentProfile?.student_type === 'online' && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => {
+                          setVideoCallStaff({ id: tutorProfile.id, name: tutorProfile.full_name, avatar: null, role: 'tutor' });
+                          setVideoCallOpen(true);
+                        }}
+                      >
+                        <Video className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                   {studentProfile?.student_type === 'online' && (
                     <Button 

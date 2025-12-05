@@ -431,6 +431,16 @@ const TeacherDashboard = () => {
                               <p className="font-medium">{student.level || <span className="text-muted-foreground">No establecido</span>}</p>
                             </div>
                             <div>
+                              <span className="text-muted-foreground">Tipo:</span>
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                student.student_type === 'online' 
+                                  ? 'bg-blue-100 text-blue-700' 
+                                  : 'bg-amber-100 text-amber-700'
+                              }`}>
+                                {student.student_type === 'online' ? '🌐 Online' : '📍 Presencial'}
+                              </span>
+                            </div>
+                            <div>
                               <span className="text-muted-foreground">Habitación:</span>
                               <p className="font-medium">{student.room || <span className="text-muted-foreground">No asignado</span>}</p>
                             </div>
@@ -485,18 +495,20 @@ const TeacherDashboard = () => {
                               <MessageSquare className="h-4 w-4 mr-1" />
                               Chat
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setVideoCallStudent({ id: student.user_id, name: student.profiles?.full_name });
-                                setVideoCallOpen(true);
-                              }}
-                              className="flex-1 min-w-[90px]"
-                            >
-                              <Video className="h-4 w-4 mr-1" />
-                              Llamar
-                            </Button>
+                            {student.student_type === 'online' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setVideoCallStudent({ id: student.user_id, name: student.profiles?.full_name });
+                                  setVideoCallOpen(true);
+                                }}
+                                className="flex-1 min-w-[90px]"
+                              >
+                                <Video className="h-4 w-4 mr-1" />
+                                Llamar
+                              </Button>
+                            )}
                             <Button
                               size="sm"
                               variant="outline"
@@ -536,6 +548,7 @@ const TeacherDashboard = () => {
                   <TableRow>
                     <TableHead>Nombre</TableHead>
                     <TableHead>Nivel</TableHead>
+                    <TableHead>Tipo</TableHead>
                     <TableHead>Habitación</TableHead>
                     <TableHead>Profesor</TableHead>
                     <TableHead>Tutor</TableHead>
@@ -555,6 +568,15 @@ const TeacherDashboard = () => {
                         {student.level || (
                           <span className="text-muted-foreground">No establecido</span>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          student.student_type === 'online' 
+                            ? 'bg-blue-100 text-blue-700' 
+                            : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {student.student_type === 'online' ? '🌐 Online' : '📍 Presencial'}
+                        </span>
                       </TableCell>
                       <TableCell>
                         {student.room || (
@@ -610,17 +632,19 @@ const TeacherDashboard = () => {
                             <MessageSquare className="h-4 w-4 mr-1" />
                             Chat
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setVideoCallStudent({ id: student.user_id, name: student.profiles?.full_name });
-                              setVideoCallOpen(true);
-                            }}
-                          >
-                            <Video className="h-4 w-4 mr-1" />
-                            Llamar
-                          </Button>
+                          {student.student_type === 'online' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setVideoCallStudent({ id: student.user_id, name: student.profiles?.full_name });
+                                setVideoCallOpen(true);
+                              }}
+                            >
+                              <Video className="h-4 w-4 mr-1" />
+                              Llamar
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="outline"

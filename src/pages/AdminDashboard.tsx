@@ -468,6 +468,16 @@ const AdminDashboard = () => {
                               <p className="font-medium">{student.level || 'Not Set'}</p>
                             </div>
                             <div>
+                              <span className="text-muted-foreground">Tipo:</span>
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                student.student_type === 'online' 
+                                  ? 'bg-blue-100 text-blue-700' 
+                                  : 'bg-amber-100 text-amber-700'
+                              }`}>
+                                {student.student_type === 'online' ? '🌐 Online' : '📍 Presencial'}
+                              </span>
+                            </div>
+                            <div>
                               <span className="text-muted-foreground">Habitación:</span>
                               <p className="font-medium">{student.room || 'Not Assigned'}</p>
                             </div>
@@ -546,6 +556,7 @@ const AdminDashboard = () => {
                       <TableHead className="whitespace-nowrap">Name</TableHead>
                       <TableHead className="whitespace-nowrap hidden sm:table-cell">Email</TableHead>
                       <TableHead className="whitespace-nowrap">Level</TableHead>
+                      <TableHead className="whitespace-nowrap">Type</TableHead>
                       <TableHead className="whitespace-nowrap hidden md:table-cell">Room</TableHead>
                       <TableHead className="whitespace-nowrap hidden lg:table-cell">Status</TableHead>
                       <TableHead className="whitespace-nowrap hidden lg:table-cell">Test Status</TableHead>
@@ -558,6 +569,15 @@ const AdminDashboard = () => {
                         <TableCell className="font-medium text-sm">{student.profiles?.full_name}</TableCell>
                         <TableCell className="text-sm hidden sm:table-cell">{student.profiles?.email}</TableCell>
                         <TableCell className="text-sm">{student.level || 'Not Set'}</TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            student.student_type === 'online' 
+                              ? 'bg-blue-100 text-blue-700' 
+                              : 'bg-amber-100 text-amber-700'
+                          }`}>
+                            {student.student_type === 'online' ? '🌐 Online' : '📍 Presencial'}
+                          </span>
+                        </TableCell>
                         <TableCell className="text-sm hidden md:table-cell">{student.room || 'Not Assigned'}</TableCell>
                         <TableCell className="hidden lg:table-cell">
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
@@ -724,6 +744,7 @@ const AdminDashboard = () => {
           currentTeacherId={selectedStudent.teacher_id}
           currentTutorId={selectedStudent.tutor_id}
           currentRoom={selectedStudent.room}
+          currentStudentType={selectedStudent.student_type}
         />
       )}
 

@@ -12,10 +12,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Clock, Globe, Languages, User, Star, Send, Loader2, GraduationCap, UserCheck } from 'lucide-react';
+import { ArrowLeft, Clock, Globe, Languages, User, Star, Send, Loader2, GraduationCap, UserCheck, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import logo from '@/assets/logo.png';
 import { NotificationBell } from '@/components/NotificationBell';
+import { StaffProfileDialog } from '@/components/StaffProfileDialog';
+import { StarRating } from '@/components/StarRating';
 
 interface StaffMember {
   id: string;
@@ -28,6 +30,8 @@ interface StaffMember {
   role: 'teacher' | 'tutor';
   hourly_rate: number | null;
   currency: string | null;
+  avgRating?: number;
+  totalReviews?: number;
 }
 
 const BrowseTeachers = () => {
@@ -35,10 +39,11 @@ const BrowseTeachers = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [requestDialogOpen, setRequestDialogOpen] = useState(false);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
   const [requestMessage, setRequestMessage] = useState('');
 
-  // Fetch approved teachers
+  // Fetch approved teachers with ratings
   const { data: teachers, isLoading: teachersLoading } = useQuery({
     queryKey: ['browse-teachers'],
     queryFn: async () => {
@@ -57,11 +62,32 @@ const BrowseTeachers = () => {
         .eq('is_approved', true);
 
       if (error) throw error;
-      return (profilesData || []).map(p => ({ ...p, role: 'teacher' as const }));
+
+      // Fetch ratings for all teachers
+      const { data: reviewsData } = await supabase
+        .from('class_reviews')
+        .select('staff_id, rating')
+        .in('staff_id', teacherIds);
+
+      const ratingMap = new Map<string, { total: number; count: number }>();
+      reviewsData?.forEach(r => {
+        const current = ratingMap.get(r.staff_id) || { total: 0, count: 0 };
+        ratingMap.set(r.staff_id, { total: current.total + r.rating, count: current.count + 1 });
+      });
+
+      return (profilesData || []).map(p => {
+        const stats = ratingMap.get(p.id);
+        return {
+          ...p,
+          role: 'teacher' as const,
+          avgRating: stats ? stats.total / stats.count : 0,
+          totalReviews: stats?.count || 0,
+        };
+      });
     },
   });
 
-  // Fetch approved tutors
+  // Fetch approved tutors with ratings
   const { data: tutors, isLoading: tutorsLoading } = useQuery({
     queryKey: ['browse-tutors'],
     queryFn: async () => {
@@ -80,7 +106,28 @@ const BrowseTeachers = () => {
         .eq('is_approved', true);
 
       if (error) throw error;
-      return (profilesData || []).map(p => ({ ...p, role: 'tutor' as const }));
+
+      // Fetch ratings for all tutors
+      const { data: reviewsData } = await supabase
+        .from('class_reviews')
+        .select('staff_id, rating')
+        .in('staff_id', tutorIds);
+
+      const ratingMap = new Map<string, { total: number; count: number }>();
+      reviewsData?.forEach(r => {
+        const current = ratingMap.get(r.staff_id) || { total: 0, count: 0 };
+        ratingMap.set(r.staff_id, { total: current.total + r.rating, count: current.count + 1 });
+      });
+
+      return (profilesData || []).map(p => {
+        const stats = ratingMap.get(p.id);
+        return {
+          ...p,
+          role: 'tutor' as const,
+          avgRating: stats ? stats.total / stats.count : 0,
+          totalReviews: stats?.count || 0,
+        };
+      });
     },
   });
 
@@ -159,6 +206,11 @@ const BrowseTeachers = () => {
     setRequestDialogOpen(true);
   };
 
+  const handleViewProfile = (staff: StaffMember) => {
+    setSelectedStaff(staff);
+    setProfileDialogOpen(true);
+  };
+
   const StaffCard = ({ staff }: { staff: StaffMember }) => {
     const requested = hasRequestedStaff(staff.id);
     const localTime = getTimezoneOffset(staff.timezone);
@@ -167,7 +219,10 @@ const BrowseTeachers = () => {
       <Card className="hover:shadow-lg transition-shadow">
         <CardContent className="p-4">
             <div className="flex items-start gap-4">
-            <Avatar className="h-16 w-16 border-2 border-primary/20">
+            <Avatar 
+              className="h-16 w-16 border-2 border-primary/20 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => handleViewProfile(staff)}
+            >
               <AvatarImage src={staff.avatar_url || undefined} />
               <AvatarFallback className="bg-primary/10 text-primary text-lg">
                 {staff.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
@@ -175,16 +230,35 @@ const BrowseTeachers = () => {
             </Avatar>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <h3 className="font-semibold truncate">{staff.full_name}</h3>
+                <h3 
+                  className="font-semibold truncate cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => handleViewProfile(staff)}
+                >
+                  {staff.full_name}
+                </h3>
                 <Badge variant={staff.role === 'teacher' ? 'default' : 'secondary'} className="text-xs">
                   {staff.role === 'teacher' ? 'Profesor' : 'Tutor'}
                 </Badge>
-                {staff.hourly_rate && (
-                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                    {staff.currency || 'USD'} ${staff.hourly_rate}/hora
-                  </Badge>
-                )}
               </div>
+
+              {/* Rating */}
+              {staff.totalReviews && staff.totalReviews > 0 ? (
+                <div className="mb-2">
+                  <StarRating 
+                    rating={staff.avgRating || 0} 
+                    size="sm" 
+                    showValue 
+                    totalReviews={staff.totalReviews} 
+                  />
+                </div>
+              ) : null}
+
+              {/* Price */}
+              {staff.hourly_rate && (
+                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 mb-2">
+                  {staff.currency || 'USD'} ${staff.hourly_rate}/hora
+                </Badge>
+              )}
 
               {staff.experience && (
                 <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
@@ -207,31 +281,35 @@ const BrowseTeachers = () => {
                 )}
               </div>
 
-              {staff.availability && (
-                <p className="text-xs text-muted-foreground mb-3">
-                  <Globe className="h-3 w-3 inline mr-1" />
-                  {staff.availability}
-                </p>
-              )}
-
-              <Button 
-                size="sm" 
-                className="w-full"
-                disabled={requested}
-                onClick={() => handleRequestClick(staff)}
-              >
-                {requested ? (
-                  <>
-                    <Clock className="h-4 w-4 mr-2" />
-                    Solicitud Pendiente
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4 mr-2" />
-                    Solicitar {staff.role === 'teacher' ? 'Clases' : 'Tutorías'}
-                  </>
-                )}
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => handleViewProfile(staff)}
+                >
+                  <Eye className="h-4 w-4 mr-1" />
+                  Ver Perfil
+                </Button>
+                <Button 
+                  size="sm" 
+                  className="flex-1"
+                  disabled={requested}
+                  onClick={() => handleRequestClick(staff)}
+                >
+                  {requested ? (
+                    <>
+                      <Clock className="h-4 w-4 mr-1" />
+                      Pendiente
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-1" />
+                      Solicitar
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -388,6 +466,21 @@ const BrowseTeachers = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Profile Dialog */}
+      {selectedStaff && (
+        <StaffProfileDialog
+          open={profileDialogOpen}
+          onOpenChange={setProfileDialogOpen}
+          staffId={selectedStaff.id}
+          staffRole={selectedStaff.role}
+          hasRequested={hasRequestedStaff(selectedStaff.id)}
+          onRequestClick={() => {
+            setProfileDialogOpen(false);
+            setRequestDialogOpen(true);
+          }}
+        />
+      )}
     </div>
   );
 };

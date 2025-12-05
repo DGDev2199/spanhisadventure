@@ -11,6 +11,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { TimeZoneSelector } from '@/components/TimeZoneSelector';
 import { AvatarUpload } from '@/components/AvatarUpload';
+import { StaffVideoUpload } from '@/components/StaffVideoUpload';
 
 interface RoleBasedEditProfileDialogProps {
   open: boolean;
@@ -35,6 +36,7 @@ export const RoleBasedEditProfileDialog = ({ open, onOpenChange }: RoleBasedEdit
     staff_type: 'presencial' as 'presencial' | 'online',
     hourly_rate: '',
     currency: 'USD',
+    intro_video_url: null as string | null,
   });
 
   const { data: profile } = useQuery({
@@ -63,6 +65,7 @@ export const RoleBasedEditProfileDialog = ({ open, onOpenChange }: RoleBasedEdit
         staff_type: (profile as any).staff_type || 'presencial',
         hourly_rate: (profile as any).hourly_rate?.toString() || '',
         currency: (profile as any).currency || 'USD',
+        intro_video_url: (profile as any).intro_video_url || null,
       });
     }
   }, [profile]);
@@ -150,6 +153,13 @@ export const RoleBasedEditProfileDialog = ({ open, onOpenChange }: RoleBasedEdit
           </div>
           {(userRole === 'teacher' || userRole === 'tutor') && (
             <>
+              {/* Video Upload */}
+              <StaffVideoUpload
+                userId={user?.id}
+                currentVideoUrl={formData.intro_video_url}
+                onVideoChange={(url) => setFormData({...formData, intro_video_url: url})}
+              />
+
               <div className="space-y-2">
                 <Label>Tipo de {userRole === 'teacher' ? 'Profesor' : 'Tutor'}</Label>
                 <Select value={formData.staff_type} onValueChange={(v) => setFormData({...formData, staff_type: v as 'presencial' | 'online'})}>

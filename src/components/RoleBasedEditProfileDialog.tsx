@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -31,6 +32,7 @@ export const RoleBasedEditProfileDialog = ({ open, onOpenChange }: RoleBasedEdit
     experience: '',
     study_objectives: '',
     avatar_url: null as string | null,
+    staff_type: 'presencial' as 'presencial' | 'online',
   });
 
   const { data: profile } = useQuery({
@@ -56,6 +58,7 @@ export const RoleBasedEditProfileDialog = ({ open, onOpenChange }: RoleBasedEdit
         experience: profile.experience || '',
         study_objectives: profile.study_objectives || '',
         avatar_url: profile.avatar_url || null,
+        staff_type: (profile as any).staff_type || 'presencial',
       });
     }
   }, [profile]);
@@ -77,6 +80,7 @@ export const RoleBasedEditProfileDialog = ({ open, onOpenChange }: RoleBasedEdit
       if (userRole === 'teacher' || userRole === 'tutor') {
         updates.availability = formData.availability;
         updates.experience = formData.experience;
+        updates.staff_type = formData.staff_type;
       } else if (userRole === 'student') {
         updates.study_objectives = formData.study_objectives;
       }
@@ -140,6 +144,23 @@ export const RoleBasedEditProfileDialog = ({ open, onOpenChange }: RoleBasedEdit
           </div>
           {(userRole === 'teacher' || userRole === 'tutor') && (
             <>
+              <div className="space-y-2">
+                <Label>Tipo de {userRole === 'teacher' ? 'Profesor' : 'Tutor'}</Label>
+                <Select value={formData.staff_type} onValueChange={(v) => setFormData({...formData, staff_type: v as 'presencial' | 'online'})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="presencial">📍 Presencial</SelectItem>
+                    <SelectItem value="online">🌐 Online</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {formData.staff_type === 'online' 
+                    ? 'Atiendes estudiantes de forma remota por videollamada' 
+                    : 'Atiendes estudiantes de forma presencial en la escuela'}
+                </p>
+              </div>
               <div className="space-y-2">
                 <Label>Disponibilidad</Label>
                 <Textarea value={formData.availability} onChange={e => setFormData({...formData, availability: e.target.value})} />

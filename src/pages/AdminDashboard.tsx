@@ -672,53 +672,71 @@ const AdminDashboard = () => {
                       <TableHead className="whitespace-nowrap">Name</TableHead>
                       <TableHead className="whitespace-nowrap hidden sm:table-cell">Email</TableHead>
                       <TableHead className="whitespace-nowrap">Role</TableHead>
+                      <TableHead className="whitespace-nowrap">Tipo</TableHead>
                       <TableHead className="whitespace-nowrap hidden md:table-cell">Nationality</TableHead>
                       <TableHead className="whitespace-nowrap hidden lg:table-cell">Age</TableHead>
                       <TableHead className="whitespace-nowrap">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {allUsers.map((user: any) => (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium text-sm">{user.full_name}</TableCell>
-                        <TableCell className="text-sm hidden sm:table-cell">{user.email}</TableCell>
-                        <TableCell>
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary capitalize">
-                            {user.user_roles?.[0]?.role || 'No Role'}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-sm hidden md:table-cell">{user.nationality || 'N/A'}</TableCell>
-                        <TableCell className="text-sm hidden lg:table-cell">{user.age || 'N/A'}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setSelectedUser(user);
-                                setRoleDialogOpen(true);
-                              }}
-                            >
-                              <Settings className="h-4 w-4 sm:mr-1" />
-                              <span className="hidden sm:inline">Change</span>
-                            </Button>
-                            {userRole === 'admin' && (
+                    {allUsers.map((user: any) => {
+                      const userCurrentRole = user.user_roles?.[0]?.role;
+                      const isStaff = userCurrentRole === 'teacher' || userCurrentRole === 'tutor';
+                      return (
+                        <TableRow key={user.id}>
+                          <TableCell className="font-medium text-sm">{user.full_name}</TableCell>
+                          <TableCell className="text-sm hidden sm:table-cell">{user.email}</TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary capitalize">
+                              {userCurrentRole || 'No Role'}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            {isStaff ? (
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                user.staff_type === 'online' 
+                                  ? 'bg-blue-100 text-blue-700' 
+                                  : 'bg-amber-100 text-amber-700'
+                              }`}>
+                                {user.staff_type === 'online' ? '🌐 Online' : '📍 Presencial'}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">N/A</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-sm hidden md:table-cell">{user.nationality || 'N/A'}</TableCell>
+                          <TableCell className="text-sm hidden lg:table-cell">{user.age || 'N/A'}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
                               <Button
                                 size="sm"
-                                variant="destructive"
+                                variant="outline"
                                 onClick={() => {
-                                  if (window.confirm(`¿Estás seguro de eliminar a ${user.full_name}? Esta acción no se puede deshacer y eliminará:\n\n- Perfil del usuario\n- Todos sus roles\n- Datos de estudiante (si aplica)\n- Todas sus asignaciones\n\n¿Continuar?`)) {
-                                    handleDeleteUser(user.id, user.full_name);
-                                  }
+                                  setSelectedUser(user);
+                                  setRoleDialogOpen(true);
                                 }}
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Settings className="h-4 w-4 sm:mr-1" />
+                                <span className="hidden sm:inline">Change</span>
                               </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                              {userRole === 'admin' && (
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => {
+                                    if (window.confirm(`¿Estás seguro de eliminar a ${user.full_name}? Esta acción no se puede deshacer y eliminará:\n\n- Perfil del usuario\n- Todos sus roles\n- Datos de estudiante (si aplica)\n- Todas sus asignaciones\n\n¿Continuar?`)) {
+                                      handleDeleteUser(user.id, user.full_name);
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -756,6 +774,7 @@ const AdminDashboard = () => {
           userName={selectedUser.full_name}
           currentRole={selectedUser.user_roles?.[0]?.role}
           currentUserRole={userRole}
+          currentStaffType={selectedUser.staff_type}
         />
       )}
 

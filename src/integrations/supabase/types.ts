@@ -532,6 +532,7 @@ export type Database = {
           is_approved: boolean | null
           languages_spoken: string[] | null
           nationality: string | null
+          staff_type: string | null
           study_objectives: string | null
           timezone: string | null
           updated_at: string
@@ -552,6 +553,7 @@ export type Database = {
           is_approved?: boolean | null
           languages_spoken?: string[] | null
           nationality?: string | null
+          staff_type?: string | null
           study_objectives?: string | null
           timezone?: string | null
           updated_at?: string
@@ -572,6 +574,7 @@ export type Database = {
           is_approved?: boolean | null
           languages_spoken?: string[] | null
           nationality?: string | null
+          staff_type?: string | null
           study_objectives?: string | null
           timezone?: string | null
           updated_at?: string

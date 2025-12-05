@@ -33,23 +33,47 @@ export const CreatePostDialog = () => {
     setMediaType(null);
   };
 
+  // Allowed MIME types for validation
+  const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
+  const ALLOWED_FILE_TYPES = [
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'text/plain',
+    'application/zip',
+    'application/x-rar-compressed'
+  ];
+  const ALL_ALLOWED_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_VIDEO_TYPES, ...ALLOWED_FILE_TYPES];
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
+    // Validate file size (50MB max)
     if (selectedFile.size > 50 * 1024 * 1024) {
       toast.error('El archivo es demasiado grande. Máximo 50MB.');
       return;
     }
 
+    // Validate file type
+    if (!ALL_ALLOWED_TYPES.includes(selectedFile.type)) {
+      toast.error('Tipo de archivo no permitido. Formatos aceptados: imágenes (JPG, PNG, GIF, WebP), videos (MP4, WebM), documentos (PDF, Word, Excel, PowerPoint, TXT) y archivos comprimidos (ZIP, RAR).');
+      return;
+    }
+
     setFile(selectedFile);
 
-    if (selectedFile.type.startsWith('image/')) {
+    if (ALLOWED_IMAGE_TYPES.includes(selectedFile.type)) {
       setMediaType('image');
       const reader = new FileReader();
       reader.onloadend = () => setPreview(reader.result as string);
       reader.readAsDataURL(selectedFile);
-    } else if (selectedFile.type.startsWith('video/')) {
+    } else if (ALLOWED_VIDEO_TYPES.includes(selectedFile.type)) {
       setMediaType('video');
       setPreview(URL.createObjectURL(selectedFile));
     } else {

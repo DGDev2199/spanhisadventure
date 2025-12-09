@@ -1,16 +1,12 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeatureFlag } from '@/contexts/FeatureFlagsContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { LogOut, User, BookOpen, Calendar, MessageSquare, Award, CheckCircle, ClipboardList, Download, Users, Search, Globe, Video } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { LogOut, User, BookOpen, Calendar, Users, Search, Globe, Award } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import logo from '@/assets/logo.png';
 import { RoleBasedEditProfileDialog } from '@/components/RoleBasedEditProfileDialog';
-import { toast } from 'sonner';
-import { Checkbox } from '@/components/ui/checkbox';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 import { StudentProgressView } from '@/components/StudentProgressView';
 import { ClassScheduleDialog } from '@/components/ClassScheduleDialog';
@@ -22,159 +18,108 @@ import { BookingDialog } from '@/components/BookingDialog';
 import { VideoCallDialog } from '@/components/VideoCallDialog';
 import { MyBookingsPanel } from '@/components/MyBookingsPanel';
 
+// Optimized hooks and components
+import { 
+  useStudentProfile, 
+  useStudentTasks, 
+  useStudentAssignments, 
+  useStaffProfile, 
+  useCompleteTask 
+} from '@/hooks/useStudentDashboardData';
+import { StaffCard } from '@/components/dashboard/StaffCard';
+import { QuickStatCard } from '@/components/dashboard/QuickStatCard';
+import { TasksList } from '@/components/dashboard/TasksList';
+import { AssignedTestsList } from '@/components/dashboard/AssignedTestsList';
+import { PlacementTestCard } from '@/components/dashboard/PlacementTestCard';
+
+type StaffInfo = { id: string; name: string; avatar?: string | null; role: 'teacher' | 'tutor' } | null;
+
 const Dashboard = () => {
   const { user, userRole, signOut } = useAuth();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   
-  // Feature flags
+  // Feature flags - memoized
   const isCommunityEnabled = useFeatureFlag('community_feed');
   const isOnlineEnabled = useFeatureFlag('online_students');
   const isBrowseTeachersEnabled = useFeatureFlag('browse_teachers');
   const isBookingEnabled = useFeatureFlag('booking_system');
   const isVideoCallsEnabled = useFeatureFlag('video_calls');
   const isBasicChatEnabled = useFeatureFlag('basic_chat');
+
+  // Dialog states
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [classScheduleOpen, setClassScheduleOpen] = useState(false);
   const [tutoringScheduleOpen, setTutoringScheduleOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  const [chatStaff, setChatStaff] = useState<{ id: string; name: string; avatar?: string | null; role: 'teacher' | 'tutor' } | null>(null);
+  const [chatStaff, setChatStaff] = useState<StaffInfo>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
-  const [bookingStaff, setBookingStaff] = useState<{ id: string; name: string; avatar?: string | null; role: 'teacher' | 'tutor' } | null>(null);
+  const [bookingStaff, setBookingStaff] = useState<StaffInfo>(null);
   const [videoCallOpen, setVideoCallOpen] = useState(false);
-  const [videoCallStaff, setVideoCallStaff] = useState<{ id: string; name: string; avatar?: string | null; role: 'teacher' | 'tutor' } | null>(null);
+  const [videoCallStaff, setVideoCallStaff] = useState<StaffInfo>(null);
 
-  const { data: studentProfile, isLoading: profileLoading } = useQuery({
-    queryKey: ['student-profile', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const { data, error } = await supabase
-        .from('student_profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (error) {
-        console.error('Error loading student profile:', error);
-        throw error;
-      }
-      console.log('Student profile loaded:', data);
-      return data;
-    },
-    enabled: !!user?.id
-  });
+  // Optimized data fetching with custom hooks
+  const { data: studentProfile, isLoading: profileLoading } = useStudentProfile(user?.id);
+  const { data: tasks, isLoading: tasksLoading } = useStudentTasks(user?.id);
+  const { data: assignedTests } = useStudentAssignments(user?.id);
+  const { data: teacherProfile, isLoading: teacherLoading } = useStaffProfile(studentProfile?.teacher_id, 'teacher');
+  const { data: tutorProfile, isLoading: tutorLoading } = useStaffProfile(studentProfile?.tutor_id, 'tutor');
+  const completeTaskMutation = useCompleteTask();
 
-  const { data: tasks, isLoading: tasksLoading } = useQuery({
-    queryKey: ['student-tasks', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('student_id', user.id)
-        .eq('completed', false)
-        .order('due_date', { ascending: true });
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id
-  });
+  // Memoized values
+  const isOnlineStudent = useMemo(() => studentProfile?.student_type === 'online', [studentProfile?.student_type]);
+  const showBookingOptions = useMemo(() => isBookingEnabled && isOnlineStudent, [isBookingEnabled, isOnlineStudent]);
+  const showVideoCallOptions = useMemo(() => isVideoCallsEnabled && isOnlineStudent, [isVideoCallsEnabled, isOnlineStudent]);
 
-  const { data: feedback, isLoading: feedbackLoading } = useQuery({
-    queryKey: ['student-feedback', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      const { data, error } = await supabase
-        .from('feedback')
-        .select(`
-          *,
-          profiles!feedback_author_id_fkey(full_name)
-        `)
-        .eq('student_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(3);
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id
-  });
-
-  const { data: assignedTests, isLoading: testsLoading } = useQuery({
-    queryKey: ['student-assignments', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      const { data, error } = await supabase
-        .from('test_assignments')
-        .select(`
-          *,
-          custom_tests (
-            id,
-            title,
-            description,
-            due_date,
-            time_limit_minutes
-          )
-        `)
-        .eq('student_id', user.id)
-        .order('assigned_at', { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id
-  });
-
-  const { data: teacherProfile, isLoading: teacherLoading } = useQuery({
-    queryKey: ['teacher-profile', studentProfile?.teacher_id],
-    queryFn: async () => {
-      if (!studentProfile?.teacher_id) return null;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .eq('id', studentProfile.teacher_id)
-        .maybeSingle();
-      if (error) {
-        console.error('Error loading teacher profile:', error);
-        return null;
-      }
-      return data;
-    },
-    enabled: !!studentProfile?.teacher_id
-  });
-
-  const { data: tutorProfile, isLoading: tutorLoading } = useQuery({
-    queryKey: ['tutor-profile', studentProfile?.tutor_id],
-    queryFn: async () => {
-      if (!studentProfile?.tutor_id) return null;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .eq('id', studentProfile.tutor_id)
-        .maybeSingle();
-      if (error) {
-        console.error('Error loading tutor profile:', error);
-        return null;
-      }
-      return data;
-    },
-    enabled: !!studentProfile?.tutor_id
-  });
-
-  const completeTaskMutation = useMutation({
-    mutationFn: async (taskId: string) => {
-      const { error } = await supabase
-        .from('tasks')
-        .update({ completed: true })
-        .eq('id', taskId);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['student-tasks'] });
-      toast.success('Task completed!');
-    },
-    onError: () => {
-      toast.error('Failed to complete task');
+  // Memoized callbacks
+  const handleTeacherChat = useCallback(() => {
+    if (teacherProfile) {
+      setChatStaff({ id: teacherProfile.id, name: teacherProfile.full_name, avatar: teacherProfile.avatar_url, role: 'teacher' });
+      setChatOpen(true);
     }
-  });
+  }, [teacherProfile]);
+
+  const handleTeacherVideoCall = useCallback(() => {
+    if (teacherProfile) {
+      setVideoCallStaff({ id: teacherProfile.id, name: teacherProfile.full_name, avatar: teacherProfile.avatar_url, role: 'teacher' });
+      setVideoCallOpen(true);
+    }
+  }, [teacherProfile]);
+
+  const handleTeacherBooking = useCallback(() => {
+    if (teacherProfile) {
+      setBookingStaff({ id: teacherProfile.id, name: teacherProfile.full_name, avatar: teacherProfile.avatar_url, role: 'teacher' });
+      setBookingOpen(true);
+    }
+  }, [teacherProfile]);
+
+  const handleTutorChat = useCallback(() => {
+    if (tutorProfile) {
+      setChatStaff({ id: tutorProfile.id, name: tutorProfile.full_name, avatar: tutorProfile.avatar_url, role: 'tutor' });
+      setChatOpen(true);
+    }
+  }, [tutorProfile]);
+
+  const handleTutorVideoCall = useCallback(() => {
+    if (tutorProfile) {
+      setVideoCallStaff({ id: tutorProfile.id, name: tutorProfile.full_name, avatar: tutorProfile.avatar_url, role: 'tutor' });
+      setVideoCallOpen(true);
+    }
+  }, [tutorProfile]);
+
+  const handleTutorBooking = useCallback(() => {
+    if (tutorProfile) {
+      setBookingStaff({ id: tutorProfile.id, name: tutorProfile.full_name, avatar: tutorProfile.avatar_url, role: 'tutor' });
+      setBookingOpen(true);
+    }
+  }, [tutorProfile]);
+
+  const handleCompleteTask = useCallback((taskId: string) => {
+    completeTaskMutation.mutate(taskId);
+  }, [completeTaskMutation]);
+
+  const handleScrollToCalendar = useCallback(() => {
+    document.getElementById('weekly-calendar')?.scrollIntoView({ behavior: 'smooth' });
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -216,24 +161,25 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8 safe-bottom">
+        {/* Welcome Section */}
         <div className="mb-4 sm:mb-6 lg:mb-8 animate-fade-in">
           <div className="flex items-center gap-2 mb-1">
             <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold">¡Bienvenido de vuelta!</h2>
             {studentProfile?.student_type && (
-              <Badge variant={studentProfile.student_type === 'online' ? 'secondary' : 'default'}>
-                {studentProfile.student_type === 'online' ? '🌐 Online' : '📍 Presencial'}
+              <Badge variant={isOnlineStudent ? 'secondary' : 'default'}>
+                {isOnlineStudent ? '🌐 Online' : '📍 Presencial'}
               </Badge>
             )}
           </div>
           <p className="text-sm sm:text-base text-muted-foreground">
-            {studentProfile?.student_type === 'online' 
+            {isOnlineStudent 
               ? 'Gestiona tus clases online y conecta con profesores' 
               : 'Continúa tu viaje de aprendizaje del español'}
           </p>
         </div>
 
-        {/* Online Student: Browse Teachers Button */}
-        {isOnlineEnabled && isBrowseTeachersEnabled && studentProfile?.student_type === 'online' && (
+        {/* Browse Teachers Button - Online Students */}
+        {isOnlineEnabled && isBrowseTeachersEnabled && isOnlineStudent && (
           <Card className="mb-6 border-primary/20 bg-primary/5">
             <CardContent className="p-4">
               <div className="flex items-center justify-between flex-wrap gap-4">
@@ -259,310 +205,86 @@ const Dashboard = () => {
           </Card>
         )}
 
-        {/* Quick Stats Grid - Different for Online vs Presencial */}
+        {/* Quick Stats Grid */}
         <div className={`grid gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8 ${
-          studentProfile?.student_type === 'online' 
-            ? 'grid-cols-2 lg:grid-cols-3' 
-            : 'grid-cols-2 lg:grid-cols-4'
+          isOnlineStudent ? 'grid-cols-2 lg:grid-cols-3' : 'grid-cols-2 lg:grid-cols-4'
         }`}>
           {/* Room - Only for Presencial */}
-          {studentProfile?.student_type !== 'online' && (
-            <Card className="shadow-md hover:shadow-lg transition-all duration-300 animate-fade-in">
-              <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-xs sm:text-sm font-medium">Mi Cuarto</CardTitle>
-                <Award className="h-4 w-4 text-accent" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-lg sm:text-2xl font-bold text-primary truncate">
-                  {profileLoading ? '...' : studentProfile?.room || 'Sin Asignar'}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {studentProfile?.room ? 'Tu cuarto asignado' : 'Contacta a tu profesor'}
-                </p>
-              </CardContent>
-            </Card>
+          {!isOnlineStudent && (
+            <QuickStatCard
+              title="Mi Cuarto"
+              value={studentProfile?.room || 'Sin Asignar'}
+              subtitle={studentProfile?.room ? 'Tu cuarto asignado' : 'Contacta a tu profesor'}
+              icon={<Award className="h-4 w-4 text-accent" />}
+              isLoading={profileLoading}
+            />
           )}
 
-          <Card className="shadow-md hover:shadow-lg transition-all duration-300 animate-fade-in">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-              <CardTitle className="text-xs sm:text-sm font-medium">Nivel Actual</CardTitle>
-              <Award className="h-4 w-4 text-secondary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg sm:text-2xl font-bold text-secondary">
-                {profileLoading ? '...' : studentProfile?.level || 'Sin Nivel'}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {studentProfile?.level ? 'Nivel actual' : 'Completa el examen'}
-              </p>
-            </CardContent>
-          </Card>
+          <QuickStatCard
+            title="Nivel Actual"
+            value={studentProfile?.level || 'Sin Nivel'}
+            subtitle={studentProfile?.level ? 'Nivel actual' : 'Completa el examen'}
+            icon={<Award className="h-4 w-4 text-secondary" />}
+            isLoading={profileLoading}
+          />
 
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Mi Profesor</CardTitle>
-              <User className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg font-bold">
-                {profileLoading || teacherLoading ? (
-                  '...'
-                ) : teacherProfile?.full_name || (
-                  <span className="text-muted-foreground text-base">No asignado</span>
-                )}
-              </div>
-              {teacherProfile && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Profesor Asignado
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground mt-1">
-                {teacherProfile ? 'Tu profesor' : 'Contacta al admin'}
-              </p>
-              {teacherProfile && user?.id && (
-                <div className="space-y-2 mt-3">
-                  <div className="flex gap-2">
-                    {isBasicChatEnabled && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1"
-                        onClick={() => {
-                          setChatStaff({ id: teacherProfile.id, name: teacherProfile.full_name, avatar: null, role: 'teacher' });
-                          setChatOpen(true);
-                        }}
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {isVideoCallsEnabled && studentProfile?.student_type === 'online' && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1"
-                        onClick={() => {
-                          setVideoCallStaff({ id: teacherProfile.id, name: teacherProfile.full_name, avatar: null, role: 'teacher' });
-                          setVideoCallOpen(true);
-                        }}
-                      >
-                        <Video className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                  {isBookingEnabled && studentProfile?.student_type === 'online' && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full"
-                      onClick={() => {
-                        setBookingStaff({ id: teacherProfile.id, name: teacherProfile.full_name, avatar: null, role: 'teacher' });
-                        setBookingOpen(true);
-                      }}
-                    >
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Reservar Clase
-                    </Button>
-                  )}
-                  {studentProfile?.student_type !== 'online' && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full"
-                      onClick={() => setClassScheduleOpen(true)}
-                    >
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Ver Horario de Clases
-                    </Button>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Teacher Card */}
+          <StaffCard
+            title="Mi Profesor"
+            staffName={teacherProfile?.full_name}
+            isLoading={profileLoading || teacherLoading}
+            iconColor="text-primary"
+            staffId={teacherProfile?.id}
+            showChat={isBasicChatEnabled}
+            showVideoCall={showVideoCallOptions}
+            showBooking={showBookingOptions}
+            showSchedule={!isOnlineStudent}
+            onChat={handleTeacherChat}
+            onVideoCall={handleTeacherVideoCall}
+            onBooking={handleTeacherBooking}
+            onViewSchedule={() => setClassScheduleOpen(true)}
+            bookingLabel="Reservar Clase"
+            scheduleLabel="Ver Horario de Clases"
+          />
 
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Mi Tutor</CardTitle>
-              <User className="h-4 w-4 text-secondary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-lg font-bold">
-                {profileLoading || tutorLoading ? (
-                  '...'
-                ) : tutorProfile?.full_name || (
-                  <span className="text-muted-foreground text-base">No asignado</span>
-                )}
-              </div>
-              {tutorProfile && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Tutor Asignado
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground mt-1">
-                {tutorProfile ? 'Tu tutor' : 'Contacta al admin'}
-              </p>
-              {tutorProfile && user?.id && (
-                <div className="space-y-2 mt-3">
-                  <div className="flex gap-2">
-                    {isBasicChatEnabled && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1"
-                        onClick={() => {
-                          setChatStaff({ id: tutorProfile.id, name: tutorProfile.full_name, avatar: null, role: 'tutor' });
-                          setChatOpen(true);
-                        }}
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {isVideoCallsEnabled && studentProfile?.student_type === 'online' && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1"
-                        onClick={() => {
-                          setVideoCallStaff({ id: tutorProfile.id, name: tutorProfile.full_name, avatar: null, role: 'tutor' });
-                          setVideoCallOpen(true);
-                        }}
-                      >
-                        <Video className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                  {isBookingEnabled && studentProfile?.student_type === 'online' && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full"
-                      onClick={() => {
-                        setBookingStaff({ id: tutorProfile.id, name: tutorProfile.full_name, avatar: null, role: 'tutor' });
-                        setBookingOpen(true);
-                      }}
-                    >
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Reservar Tutoría
-                    </Button>
-                  )}
-                  {studentProfile?.student_type !== 'online' && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full"
-                      onClick={() => setTutoringScheduleOpen(true)}
-                    >
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Ver Horario de Tutorías
-                    </Button>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Tutor Card */}
+          <StaffCard
+            title="Mi Tutor"
+            staffName={tutorProfile?.full_name}
+            isLoading={profileLoading || tutorLoading}
+            iconColor="text-secondary"
+            staffId={tutorProfile?.id}
+            showChat={isBasicChatEnabled}
+            showVideoCall={showVideoCallOptions}
+            showBooking={showBookingOptions}
+            showSchedule={!isOnlineStudent}
+            onChat={handleTutorChat}
+            onVideoCall={handleTutorVideoCall}
+            onBooking={handleTutorBooking}
+            onViewSchedule={() => setTutoringScheduleOpen(true)}
+            bookingLabel="Reservar Tutoría"
+            scheduleLabel="Ver Horario de Tutorías"
+          />
 
-          <Card className="shadow-md hover:shadow-lg transition-shadow">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Tasks</CardTitle>
-              <BookOpen className="h-4 w-4 text-accent" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {tasksLoading ? '...' : tasks?.length || 0}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {tasks && tasks.length > 0 ? 'Pending tasks' : 'No pending tasks'}
-              </p>
-            </CardContent>
-          </Card>
+          <QuickStatCard
+            title="Tareas"
+            value={tasks?.length || 0}
+            subtitle={tasks && tasks.length > 0 ? 'Tareas pendientes' : 'Sin tareas pendientes'}
+            icon={<BookOpen className="h-4 w-4 text-accent" />}
+            isLoading={tasksLoading}
+          />
         </div>
 
         {/* Main Content Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="shadow-md">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-primary" />
-                Examen de Nivelación
-              </CardTitle>
-              <CardDescription>
-                {studentProfile?.placement_test_status === 'not_started' 
-                  ? 'Completa tu examen de nivelación para determinar tu nivel'
-                  : studentProfile?.placement_test_status === 'pending'
-                  ? 'Tu examen está siendo revisado por el profesor'
-                  : 'Examen completado y nivel asignado'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {studentProfile?.placement_test_status === 'not_started' ? (
-                <>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Realiza el examen automatizado para comenzar. Tu profesor luego realizará una evaluación oral
-                    para finalizar tu nivel.
-                  </p>
-                  <Button 
-                    className="w-full"
-                    onClick={() => navigate('/placement-test')}
-                  >
-                    Iniciar Examen de Nivelación
-                  </Button>
-                </>
-              ) : studentProfile?.placement_test_status === 'pending' ? (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-yellow-600 bg-yellow-50 p-3 rounded-md">
-                    <CheckCircle className="h-5 w-5" />
-                    <span className="text-sm font-medium">Examen enviado exitosamente</span>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Puntuación Escrita:</span>
-                      <span className="font-bold text-lg">{studentProfile?.placement_test_written_score || 0}%</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Tu profesor revisará tus respuestas y programará una evaluación oral pronto.
-                    </p>
-                  </div>
-                  <Button 
-                    className="w-full"
-                    disabled
-                    variant="outline"
-                  >
-                    Esperando Revisión del Profesor
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-md">
-                    <CheckCircle className="h-5 w-5" />
-                    <span className="text-sm font-medium">Examen completado</span>
-                  </div>
-                  <div className="space-y-2 bg-accent/10 p-4 rounded-md">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Puntuación Escrita:</span>
-                      <span className="font-bold text-lg">{studentProfile?.placement_test_written_score || 0}%</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Nivel Asignado:</span>
-                      <span className="font-bold text-2xl text-primary">{studentProfile?.level || 'N/A'}</span>
-                    </div>
-                    {studentProfile?.placement_test_oral_completed && (
-                      <p className="text-xs text-muted-foreground pt-2 border-t">
-                        ✓ Evaluación oral completada
-                      </p>
-                    )}
-                  </div>
-                  <Button 
-                    className="w-full"
-                    disabled
-                    variant="secondary"
-                  >
-                    Test Finalizado
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <PlacementTestCard
+            status={studentProfile?.placement_test_status || 'not_started'}
+            writtenScore={studentProfile?.placement_test_written_score}
+            level={studentProfile?.level}
+            oralCompleted={studentProfile?.placement_test_oral_completed}
+          />
 
-          {studentProfile?.student_type !== 'online' && (
+          {!isOnlineStudent && (
             <Card className="shadow-md">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -577,9 +299,7 @@ const Dashboard = () => {
                 <p className="text-sm text-muted-foreground mb-4">
                   Consulta el horario completo más abajo o en la sección de horarios.
                 </p>
-                <Button variant="outline" className="w-full" onClick={() => {
-                  document.getElementById('weekly-calendar')?.scrollIntoView({ behavior: 'smooth' });
-                }}>
+                <Button variant="outline" className="w-full" onClick={handleScrollToCalendar}>
                   Ver Horario Completo
                 </Button>
               </CardContent>
@@ -595,14 +315,15 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
+          {/* Profile Card */}
           <Card className="shadow-md">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5 text-primary" />
-                My Profile
+                Mi Perfil
               </CardTitle>
               <CardDescription>
-                View and update your information
+                Ver y actualizar tu información
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -611,152 +332,42 @@ const Dashboard = () => {
                   <span className="font-medium">Email:</span> {user?.email}
                 </div>
                 <div>
-                  <span className="font-medium">Status:</span>{' '}
-                  <span className="text-green-600 font-medium">Active</span>
+                  <span className="font-medium">Estado:</span>{' '}
+                  <span className="text-green-600 font-medium">Activo</span>
                 </div>
               </div>
               <Button variant="outline" className="w-full mt-4" onClick={() => setEditProfileOpen(true)}>
-                Edit Profile
+                Editar Perfil
               </Button>
             </CardContent>
           </Card>
         </div>
 
         {/* Tasks Section */}
-        {tasks && tasks.length > 0 && (
-          <Card className="shadow-md mt-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-primary" />
-                My Tasks
-              </CardTitle>
-              <CardDescription>
-                Complete your assigned tasks
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {tasks.map((task: any) => (
-                  <div key={task.id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-accent/5 transition-colors">
-                    <Checkbox
-                      checked={task.completed}
-                      onCheckedChange={() => completeTaskMutation.mutate(task.id)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <h4 className="font-medium">{task.title}</h4>
-                      {task.description && (
-                        <p className="text-sm text-muted-foreground mt-1">{task.description}</p>
-                      )}
-                      {task.due_date && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Due: {new Date(task.due_date).toLocaleDateString()}
-                        </p>
-                      )}
-                      {task.attachment_url && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="mt-2"
-                          onClick={() => window.open(task.attachment_url, '_blank')}
-                        >
-                          <Download className="h-4 w-4 mr-2" />
-                          Descargar Archivo Adjunto
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        <TasksList 
+          tasks={tasks || []} 
+          onCompleteTask={handleCompleteTask}
+        />
 
         {/* Assigned Tests Section */}
-        {assignedTests && assignedTests.length > 0 && (
-          <Card className="shadow-md mt-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-secondary" />
-                Tests Asignados
-              </CardTitle>
-              <CardDescription>
-                Tests creados por tu profesor
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {assignedTests.map((assignment: any) => (
-                  <div key={assignment.id} className="p-4 border rounded-lg hover:bg-accent/5 transition-colors">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-lg">{assignment.custom_tests?.title}</h4>
-                        {assignment.custom_tests?.description && (
-                          <p className="text-sm text-muted-foreground mt-1">{assignment.custom_tests.description}</p>
-                        )}
-                        <div className="flex gap-4 mt-2 text-xs text-muted-foreground">
-                          {assignment.custom_tests?.due_date && (
-                            <span>Entrega: {new Date(assignment.custom_tests.due_date).toLocaleDateString()}</span>
-                          )}
-                          {assignment.custom_tests?.time_limit_minutes && (
-                            <span>Tiempo: {assignment.custom_tests.time_limit_minutes} min</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-2">
-                        {assignment.status === 'assigned' && (
-                          <Button size="sm" onClick={() => navigate(`/test/${assignment.id}`)}>
-                            Empezar Test
-                          </Button>
-                        )}
-                        {assignment.status === 'in_progress' && (
-                          <Button size="sm" variant="secondary" onClick={() => navigate(`/test/${assignment.id}`)}>
-                            Continuar
-                          </Button>
-                        )}
-                        {assignment.status === 'submitted' && (
-                          <div className="text-center">
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-                              Pendiente revisión
-                            </span>
-                            {assignment.score !== null && (
-                              <p className="text-2xl font-bold text-primary mt-2">{assignment.score}%</p>
-                            )}
-                          </div>
-                        )}
-                        {assignment.status === 'graded' && (
-                          <div className="text-center">
-                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                              Calificado
-                            </span>
-                            <p className="text-3xl font-bold text-primary mt-2">{assignment.score}%</p>
-                            <p className="text-xs text-muted-foreground mt-1">Puntos obtenidos</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        <AssignedTestsList assignments={assignedTests || []} />
 
         {/* My Bookings Panel - Online Students Only */}
-        {isBookingEnabled && studentProfile?.student_type === 'online' && (
+        {showBookingOptions && (
           <div className="mt-6">
             <MyBookingsPanel />
           </div>
         )}
 
         {/* Weekly Calendar - Presencial Students Only */}
-        {studentProfile?.student_type !== 'online' && (
+        {!isOnlineStudent && (
           <div id="weekly-calendar" className="mt-6">
             <WeeklyCalendar />
           </div>
         )}
       </main>
 
+      {/* Dialogs */}
       <RoleBasedEditProfileDialog open={editProfileOpen} onOpenChange={setEditProfileOpen} />
       
       {user?.id && (
@@ -774,7 +385,6 @@ const Dashboard = () => {
         </>
       )}
 
-      {/* Chat Dialog */}
       {chatStaff && (
         <StudentChatDialog
           open={chatOpen}
@@ -796,7 +406,6 @@ const Dashboard = () => {
         />
       )}
 
-      {/* Booking Dialog */}
       {bookingStaff && (
         <BookingDialog
           open={bookingOpen}
@@ -808,7 +417,6 @@ const Dashboard = () => {
         />
       )}
 
-      {/* Video Call Dialog */}
       {videoCallStaff && (
         <VideoCallDialog
           open={videoCallOpen}

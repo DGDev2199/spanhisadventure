@@ -54,6 +54,7 @@ const TeacherDashboard = () => {
   const isVideoCallsEnabled = useFeatureFlag('video_calls');
   const isEarningsEnabled = useFeatureFlag('earnings_panel');
   const isCustomTestsEnabled = useFeatureFlag('custom_tests');
+  const isBasicChatEnabled = useFeatureFlag('basic_chat');
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
   const [isRoomDialogOpen, setIsRoomDialogOpen] = useState(false);
@@ -363,9 +364,11 @@ const TeacherDashboard = () => {
         )}
 
         {/* Unified Messages Panel */}
-        <div className="mb-8">
-          <StaffMessagesPanel />
-        </div>
+        {isBasicChatEnabled && (
+          <div className="mb-8">
+            <StaffMessagesPanel />
+          </div>
+        )}
 
         {/* Availability Calendar */}
         {isOnlineEnabled && isAvailabilityEnabled && (
@@ -529,7 +532,7 @@ const TeacherDashboard = () => {
                               <MessageSquare className="h-4 w-4 mr-1" />
                               Chat
                             </Button>
-                            {student.student_type === 'online' && (
+                            {isVideoCallsEnabled && student.student_type === 'online' && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -666,7 +669,7 @@ const TeacherDashboard = () => {
                             <MessageSquare className="h-4 w-4 mr-1" />
                             Chat
                           </Button>
-                          {student.student_type === 'online' && (
+                          {isVideoCallsEnabled && student.student_type === 'online' && (
                             <Button
                               size="sm"
                               variant="outline"
@@ -843,6 +846,7 @@ const TeacherDashboard = () => {
         </Card>
 
         {/* Custom Tests Table */}
+        {isCustomTestsEnabled && (
         <Card className="shadow-md mt-6">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -929,6 +933,7 @@ const TeacherDashboard = () => {
             )}
           </CardContent>
         </Card>
+        )}
 
         {/* Weekly Calendar */}
         <div className="mt-6">

@@ -322,18 +322,20 @@ const Dashboard = () => {
               {teacherProfile && user?.id && (
                 <div className="space-y-2 mt-3">
                   <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1"
-                      onClick={() => {
-                        setChatStaff({ id: teacherProfile.id, name: teacherProfile.full_name, avatar: null, role: 'teacher' });
-                        setChatOpen(true);
-                      }}
-                    >
-                      <MessageSquare className="h-4 w-4" />
-                    </Button>
-                    {studentProfile?.student_type === 'online' && (
+                    {isBasicChatEnabled && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => {
+                          setChatStaff({ id: teacherProfile.id, name: teacherProfile.full_name, avatar: null, role: 'teacher' });
+                          setChatOpen(true);
+                        }}
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {isVideoCallsEnabled && studentProfile?.student_type === 'online' && (
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -347,7 +349,7 @@ const Dashboard = () => {
                       </Button>
                     )}
                   </div>
-                  {studentProfile?.student_type === 'online' && (
+                  {isBookingEnabled && studentProfile?.student_type === 'online' && (
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -401,18 +403,20 @@ const Dashboard = () => {
               {tutorProfile && user?.id && (
                 <div className="space-y-2 mt-3">
                   <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1"
-                      onClick={() => {
-                        setChatStaff({ id: tutorProfile.id, name: tutorProfile.full_name, avatar: null, role: 'tutor' });
-                        setChatOpen(true);
-                      }}
-                    >
-                      <MessageSquare className="h-4 w-4" />
-                    </Button>
-                    {studentProfile?.student_type === 'online' && (
+                    {isBasicChatEnabled && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => {
+                          setChatStaff({ id: tutorProfile.id, name: tutorProfile.full_name, avatar: null, role: 'tutor' });
+                          setChatOpen(true);
+                        }}
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {isVideoCallsEnabled && studentProfile?.student_type === 'online' && (
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -426,7 +430,7 @@ const Dashboard = () => {
                       </Button>
                     )}
                   </div>
-                  {studentProfile?.student_type === 'online' && (
+                  {isBookingEnabled && studentProfile?.student_type === 'online' && (
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -739,7 +743,7 @@ const Dashboard = () => {
         )}
 
         {/* My Bookings Panel - Online Students Only */}
-        {studentProfile?.student_type === 'online' && (
+        {isBookingEnabled && studentProfile?.student_type === 'online' && (
           <div className="mt-6">
             <MyBookingsPanel />
           </div>

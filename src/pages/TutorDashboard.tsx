@@ -37,6 +37,7 @@ const TutorDashboard = () => {
   const isAvailabilityEnabled = useFeatureFlag('availability_calendar');
   const isVideoCallsEnabled = useFeatureFlag('video_calls');
   const isEarningsEnabled = useFeatureFlag('earnings_panel');
+  const isBasicChatEnabled = useFeatureFlag('basic_chat');
   const [chatOpen, setChatOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string } | null>(null);
   const [progressDialogOpen, setProgressDialogOpen] = useState(false);
@@ -218,9 +219,11 @@ const TutorDashboard = () => {
         )}
 
         {/* Unified Messages Panel */}
-        <div className="mb-8">
-          <StaffMessagesPanel />
-        </div>
+        {isBasicChatEnabled && (
+          <div className="mb-8">
+            <StaffMessagesPanel />
+          </div>
+        )}
 
         {/* Availability Calendar */}
         {isOnlineEnabled && isAvailabilityEnabled && (
@@ -305,7 +308,7 @@ const TutorDashboard = () => {
                             <MessageSquare className="h-4 w-4 mr-1" />
                             Chat
                           </Button>
-                          {student.student_type === 'online' && (
+                          {isVideoCallsEnabled && student.student_type === 'online' && (
                             <Button 
                               size="sm" 
                               variant="outline"

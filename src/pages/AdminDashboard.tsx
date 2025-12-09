@@ -439,31 +439,37 @@ const AdminDashboard = () => {
         </div>
 
         {/* Modality Requests Panel */}
-        <div className="mb-8">
-          <ModalityRequestsPanel />
-        </div>
+        {isModalityRequestsEnabled && (
+          <div className="mb-8">
+            <ModalityRequestsPanel />
+          </div>
+        )}
 
         {/* Video Call History */}
-        <div className="mb-8">
-          <VideoCallHistoryAdmin />
-        </div>
+        {isVideoCallsEnabled && (
+          <div className="mb-8">
+            <VideoCallHistoryAdmin />
+          </div>
+        )}
 
         {/* Earnings Panel */}
-        <div className="mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                💰 Ingresos de la Plataforma
-              </CardTitle>
-              <CardDescription>
-                Resumen de pagos de clases online (15% comisión)
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <EarningsPanel />
-            </CardContent>
-          </Card>
-        </div>
+        {isEarningsEnabled && (
+          <div className="mb-8">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  💰 Ingresos de la Plataforma
+                </CardTitle>
+                <CardDescription>
+                  Resumen de pagos de clases online (15% comisión)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EarningsPanel />
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Students Table */}
         <Card className="shadow-md mb-6">

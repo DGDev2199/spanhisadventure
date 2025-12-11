@@ -29,6 +29,11 @@ interface DayProgressModalProps {
     vocabulary?: string | null;
     achievements?: string | null;
     challenges?: string | null;
+    class_topics_by?: string | null;
+    tutoring_topics_by?: string | null;
+    vocabulary_by?: string | null;
+    achievements_by?: string | null;
+    challenges_by?: string | null;
   };
   userRole: 'teacher' | 'tutor' | 'student' | 'admin';
 }
@@ -71,19 +76,49 @@ export const DayProgressModal = ({
     mutationFn: async () => {
       const userId = (await supabase.auth.getUser()).data.user?.id;
       
+      // Track who filled each field
+      const updateData: Record<string, unknown> = {
+        week_id: weekId,
+        day_type: dayType,
+        created_by: userId,
+        notes: null,
+      };
+
+      // Only update fields the user can edit, and track who filled them
+      if (canEditClassTopics) {
+        updateData.class_topics = classTopics || null;
+        if (classTopics && classTopics !== existingNote?.class_topics) {
+          updateData.class_topics_by = userId;
+        }
+      }
+      if (canEditTutoringTopics) {
+        updateData.tutoring_topics = tutoringTopics || null;
+        if (tutoringTopics && tutoringTopics !== existingNote?.tutoring_topics) {
+          updateData.tutoring_topics_by = userId;
+        }
+      }
+      if (canEditVocabulary) {
+        updateData.vocabulary = vocabulary || null;
+        if (vocabulary && vocabulary !== existingNote?.vocabulary) {
+          updateData.vocabulary_by = userId;
+        }
+      }
+      if (canEditAchievements) {
+        updateData.achievements = achievements || null;
+        if (achievements && achievements !== existingNote?.achievements) {
+          updateData.achievements_by = userId;
+        }
+      }
+      if (canEditChallenges) {
+        updateData.challenges = challenges || null;
+        if (challenges && challenges !== existingNote?.challenges) {
+          updateData.challenges_by = userId;
+        }
+      }
+      
       const { error } = await supabase
         .from('student_progress_notes')
-        .upsert({
-          week_id: weekId,
-          day_type: dayType,
-          created_by: userId,
-          class_topics: classTopics || null,
-          tutoring_topics: tutoringTopics || null,
-          vocabulary: vocabulary || null,
-          achievements: achievements || null,
-          challenges: challenges || null,
-          notes: null, // Keep legacy field null
-        }, {
+        .upsert(updateData as any, {
           onConflict: 'week_id,day_type'
         });
       

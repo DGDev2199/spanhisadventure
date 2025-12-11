@@ -1024,50 +1024,100 @@ export type Database = {
       student_progress_notes: {
         Row: {
           achievements: string | null
+          achievements_by: string | null
           challenges: string | null
+          challenges_by: string | null
           class_topics: string | null
+          class_topics_by: string | null
           created_at: string
           created_by: string
           day_type: string
           id: string
           notes: string | null
           tutoring_topics: string | null
+          tutoring_topics_by: string | null
           updated_at: string
           vocabulary: string | null
+          vocabulary_by: string | null
           week_id: string
         }
         Insert: {
           achievements?: string | null
+          achievements_by?: string | null
           challenges?: string | null
+          challenges_by?: string | null
           class_topics?: string | null
+          class_topics_by?: string | null
           created_at?: string
           created_by: string
           day_type: string
           id?: string
           notes?: string | null
           tutoring_topics?: string | null
+          tutoring_topics_by?: string | null
           updated_at?: string
           vocabulary?: string | null
+          vocabulary_by?: string | null
           week_id: string
         }
         Update: {
           achievements?: string | null
+          achievements_by?: string | null
           challenges?: string | null
+          challenges_by?: string | null
           class_topics?: string | null
+          class_topics_by?: string | null
           created_at?: string
           created_by?: string
           day_type?: string
           id?: string
           notes?: string | null
           tutoring_topics?: string | null
+          tutoring_topics_by?: string | null
           updated_at?: string
           vocabulary?: string | null
+          vocabulary_by?: string | null
           week_id?: string
         }
         Relationships: [
           {
+            foreignKeyName: "student_progress_notes_achievements_by_fkey"
+            columns: ["achievements_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_progress_notes_challenges_by_fkey"
+            columns: ["challenges_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_progress_notes_class_topics_by_fkey"
+            columns: ["class_topics_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "student_progress_notes_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_progress_notes_tutoring_topics_by_fkey"
+            columns: ["tutoring_topics_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_progress_notes_vocabulary_by_fkey"
+            columns: ["vocabulary_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

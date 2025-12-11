@@ -8,9 +8,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, Lock, BookOpen, Trash2, Pencil, Calendar } from 'lucide-react';
+import { CheckCircle, Lock, BookOpen, Trash2, Pencil, Calendar, Download, GraduationCap, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { DayProgressModal } from './DayProgressModal';
+import jsPDF from 'jspdf';
 
 interface StudentProgressViewProps {
   studentId: string;
@@ -327,6 +328,106 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
     return !!(note.class_topics || note.tutoring_topics || note.vocabulary || note.achievements || note.challenges);
   };
 
+  // Get who filled the notes for visual indicators
+  const getNoteFilledBy = (weekId: string, dayType: string): { hasTeacher: boolean; hasTutor: boolean } => {
+    const note = getNoteForDay(weekId, dayType);
+    if (!note) return { hasTeacher: false, hasTutor: false };
+    
+    // Check if teacher filled (class_topics)
+    const hasTeacher = !!(note.class_topics);
+    // Check if tutor filled (tutoring_topics)
+    const hasTutor = !!(note.tutoring_topics);
+    
+    return { hasTeacher, hasTutor };
+  };
+
+  // Export week to PDF
+  const exportWeekToPDF = async (week: typeof weeks[0]) => {
+    const weekNotes = notes?.filter(n => n.week_id === week.id) || [];
+    
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let yPos = 20;
+    
+    // Title
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Semana ${week.week_number} - ${week.week_theme}`, pageWidth / 2, yPos, { align: 'center' });
+    yPos += 10;
+    
+    // Objectives
+    if (week.week_objectives) {
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Objetivos: ${week.week_objectives}`, 14, yPos);
+      yPos += 10;
+    }
+    
+    // Status
+    doc.setFontSize(10);
+    doc.text(`Estado: ${week.is_completed ? 'Completada' : 'En progreso'}`, 14, yPos);
+    yPos += 15;
+    
+    // Days
+    const dayOrder = ['tuesday', 'wednesday', 'thursday', 'friday'];
+    
+    for (const day of dayOrder) {
+      const note = weekNotes.find(n => n.day_type === day);
+      const dayLabel = DAY_LABELS[day];
+      
+      // Day header
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text(dayLabel, 14, yPos);
+      yPos += 8;
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      
+      if (note) {
+        if (note.class_topics) {
+          doc.text(`Temas de clase: ${note.class_topics}`, 18, yPos);
+          yPos += 6;
+        }
+        if (note.tutoring_topics) {
+          doc.text(`Temas de tutoría: ${note.tutoring_topics}`, 18, yPos);
+          yPos += 6;
+        }
+        if (note.vocabulary) {
+          doc.text(`Vocabulario: ${note.vocabulary}`, 18, yPos);
+          yPos += 6;
+        }
+        if (note.achievements) {
+          doc.text(`Logros: ${note.achievements}`, 18, yPos);
+          yPos += 6;
+        }
+        if (note.challenges) {
+          doc.text(`Retos: ${note.challenges}`, 18, yPos);
+          yPos += 6;
+        }
+        if (!note.class_topics && !note.tutoring_topics && !note.vocabulary && !note.achievements && !note.challenges) {
+          doc.text('Sin notas registradas', 18, yPos);
+          yPos += 6;
+        }
+      } else {
+        doc.text('Sin notas registradas', 18, yPos);
+        yPos += 6;
+      }
+      
+      yPos += 8;
+      
+      // Check if we need a new page
+      if (yPos > 270) {
+        doc.addPage();
+        yPos = 20;
+      }
+    }
+    
+    // Save
+    doc.save(`progreso_semana_${week.week_number}.pdf`);
+    toast.success('PDF exportado correctamente');
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -581,35 +682,67 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
 
                   {/* Daily Notes Grid - Clickable cards */}
                   {canViewNotes && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {DAYS.map((day) => {
-                        const hasContent = hasNoteContent(week.id, day);
-                        const canInteract = isEditable || week.is_completed || isCurrent;
-                        
-                        return (
-                          <div
-                            key={day}
-                            onClick={() => canInteract && setSelectedDay({ weekId: week.id, dayType: day, dayLabel: DAY_LABELS[day] })}
-                            className={`p-4 rounded-lg border transition-all ${
-                              canInteract 
-                                ? 'cursor-pointer hover:border-primary hover:shadow-md' 
-                                : 'opacity-50'
-                            } ${
-                              hasContent 
-                                ? 'bg-primary/5 border-primary/30' 
-                                : 'bg-muted/30 border-muted'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2 mb-2">
-                              <Calendar className="h-4 w-4 text-primary" />
-                              <span className="font-semibold text-sm">{DAY_LABELS[day]}</span>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-muted-foreground">Notas diarias</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => exportWeekToPDF(week)}
+                          className="gap-2"
+                        >
+                          <Download className="h-4 w-4" />
+                          Exportar PDF
+                        </Button>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {DAYS.map((day) => {
+                          const hasContent = hasNoteContent(week.id, day);
+                          const { hasTeacher, hasTutor } = getNoteFilledBy(week.id, day);
+                          const canInteract = isEditable || week.is_completed || isCurrent;
+                          
+                          return (
+                            <div
+                              key={day}
+                              onClick={() => canInteract && setSelectedDay({ weekId: week.id, dayType: day, dayLabel: DAY_LABELS[day] })}
+                              className={`p-4 rounded-lg border transition-all ${
+                                canInteract 
+                                  ? 'cursor-pointer hover:border-primary hover:shadow-md' 
+                                  : 'opacity-50'
+                              } ${
+                                hasContent 
+                                  ? 'bg-primary/5 border-primary/30' 
+                                  : 'bg-muted/30 border-muted'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 mb-2">
+                                <Calendar className="h-4 w-4 text-primary" />
+                                <span className="font-semibold text-sm">{DAY_LABELS[day]}</span>
+                              </div>
+                              <div className={`text-xs ${hasContent ? 'text-primary' : 'text-muted-foreground'}`}>
+                                {hasContent ? '✓ Con notas' : 'Sin notas aún'}
+                              </div>
+                              {/* Visual indicators for who filled */}
+                              {hasContent && (
+                                <div className="flex items-center gap-1 mt-2">
+                                  {hasTeacher && (
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400">
+                                      <GraduationCap className="h-3 w-3" />
+                                      Profesor
+                                    </span>
+                                  )}
+                                  {hasTutor && (
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400">
+                                      <Users className="h-3 w-3" />
+                                      Tutor
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                             </div>
-                            <div className={`text-xs ${hasContent ? 'text-primary' : 'text-muted-foreground'}`}>
-                              {hasContent ? '✓ Con notas' : 'Sin notas aún'}
-                            </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
 

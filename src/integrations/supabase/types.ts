@@ -1023,30 +1023,45 @@ export type Database = {
       }
       student_progress_notes: {
         Row: {
+          achievements: string | null
+          challenges: string | null
+          class_topics: string | null
           created_at: string
           created_by: string
           day_type: string
           id: string
           notes: string | null
+          tutoring_topics: string | null
           updated_at: string
+          vocabulary: string | null
           week_id: string
         }
         Insert: {
+          achievements?: string | null
+          challenges?: string | null
+          class_topics?: string | null
           created_at?: string
           created_by: string
           day_type: string
           id?: string
           notes?: string | null
+          tutoring_topics?: string | null
           updated_at?: string
+          vocabulary?: string | null
           week_id: string
         }
         Update: {
+          achievements?: string | null
+          challenges?: string | null
+          class_topics?: string | null
           created_at?: string
           created_by?: string
           day_type?: string
           id?: string
           notes?: string | null
+          tutoring_topics?: string | null
           updated_at?: string
+          vocabulary?: string | null
           week_id?: string
         }
         Relationships: [

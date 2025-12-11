@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,26 +8,24 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, Lock, BookOpen, Trash2, Pencil } from 'lucide-react';
+import { CheckCircle, Lock, BookOpen, Trash2, Pencil, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
+import { DayProgressModal } from './DayProgressModal';
 
 interface StudentProgressViewProps {
   studentId: string;
-  isEditable: boolean; // true for teacher/tutor/admin, false for student
+  isEditable: boolean;
 }
 
-const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'strengths', 'weaknesses'];
-const DAY_LABELS = {
-  monday: 'Lunes',
+// Days are now Tuesday to Friday only (class days)
+const DAYS = ['tuesday', 'wednesday', 'thursday', 'friday'];
+const DAY_LABELS: Record<string, string> = {
   tuesday: 'Martes',
   wednesday: 'Miércoles',
   thursday: 'Jueves',
   friday: 'Viernes',
-  strengths: 'Fortalezas',
-  weaknesses: 'Debilidades'
 };
 
-// Helper function to format week display name
 const formatWeekName = (weekNumber: number): string => {
   if (weekNumber >= 100) {
     const baseWeek = Math.floor(weekNumber / 100);
@@ -37,7 +35,6 @@ const formatWeekName = (weekNumber: number): string => {
   return `Semana ${weekNumber}`;
 };
 
-// Helper to check if week is special
 const isSpecialWeek = (weekNumber: number): boolean => weekNumber >= 100;
 
 export const StudentProgressView = ({ studentId, isEditable }: StudentProgressViewProps) => {
@@ -45,9 +42,11 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
   const [editingWeek, setEditingWeek] = useState<number | null>(null);
   const [weekTheme, setWeekTheme] = useState('');
   const [weekObjectives, setWeekObjectives] = useState('');
-  const [editingNotes, setEditingNotes] = useState<Record<string, string>>({});
   const [renamingWeekId, setRenamingWeekId] = useState<string | null>(null);
   const [newWeekTheme, setNewWeekTheme] = useState('');
+  
+  // Modal state
+  const [selectedDay, setSelectedDay] = useState<{ weekId: string; dayType: string; dayLabel: string } | null>(null);
 
   // Fetch current user to determine role
   const { data: currentUser } = useQuery({
@@ -56,7 +55,6 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return null;
 
-      // Check if user is teacher or tutor
       const { data: roles } = await supabase
         .from('user_roles')
         .select('role')
@@ -80,11 +78,9 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
     },
   });
 
-  // Fetch all weeks for this student
   const { data: weeks, isLoading } = useQuery({
     queryKey: ['student-progress-weeks', studentId],
     queryFn: async () => {
-      console.log('📚 Fetching student progress weeks for student:', studentId);
       const { data, error } = await supabase
         .from('student_progress_weeks')
         .select(`
@@ -94,17 +90,11 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
         .eq('student_id', studentId)
         .order('week_number', { ascending: true });
       
-      if (error) {
-        console.error('❌ Error fetching weeks:', error);
-        throw error;
-      }
-      console.log('✅ Weeks fetched:', data?.length || 0, 'weeks');
-      console.log('📊 Week numbers:', data?.map(w => w.week_number));
+      if (error) throw error;
       return data || [];
     }
   });
 
-  // Fetch all notes for all weeks
   const { data: notes } = useQuery({
     queryKey: ['student-progress-notes', studentId],
     queryFn: async () => {
@@ -113,29 +103,10 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
       const weekIds = weeks.map(w => w.id);
       const { data, error } = await supabase
         .from('student_progress_notes')
-        .select(`
-          *,
-          author:profiles!student_progress_notes_created_by_fkey(full_name, id)
-        `)
+        .select('*')
         .in('week_id', weekIds);
       
       if (error) throw error;
-      
-      // Fetch roles for all authors
-      if (data && data.length > 0) {
-        const authorIds = [...new Set(data.map(n => n.created_by))];
-        const { data: authorRoles } = await supabase
-          .from('user_roles')
-          .select('user_id, role')
-          .in('user_id', authorIds);
-        
-        // Attach roles to notes
-        return data.map(note => ({
-          ...note,
-          author_role: authorRoles?.find(r => r.user_id === note.created_by)?.role
-        }));
-      }
-      
       return data || [];
     },
     enabled: !!weeks && weeks.length > 0
@@ -170,51 +141,17 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
     }
   });
 
-  // Save note
-  const saveNoteMutation = useMutation({
-    mutationFn: async ({ weekId, dayType, noteContent }: { weekId: string; dayType: string; noteContent: string }) => {
-      const { error } = await supabase
-        .from('student_progress_notes')
-        .upsert({
-          week_id: weekId,
-          day_type: dayType,
-          notes: noteContent,
-          created_by: (await supabase.auth.getUser()).data.user?.id
-        }, {
-          onConflict: 'week_id,day_type'
-        });
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['student-progress-notes', studentId] });
-      toast.success('Nota guardada');
-    },
-    onError: () => {
-      toast.error('Error al guardar la nota');
-    }
-  });
-
   // Mark week as special (complete current and create special week)
   const specialWeekMutation = useMutation({
     mutationFn: async (weekId: string) => {
-      console.log('⭐ Creating special week from:', weekId);
-      
-      // Get the current week data
       const { data: currentWeekData, error: fetchError } = await supabase
         .from('student_progress_weeks')
         .select('*')
         .eq('id', weekId)
         .single();
       
-      if (fetchError) {
-        console.error('❌ Error fetching week data:', fetchError);
-        throw fetchError;
-      }
+      if (fetchError) throw fetchError;
       
-      console.log('📊 Current week data for special:', currentWeekData);
-      
-      // Mark current week as completed
       const { error: updateError } = await supabase
         .from('student_progress_weeks')
         .update({
@@ -224,17 +161,8 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
         })
         .eq('id', weekId);
       
-      if (updateError) {
-        console.error('❌ Error updating week:', updateError);
-        throw updateError;
-      }
+      if (updateError) throw updateError;
       
-      console.log('✅ Week marked as completed');
-      
-      // Create special week - use a unique week number (base week * 100 + count)
-      console.log('📝 Creating special week for week:', currentWeekData.week_number);
-      
-      // Check how many special weeks exist for this base week (week numbers 100+)
       const baseSpecialNumber = currentWeekData.week_number * 100;
       const { data: existingSpecialWeeks } = await supabase
         .from('student_progress_weeks')
@@ -246,39 +174,29 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
       const specialCount = (existingSpecialWeeks?.length || 0) + 1;
       const specialWeekNumber = baseSpecialNumber + specialCount;
       
-      console.log('📝 Special week number:', specialWeekNumber, 'count:', specialCount);
-      
       const { error: insertError } = await supabase
         .from('student_progress_weeks')
         .insert({
           student_id: studentId,
-          week_number: specialWeekNumber, // Unique number for special weeks (e.g., 701, 702 for week 7 specials)
+          week_number: specialWeekNumber,
           week_theme: `Semana ${currentWeekData.week_number}-${specialCount}+`,
           week_objectives: `Objetivos de refuerzo para semana ${currentWeekData.week_number}`,
           is_completed: false
         });
       
-      if (insertError) {
-        console.error('❌ Error creating special week:', insertError);
-        throw insertError;
-      }
-      
-      console.log('✅ Special week created successfully');
+      if (insertError) throw insertError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student-progress-weeks', studentId] });
       toast.success('Semana especial creada');
     },
-    onError: (error: any) => {
-      console.error('❌ Special week mutation error:', error);
+    onError: () => {
       toast.error('Error al crear semana especial');
     }
   });
 
-  // Delete week mutation
   const deleteWeekMutation = useMutation({
     mutationFn: async (weekId: string) => {
-      // First delete all notes for this week
       const { error: notesError } = await supabase
         .from('student_progress_notes')
         .delete()
@@ -286,7 +204,6 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
       
       if (notesError) throw notesError;
       
-      // Then delete the week
       const { error } = await supabase
         .from('student_progress_weeks')
         .delete()
@@ -303,7 +220,6 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
     }
   });
 
-  // Rename week mutation
   const renameWeekMutation = useMutation({
     mutationFn: async ({ weekId, theme }: { weekId: string; theme: string }) => {
       const { error } = await supabase
@@ -324,26 +240,16 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
     }
   });
 
-  // Mark week as completed and create next week if needed
   const completeWeekMutation = useMutation({
     mutationFn: async (weekId: string) => {
-      console.log('🎯 Completing week:', weekId);
-      
-      // Get the current week data
       const { data: currentWeekData, error: fetchError } = await supabase
         .from('student_progress_weeks')
         .select('*')
         .eq('id', weekId)
         .single();
       
-      if (fetchError) {
-        console.error('❌ Error fetching week data:', fetchError);
-        throw fetchError;
-      }
+      if (fetchError) throw fetchError;
       
-      console.log('📊 Current week data:', currentWeekData);
-      
-      // Mark current week as completed
       const { error: updateError } = await supabase
         .from('student_progress_weeks')
         .update({
@@ -353,19 +259,10 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
         })
         .eq('id', weekId);
       
-      if (updateError) {
-        console.error('❌ Error updating week:', updateError);
-        throw updateError;
-      }
+      if (updateError) throw updateError;
       
-      console.log('✅ Week marked as completed');
-      
-      // Create next week if we haven't reached week 12
       const nextWeekNumber = currentWeekData.week_number + 1;
       if (nextWeekNumber <= 12) {
-        console.log('📝 Creating next week:', nextWeekNumber);
-        
-        // Check if next week already exists
         const { data: existingWeek } = await supabase
           .from('student_progress_weeks')
           .select('id')
@@ -374,7 +271,6 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
           .maybeSingle();
         
         if (!existingWeek) {
-          // Determine the level and theme for the next week
           const levelWeeks: Record<string, { level: string; weeks: number[] }> = {
             'A1': { level: 'A1', weeks: [1, 2] },
             'A2': { level: 'A2', weeks: [3, 4] },
@@ -392,7 +288,7 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
             }
           }
           
-          const { error: insertError } = await supabase
+          await supabase
             .from('student_progress_weeks')
             .insert({
               student_id: studentId,
@@ -401,28 +297,35 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
               week_objectives: `Objetivos para la semana ${nextWeekNumber} del nivel ${nextLevel}`,
               is_completed: false
             });
-          
-          if (insertError) {
-            console.error('❌ Error creating next week:', insertError);
-          } else {
-            console.log('✅ Next week created successfully:', nextWeekNumber);
-          }
-        } else {
-          console.log('ℹ️ Next week already exists:', nextWeekNumber);
         }
-      } else {
-        console.log('🎓 Student has completed all 12 weeks!');
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student-progress-weeks', studentId] });
       toast.success('Semana marcada como completada');
     },
-    onError: (error: any) => {
-      console.error('❌ Complete week mutation error:', error);
+    onError: () => {
       toast.error('Error al completar la semana');
     }
   });
+
+  // Determine user role for the modal
+  const getUserRole = (): 'teacher' | 'tutor' | 'student' | 'admin' => {
+    if (currentUser?.roles?.includes('admin')) return 'admin';
+    if (currentUser?.roles?.includes('teacher')) return 'teacher';
+    if (currentUser?.roles?.includes('tutor')) return 'tutor';
+    return 'student';
+  };
+
+  const getNoteForDay = (weekId: string, dayType: string) => {
+    return notes?.find(n => n.week_id === weekId && n.day_type === dayType);
+  };
+
+  const hasNoteContent = (weekId: string, dayType: string) => {
+    const note = getNoteForDay(weekId, dayType);
+    if (!note) return false;
+    return !!(note.class_topics || note.tutoring_topics || note.vocabulary || note.achievements || note.challenges);
+  };
 
   if (isLoading) {
     return (
@@ -447,48 +350,8 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
   const completedWeeks = weeks.filter(w => w.is_completed).length;
   const totalWeeks = weeks.length;
   const progressPercentage = totalWeeks > 0 ? (completedWeeks / totalWeeks) * 100 : 0;
-
-  // Determine current week (first non-completed week)
   const currentWeek = weeks.find(w => !w.is_completed);
   const currentWeekNumber = currentWeek?.week_number || (weeks[weeks.length - 1]?.week_number || 0);
-  
-  console.log('📈 Progress calculation:', {
-    completedWeeks,
-    totalWeeks,
-    currentWeekNumber,
-    progressPercentage: Math.round(progressPercentage)
-  });
-
-  const getWeekNotes = (weekId: string) => {
-    return notes?.filter(n => n.week_id === weekId) || [];
-  };
-
-  const getNoteForDay = (weekId: string, dayType: string) => {
-    return getWeekNotes(weekId).find(n => n.day_type === dayType);
-  };
-
-  const handleNoteChange = (weekId: string, dayType: string, content: string) => {
-    const key = `${weekId}-${dayType}`;
-    setEditingNotes({ ...editingNotes, [key]: content });
-  };
-
-  const handleSaveNote = (weekId: string, dayType: string) => {
-    const key = `${weekId}-${dayType}`;
-    const content = editingNotes[key];
-    if (content !== undefined) {
-      saveNoteMutation.mutate({ weekId, dayType, noteContent: content });
-      // Remove from editing state after save
-      const newEditingNotes = { ...editingNotes };
-      delete newEditingNotes[key];
-      setEditingNotes(newEditingNotes);
-    }
-  };
-
-  const getNoteValue = (weekId: string, dayType: string) => {
-    const key = `${weekId}-${dayType}`;
-    const note = getNoteForDay(weekId, dayType);
-    return editingNotes[key] !== undefined ? editingNotes[key] : (note?.notes || '');
-  };
 
   return (
     <div className="space-y-6">
@@ -527,7 +390,6 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
       </Card>
 
       <Accordion type="single" collapsible defaultValue={`week-${currentWeekNumber}`} className="space-y-4">
-        {/* Show initial feedback only until the first week is completed */}
         {studentProfile?.initial_feedback && completedWeeks === 0 && (
           <Card className="border-primary/30 bg-primary/5">
             <CardHeader>
@@ -546,11 +408,7 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
 
         {weeks.map((week) => {
           const isCurrent = week.week_number === currentWeekNumber;
-          const canEditNotes = isEditable && isCurrent;
-          const weekNotes = getWeekNotes(week.id);
-          const isTeacher = currentUser?.roles?.includes('teacher');
-          const isTutor = currentUser?.roles?.includes('tutor');
-          const canViewNotes = isEditable || week.is_completed || (!week.is_completed && weeks.find(w => !w.is_completed)?.id === week.id);
+          const canViewNotes = isEditable || week.is_completed || isCurrent;
 
           return (
             <AccordionItem
@@ -562,9 +420,7 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                 'bg-card'
               }`}
             >
-              <AccordionTrigger
-                className="px-4 hover:no-underline"
-              >
+              <AccordionTrigger className="px-4 hover:no-underline">
                 <div className="flex items-center justify-between w-full pr-4">
                   <div className="flex items-center gap-3">
                     {week.is_completed ? (
@@ -595,10 +451,7 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                           onClick={(e) => {
                             e.stopPropagation();
                             setRenamingWeekId(week.id);
-                            // For special weeks, use full name; for regular, just the theme
-                            setNewWeekTheme(isSpecialWeek(week.week_number) 
-                              ? week.week_theme 
-                              : week.week_theme);
+                            setNewWeekTheme(week.week_theme);
                           }}
                         >
                           <Pencil className="h-4 w-4" />
@@ -627,7 +480,6 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                 </div>
               </AccordionTrigger>
 
-              {/* Rename Dialog */}
               {renamingWeekId === week.id && (
                 <div className="px-4 py-3 bg-muted/50 border-b">
                   <div className="flex items-center gap-2">
@@ -727,75 +579,34 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                     </div>
                   )}
 
-                  {/* Daily Notes Grid - Only shown for completed weeks or if user can edit */}
+                  {/* Daily Notes Grid - Clickable cards */}
                   {canViewNotes && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       {DAYS.map((day) => {
-                        const note = getNoteForDay(week.id, day);
+                        const hasContent = hasNoteContent(week.id, day);
+                        const canInteract = isEditable || week.is_completed || isCurrent;
                         
                         return (
                           <div
                             key={day}
-                            className={`p-4 rounded-lg border ${
-                              day === 'strengths' ? 'col-span-1' :
-                              day === 'weaknesses' ? 'col-span-1' :
-                              ''
+                            onClick={() => canInteract && setSelectedDay({ weekId: week.id, dayType: day, dayLabel: DAY_LABELS[day] })}
+                            className={`p-4 rounded-lg border transition-all ${
+                              canInteract 
+                                ? 'cursor-pointer hover:border-primary hover:shadow-md' 
+                                : 'opacity-50'
+                            } ${
+                              hasContent 
+                                ? 'bg-primary/5 border-primary/30' 
+                                : 'bg-muted/30 border-muted'
                             }`}
                           >
-                            <Label className="font-semibold mb-2 block">
-                              {DAY_LABELS[day as keyof typeof DAY_LABELS]}
-                            </Label>
-                            {canEditNotes ? (
-                              <div className="space-y-2">
-                                <Textarea
-                                  value={getNoteValue(week.id, day)}
-                                  onChange={(e) => {
-                                    handleNoteChange(week.id, day, e.target.value);
-                                  }}
-                                  placeholder={`Notas para ${DAY_LABELS[day as keyof typeof DAY_LABELS]}...`}
-                                  rows={4}
-                                  className="resize-none"
-                                />
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleSaveNote(week.id, day)}
-                                  disabled={editingNotes[`${week.id}-${day}`] === undefined}
-                                >
-                                  Guardar Nota
-                                </Button>
-                              </div>
-                            ) : (
-                              <div className="space-y-2">
-                                {note?.notes ? (
-                                  <>
-                                    <div className={`min-h-[100px] p-3 rounded-md text-sm border-l-4 ${
-                                      (note as any).author_role === 'teacher' ? 
-                                      'border-green-500 bg-green-50 dark:bg-green-950/20' :
-                                      (note as any).author_role === 'tutor' ?
-                                      'border-blue-500 bg-blue-50 dark:bg-blue-950/20' :
-                                      'border-muted bg-muted/50'
-                                    }`}>
-                                      {note.notes}
-                                    </div>
-                                    {note.author?.full_name && (
-                                      <div className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium ${
-                                        (note as any).author_role === 'teacher' ? 
-                                        'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
-                                        (note as any).author_role === 'tutor' ?
-                                        'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' :
-                                        'bg-muted text-muted-foreground'
-                                      }`}>
-                                        {(note.author as any)?.full_name}
-                                      </div>
-                                    )}
-                                  </>
-                                ) : (
-                                  <div className="min-h-[100px] p-3 bg-muted/50 rounded-md text-sm text-muted-foreground">
-                                    Sin notas
-                                  </div>
-                                )}
-                              </div>
-                            )}
+                            <div className="flex items-center gap-2 mb-2">
+                              <Calendar className="h-4 w-4 text-primary" />
+                              <span className="font-semibold text-sm">{DAY_LABELS[day]}</span>
+                            </div>
+                            <div className={`text-xs ${hasContent ? 'text-primary' : 'text-muted-foreground'}`}>
+                              {hasContent ? '✓ Con notas' : 'Sin notas aún'}
+                            </div>
                           </div>
                         );
                       })}
@@ -833,7 +644,6 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                     </div>
                   )}
                   
-                  {/* Show who completed the week */}
                   {week.is_completed && (week as any).completed_by_profile?.full_name && (
                     <p className="text-sm text-muted-foreground text-center">
                       Completada por: {(week as any).completed_by_profile.full_name}
@@ -845,6 +655,21 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
           );
         })}
       </Accordion>
+
+      {/* Day Progress Modal */}
+      {selectedDay && (
+        <DayProgressModal
+          open={!!selectedDay}
+          onClose={() => setSelectedDay(null)}
+          weekId={selectedDay.weekId}
+          studentId={studentId}
+          dayType={selectedDay.dayType}
+          dayLabel={selectedDay.dayLabel}
+          isEditable={isEditable}
+          existingNote={getNoteForDay(selectedDay.weekId, selectedDay.dayType)}
+          userRole={getUserRole()}
+        />
+      )}
     </div>
   );
 };

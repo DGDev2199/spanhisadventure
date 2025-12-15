@@ -66,8 +66,9 @@ export const DayProgressModal = ({
     setChallenges(existingNote?.challenges || '');
   }, [existingNote]);
 
-  const canEditClassTopics = userRole === 'teacher' || userRole === 'admin';
-  const canEditTutoringTopics = userRole === 'tutor' || userRole === 'admin';
+  // Both teachers and tutors can edit all fields
+  const canEditClassTopics = userRole === 'teacher' || userRole === 'tutor' || userRole === 'admin';
+  const canEditTutoringTopics = userRole === 'teacher' || userRole === 'tutor' || userRole === 'admin';
   const canEditVocabulary = userRole === 'teacher' || userRole === 'tutor' || userRole === 'admin';
   const canEditAchievements = userRole === 'teacher' || userRole === 'tutor' || userRole === 'admin';
   const canEditChallenges = userRole === 'teacher' || userRole === 'tutor' || userRole === 'admin';
@@ -153,12 +154,12 @@ export const DayProgressModal = ({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Class Topics - Teacher edits */}
+          {/* Class Topics - Both can edit */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2 text-sm font-semibold">
               <BookOpen className="h-4 w-4 text-green-600" />
               Temas aprendidos en clase
-              <span className="text-xs text-muted-foreground font-normal">(Profesor)</span>
+              <span className="text-xs text-muted-foreground font-normal">(Profesor/Tutor)</span>
             </Label>
             {isEditable && canEditClassTopics ? (
               <Textarea
@@ -179,12 +180,12 @@ export const DayProgressModal = ({
             )}
           </div>
 
-          {/* Tutoring Topics - Tutor edits */}
+          {/* Tutoring Topics - Both can edit */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2 text-sm font-semibold">
               <MessageSquare className="h-4 w-4 text-blue-600" />
               Temas practicados en tutorías
-              <span className="text-xs text-muted-foreground font-normal">(Tutor)</span>
+              <span className="text-xs text-muted-foreground font-normal">(Profesor/Tutor)</span>
             </Label>
             {isEditable && canEditTutoringTopics ? (
               <Textarea

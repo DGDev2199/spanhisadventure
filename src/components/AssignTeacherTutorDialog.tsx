@@ -54,23 +54,38 @@ export const AssignTeacherTutorDialog = ({
     }
   });
 
+  // Include both tutors AND teachers in the tutor list (teachers can also be tutors)
   const { data: tutors } = useQuery({
-    queryKey: ['tutors'],
+    queryKey: ['tutors-and-teachers'],
     queryFn: async () => {
-      const { data: tutorRoles } = await supabase
+      const { data: staffRoles } = await supabase
         .from('user_roles')
-        .select('user_id')
-        .eq('role', 'tutor');
+        .select('user_id, role')
+        .in('role', ['tutor', 'teacher']);
       
-      if (!tutorRoles || tutorRoles.length === 0) return [];
+      if (!staffRoles || staffRoles.length === 0) return [];
       
-      const tutorIds = tutorRoles.map(r => r.user_id);
+      const staffIds = [...new Set(staffRoles.map(r => r.user_id))];
       const { data } = await supabase
         .from('profiles')
         .select('id, full_name')
-        .in('id', tutorIds);
+        .in('id', staffIds);
       
-      return data || [];
+      // Add role indicator to names
+      const staffWithRoles = data?.map(profile => {
+        const roles = staffRoles.filter(r => r.user_id === profile.id).map(r => r.role);
+        const roleLabel = roles.includes('teacher') && roles.includes('tutor') 
+          ? '(Profesor/Tutor)' 
+          : roles.includes('teacher') 
+            ? '(Profesor)' 
+            : '(Tutor)';
+        return {
+          ...profile,
+          display_name: `${profile.full_name} ${roleLabel}`
+        };
+      });
+      
+      return staffWithRoles || [];
     }
   });
 
@@ -163,7 +178,7 @@ export const AssignTeacherTutorDialog = ({
                 <SelectItem value="none">None</SelectItem>
                 {tutors?.map((tutor) => (
                   <SelectItem key={tutor.id} value={tutor.id}>
-                    {tutor.full_name}
+                    {tutor.display_name}
                   </SelectItem>
                 ))}
               </SelectContent>

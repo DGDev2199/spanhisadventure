@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Lock, Unlock, Settings, ArrowLeft, Package, Globe, Users, Star, KeyRound } from 'lucide-react';
+import { Lock, Unlock, Settings, ArrowLeft, Package, Globe, Users, Star, Shield, Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface FeatureFlag {
   id: string;
@@ -26,141 +26,132 @@ const phaseInfo = [
 
 const DevPanel = () => {
   const navigate = useNavigate();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [pin, setPin] = useState('');
-  const [newPin, setNewPin] = useState('');
-  const [showChangePin, setShowChangePin] = useState(false);
+  const { user, userRole, loading: authLoading } = useAuth();
   const [flags, setFlags] = useState<FeatureFlag[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const isAdmin = userRole === 'admin';
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchFlags();
+    } else if (!authLoading) {
+      setLoading(false);
+    }
+  }, [isAdmin, authLoading]);
 
   const fetchFlags = async () => {
-    const { data, error } = await supabase
-      .from('feature_flags')
-      .select('*')
-      .order('phase', { ascending: true })
-      .order('feature_name', { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from('feature_flags')
+        .select('*')
+        .order('phase', { ascending: true })
+        .order('feature_name', { ascending: true });
 
-    if (error) {
+      if (error) throw error;
+      setFlags(data || []);
+    } catch (error) {
+      console.error('Error fetching flags:', error);
       toast.error('Error al cargar flags');
-      return;
-    }
-    setFlags(data || []);
-  };
-
-  const validatePin = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('developer_settings')
-      .select('setting_value')
-      .eq('setting_key', 'dev_pin')
-      .single();
-
-    if (error || !data) {
-      toast.error('Error de autenticación');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    if (data.setting_value === pin) {
-      setIsAuthenticated(true);
-      await fetchFlags();
-      toast.success('Acceso concedido');
-    } else {
-      toast.error('PIN incorrecto');
-    }
-    setLoading(false);
   };
 
   const toggleFeature = async (flag: FeatureFlag) => {
-    const { error } = await supabase
-      .from('feature_flags')
-      .update({ is_enabled: !flag.is_enabled, updated_at: new Date().toISOString() })
-      .eq('id', flag.id);
+    try {
+      const { error } = await supabase
+        .from('feature_flags')
+        .update({ is_enabled: !flag.is_enabled, updated_at: new Date().toISOString() })
+        .eq('id', flag.id);
 
-    if (error) {
+      if (error) throw error;
+
+      setFlags(prev => 
+        prev.map(f => f.id === flag.id ? { ...f, is_enabled: !f.is_enabled } : f)
+      );
+      toast.success(`${flag.feature_name} ${!flag.is_enabled ? 'activado' : 'desactivado'}`);
+    } catch (error) {
+      console.error('Error toggling feature:', error);
       toast.error('Error al actualizar');
-      return;
     }
-
-    setFlags(prev => 
-      prev.map(f => f.id === flag.id ? { ...f, is_enabled: !f.is_enabled } : f)
-    );
-    toast.success(`${flag.feature_name} ${!flag.is_enabled ? 'activado' : 'desactivado'}`);
   };
 
   const togglePhase = async (phase: number, enable: boolean) => {
-    const phaseFlags = flags.filter(f => f.phase === phase);
-    
-    for (const flag of phaseFlags) {
-      await supabase
-        .from('feature_flags')
-        .update({ is_enabled: enable, updated_at: new Date().toISOString() })
-        .eq('id', flag.id);
-    }
+    try {
+      const phaseFlags = flags.filter(f => f.phase === phase);
+      
+      for (const flag of phaseFlags) {
+        await supabase
+          .from('feature_flags')
+          .update({ is_enabled: enable, updated_at: new Date().toISOString() })
+          .eq('id', flag.id);
+      }
 
-    setFlags(prev => 
-      prev.map(f => f.phase === phase ? { ...f, is_enabled: enable } : f)
-    );
-    toast.success(`Fase ${phase} ${enable ? 'activada' : 'desactivada'}`);
+      setFlags(prev => 
+        prev.map(f => f.phase === phase ? { ...f, is_enabled: enable } : f)
+      );
+      toast.success(`Fase ${phase} ${enable ? 'activada' : 'desactivada'}`);
+    } catch (error) {
+      console.error('Error toggling phase:', error);
+      toast.error('Error al cambiar el estado de la fase');
+    }
   };
 
   const disableAll = async () => {
-    for (const flag of flags) {
-      await supabase
-        .from('feature_flags')
-        .update({ is_enabled: false, updated_at: new Date().toISOString() })
-        .eq('id', flag.id);
+    try {
+      for (const flag of flags) {
+        await supabase
+          .from('feature_flags')
+          .update({ is_enabled: false, updated_at: new Date().toISOString() })
+          .eq('id', flag.id);
+      }
+
+      setFlags(prev => prev.map(f => ({ ...f, is_enabled: false })));
+      toast.success('Todas las funciones desactivadas');
+    } catch (error) {
+      console.error('Error disabling all:', error);
+      toast.error('Error al desactivar todo');
     }
-
-    setFlags(prev => prev.map(f => ({ ...f, is_enabled: false })));
-    toast.success('Todas las funciones desactivadas');
-  };
-
-  const changePin = async () => {
-    if (newPin.length < 4) {
-      toast.error('El PIN debe tener al menos 4 caracteres');
-      return;
-    }
-
-    const { error } = await supabase
-      .from('developer_settings')
-      .update({ setting_value: newPin })
-      .eq('setting_key', 'dev_pin');
-
-    if (error) {
-      toast.error('Error al cambiar PIN');
-      return;
-    }
-
-    toast.success('PIN cambiado exitosamente');
-    setNewPin('');
-    setShowChangePin(false);
   };
 
   const getFlagsByPhase = (phase: number) => flags.filter(f => f.phase === phase);
 
-  if (!isAuthenticated) {
+  // Show loading while checking auth
+  if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+          <p className="mt-2 text-muted-foreground">Verificando acceso...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect if not logged in
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // Show access denied if not admin
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <Lock className="h-12 w-12 mx-auto text-primary mb-2" />
-            <CardTitle>Panel de Desarrollador</CardTitle>
+            <div className="mx-auto w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
+              <Shield className="h-8 w-8 text-destructive" />
+            </div>
+            <CardTitle className="text-destructive">Acceso Denegado</CardTitle>
+            <CardDescription>
+              Solo los administradores pueden acceder al panel de desarrollo.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Input
-              type="password"
-              placeholder="Ingresa el PIN"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && validatePin()}
-            />
-            <Button onClick={validatePin} className="w-full" disabled={loading}>
-              {loading ? 'Verificando...' : 'Acceder'}
-            </Button>
-            <Button variant="ghost" onClick={() => navigate('/')} className="w-full">
+          <CardContent className="text-center">
+            <Button variant="outline" onClick={() => navigate('/')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver
+              Volver al inicio
             </Button>
           </CardContent>
         </Card>
@@ -175,37 +166,16 @@ const DevPanel = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Settings className="h-8 w-8 text-primary" />
-            <h1 className="text-2xl font-bold">Panel de Desarrollador</h1>
+            <div>
+              <h1 className="text-2xl font-bold">Panel de Desarrollador</h1>
+              <p className="text-sm text-muted-foreground">Autenticado como Admin</p>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowChangePin(!showChangePin)}>
-              <KeyRound className="h-4 w-4 mr-2" />
-              Cambiar PIN
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Salir
-            </Button>
-          </div>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Salir
+          </Button>
         </div>
-
-        {/* Change PIN */}
-        {showChangePin && (
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex gap-2">
-                <Input
-                  type="password"
-                  placeholder="Nuevo PIN"
-                  value={newPin}
-                  onChange={(e) => setNewPin(e.target.value)}
-                />
-                <Button onClick={changePin}>Guardar</Button>
-                <Button variant="ghost" onClick={() => setShowChangePin(false)}>Cancelar</Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Phases */}
         {phaseInfo.map(({ phase, name, icon: Icon, color }) => {

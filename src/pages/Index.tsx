@@ -147,9 +147,25 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="bg-primary text-white py-8 px-4">
-        <div className="container mx-auto text-center">
-          <img src={logo} alt="Spanish Adventure" className="h-12 mx-auto mb-4" />
-          <p className="text-white/80">© 2025 Spanish Adventure. All rights reserved.</p>
+        <div className="container mx-auto">
+          <div className="flex flex-col items-center">
+            <img src={logo} alt="Spanish Adventure" className="h-12 mb-4" />
+            <div className="flex flex-wrap justify-center gap-6 mb-4 text-sm">
+              <button 
+                onClick={() => navigate('/privacy')} 
+                className="text-white/80 hover:text-white transition-colors"
+              >
+                Política de Privacidad
+              </button>
+              <button 
+                onClick={() => navigate('/terms')} 
+                className="text-white/80 hover:text-white transition-colors"
+              >
+                Términos de Servicio
+              </button>
+            </div>
+            <p className="text-white/80 text-sm">© 2025 Spanish Adventure. All rights reserved.</p>
+          </div>
         </div>
       </footer>
     </div>

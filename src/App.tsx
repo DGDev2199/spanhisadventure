@@ -19,6 +19,8 @@ import BrowseTeachers from "./pages/BrowseTeachers";
 import Feed from "./pages/Feed";
 import DevPanel from "./pages/DevPanel";
 import NotFound from "./pages/NotFound";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import "./i18n/config";
 
 const queryClient = new QueryClient();
@@ -99,6 +101,8 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/terms" element={<TermsOfService />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

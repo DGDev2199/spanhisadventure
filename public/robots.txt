@@ -1,3 +1,5 @@
+# https://www.robotstxt.org/robotstxt.html
+
 User-agent: Googlebot
 Allow: /
 
@@ -12,3 +14,14 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /dashboard
+Disallow: /dashboard/*
+Disallow: /dev-panel
+Disallow: /profile-verification
+Disallow: /pending-approval
+Disallow: /placement-test
+Disallow: /take-test/*
+Disallow: /test/*
+
+# Sitemap
+Sitemap: https://spanishadventure.lovable.app/sitemap.xml

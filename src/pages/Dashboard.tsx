@@ -17,6 +17,7 @@ import { StudentChatDialog } from '@/components/StudentChatDialog';
 import { BookingDialog } from '@/components/BookingDialog';
 import { VideoCallDialog } from '@/components/VideoCallDialog';
 import { MyBookingsPanel } from '@/components/MyBookingsPanel';
+import { StaffProfileDialog } from '@/components/StaffProfileDialog';
 
 // Optimized hooks and components
 import { 
@@ -56,6 +57,8 @@ const Dashboard = () => {
   const [bookingStaff, setBookingStaff] = useState<StaffInfo>(null);
   const [videoCallOpen, setVideoCallOpen] = useState(false);
   const [videoCallStaff, setVideoCallStaff] = useState<StaffInfo>(null);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+  const [profileStaff, setProfileStaff] = useState<{ id: string; role: 'teacher' | 'tutor' } | null>(null);
 
   // Optimized data fetching with custom hooks
   const { data: studentProfile, isLoading: profileLoading } = useStudentProfile(user?.id);
@@ -120,6 +123,20 @@ const Dashboard = () => {
   const handleScrollToCalendar = useCallback(() => {
     document.getElementById('weekly-calendar')?.scrollIntoView({ behavior: 'smooth' });
   }, []);
+
+  const handleViewTeacherProfile = useCallback(() => {
+    if (teacherProfile) {
+      setProfileStaff({ id: teacherProfile.id, role: 'teacher' });
+      setProfileDialogOpen(true);
+    }
+  }, [teacherProfile]);
+
+  const handleViewTutorProfile = useCallback(() => {
+    if (tutorProfile) {
+      setProfileStaff({ id: tutorProfile.id, role: 'tutor' });
+      setProfileDialogOpen(true);
+    }
+  }, [tutorProfile]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -243,6 +260,7 @@ const Dashboard = () => {
             onVideoCall={handleTeacherVideoCall}
             onBooking={handleTeacherBooking}
             onViewSchedule={() => setClassScheduleOpen(true)}
+            onViewProfile={handleViewTeacherProfile}
             bookingLabel="Reservar Clase"
             scheduleLabel="Ver Horario de Clases"
           />
@@ -262,6 +280,7 @@ const Dashboard = () => {
             onVideoCall={handleTutorVideoCall}
             onBooking={handleTutorBooking}
             onViewSchedule={() => setTutoringScheduleOpen(true)}
+            onViewProfile={handleViewTutorProfile}
             bookingLabel="Reservar Tutoría"
             scheduleLabel="Ver Horario de Tutorías"
           />
@@ -424,6 +443,15 @@ const Dashboard = () => {
           participantName={videoCallStaff.name}
           participantAvatar={videoCallStaff.avatar}
           participantRole={videoCallStaff.role}
+        />
+      )}
+
+      {profileStaff && (
+        <StaffProfileDialog
+          open={profileDialogOpen}
+          onOpenChange={setProfileDialogOpen}
+          staffId={profileStaff.id}
+          staffRole={profileStaff.role}
         />
       )}
     </div>

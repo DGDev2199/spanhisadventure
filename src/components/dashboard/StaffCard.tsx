@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { User, MessageSquare, Video, Calendar } from 'lucide-react';
+import { User, MessageSquare, Video, Calendar, ExternalLink } from 'lucide-react';
 
 interface StaffCardProps {
   title: string;
@@ -13,6 +13,7 @@ interface StaffCardProps {
   onVideoCall?: () => void;
   onBooking?: () => void;
   onViewSchedule?: () => void;
+  onViewProfile?: () => void;
   showChat?: boolean;
   showVideoCall?: boolean;
   showBooking?: boolean;
@@ -31,6 +32,7 @@ export const StaffCard = memo(({
   onVideoCall,
   onBooking,
   onViewSchedule,
+  onViewProfile,
   showChat = false,
   showVideoCall = false,
   showBooking = false,
@@ -48,7 +50,17 @@ export const StaffCard = memo(({
         <div className="text-lg font-bold">
           {isLoading ? (
             '...'
-          ) : staffName || (
+          ) : staffName && onViewProfile ? (
+            <button
+              onClick={onViewProfile}
+              className="text-left hover:text-primary hover:underline cursor-pointer transition-colors flex items-center gap-1"
+            >
+              {staffName}
+              <ExternalLink className="h-3.5 w-3.5 opacity-50" />
+            </button>
+          ) : staffName ? (
+            staffName
+          ) : (
             <span className="text-muted-foreground text-base">No asignado</span>
           )}
         </div>

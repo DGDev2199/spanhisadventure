@@ -1,12 +1,15 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Compass, BookOpen, Users, Award, Calendar } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { useEffect } from 'react';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 const Index = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, loading } = useAuth();
 
@@ -26,6 +29,11 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Language Switcher - Fixed Position */}
+      <div className="absolute top-4 right-4 z-50">
+        <LanguageSwitcher />
+      </div>
+
       {/* Hero Section */}
       <section className="relative bg-gradient-hero text-white overflow-hidden">
         <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:20px_20px]" />
@@ -33,10 +41,10 @@ const Index = () => {
           <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
             <img src={logo} alt="Spanish Adventure" className="h-32 mb-8 animate-in fade-in zoom-in duration-500" />
             <h1 className="text-5xl md:text-6xl font-bold mb-6 animate-in slide-in-from-bottom-4 duration-700">
-              Spanish Adventure
+              {t('landing.title')}
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-white/90 animate-in slide-in-from-bottom-6 duration-700 delay-100">
-              Begin your journey to Spanish fluency with personalized learning, expert teachers, and a supportive community
+              {t('landing.subtitle')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 animate-in slide-in-from-bottom-8 duration-700 delay-200">
               <Button
@@ -44,7 +52,7 @@ const Index = () => {
                 onClick={() => navigate('/auth')}
                 className="bg-white text-primary hover:bg-white/90 shadow-lg"
               >
-                Get Started
+                {t('landing.getStarted')}
               </Button>
               <Button
                 size="lg"
@@ -52,7 +60,7 @@ const Index = () => {
                 onClick={() => navigate('/auth')}
                 className="border-white text-white hover:bg-white/10"
               >
-                Sign In
+                {t('landing.signIn')}
               </Button>
             </div>
           </div>
@@ -63,9 +71,9 @@ const Index = () => {
       <section className="py-20 px-4 bg-muted/50">
         <div className="container mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose Spanish Adventure?</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">{t('landing.whyChoose')}</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Experience a comprehensive learning platform designed for your success
+              {t('landing.whyChooseDesc')}
             </p>
           </div>
 
@@ -75,9 +83,9 @@ const Index = () => {
                 <div className="rounded-full bg-primary/10 w-12 h-12 flex items-center justify-center mb-4">
                   <Award className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-bold text-lg mb-2">Placement Testing</h3>
+                <h3 className="font-bold text-lg mb-2">{t('landing.placementTesting')}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Automated tests plus oral assessment to find your perfect level (A1-C2)
+                  {t('landing.placementTestingDesc')}
                 </p>
               </CardContent>
             </Card>
@@ -87,9 +95,9 @@ const Index = () => {
                 <div className="rounded-full bg-secondary/10 w-12 h-12 flex items-center justify-center mb-4">
                   <Users className="h-6 w-6 text-secondary" />
                 </div>
-                <h3 className="font-bold text-lg mb-2">Expert Teachers & Tutors</h3>
+                <h3 className="font-bold text-lg mb-2">{t('landing.expertTeachers')}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Personal attention from dedicated teachers and tutors assigned to you
+                  {t('landing.expertTeachersDesc')}
                 </p>
               </CardContent>
             </Card>
@@ -99,9 +107,9 @@ const Index = () => {
                 <div className="rounded-full bg-accent/20 w-12 h-12 flex items-center justify-center mb-4">
                   <BookOpen className="h-6 w-6 text-accent-foreground" />
                 </div>
-                <h3 className="font-bold text-lg mb-2">Track Your Progress</h3>
+                <h3 className="font-bold text-lg mb-2">{t('landing.trackProgress')}</h3>
                 <p className="text-sm text-muted-foreground">
-                  View tasks, receive feedback, and monitor your improvement journey
+                  {t('landing.trackProgressDesc')}
                 </p>
               </CardContent>
             </Card>
@@ -111,9 +119,9 @@ const Index = () => {
                 <div className="rounded-full bg-primary/10 w-12 h-12 flex items-center justify-center mb-4">
                   <Calendar className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-bold text-lg mb-2">Organized Schedule</h3>
+                <h3 className="font-bold text-lg mb-2">{t('landing.organizedSchedule')}</h3>
                 <p className="text-sm text-muted-foreground">
-                  Easy access to your weekly schedule, room assignments, and class times
+                  {t('landing.organizedScheduleDesc')}
                 </p>
               </CardContent>
             </Card>
@@ -128,17 +136,17 @@ const Index = () => {
             <CardContent className="p-12 text-center">
               <Compass className="h-16 w-16 mx-auto mb-6 text-accent" />
               <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Ready to Start Your Adventure?
+                {t('landing.readyToStart')}
               </h2>
               <p className="text-lg mb-8 text-white/90">
-                Join Spanish Adventure today and take the first step toward fluency
+                {t('landing.joinToday')}
               </p>
               <Button
                 size="lg"
                 onClick={() => navigate('/auth')}
                 className="bg-white text-primary hover:bg-white/90 shadow-lg"
               >
-                Create Your Account
+                {t('landing.createAccount')}
               </Button>
             </CardContent>
           </Card>
@@ -155,16 +163,16 @@ const Index = () => {
                 onClick={() => navigate('/privacy')} 
                 className="text-white/80 hover:text-white transition-colors"
               >
-                Política de Privacidad
+                {t('landing.privacyPolicy')}
               </button>
               <button 
                 onClick={() => navigate('/terms')} 
                 className="text-white/80 hover:text-white transition-colors"
               >
-                Términos de Servicio
+                {t('landing.termsOfService')}
               </button>
             </div>
-            <p className="text-white/80 text-sm">© 2025 Spanish Adventure. All rights reserved.</p>
+            <p className="text-white/80 text-sm">© 2025 Spanish Adventure. {t('landing.allRightsReserved')}</p>
           </div>
         </div>
       </footer>

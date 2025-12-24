@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeatureFlag } from '@/contexts/FeatureFlagsContext';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ import { BookingDialog } from '@/components/BookingDialog';
 import { VideoCallDialog } from '@/components/VideoCallDialog';
 import { MyBookingsPanel } from '@/components/MyBookingsPanel';
 import { StaffProfileDialog } from '@/components/StaffProfileDialog';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 // Optimized hooks and components
 import { 
@@ -36,6 +38,7 @@ import { PlacementTestCard } from '@/components/dashboard/PlacementTestCard';
 type StaffInfo = { id: string; name: string; avatar?: string | null; role: 'teacher' | 'tutor' } | null;
 
 const Dashboard = () => {
+  const { t } = useTranslation();
   const { user, userRole, signOut } = useAuth();
   const navigate = useNavigate();
   
@@ -159,9 +162,10 @@ const Dashboard = () => {
                 className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
               >
                 <Users className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Comunidad</span>
+                <span className="hidden sm:inline">{t('navigation.community')}</span>
               </Button>
             )}
+            <LanguageSwitcher />
             <NotificationBell />
             <Button
               onClick={signOut}
@@ -170,7 +174,7 @@ const Dashboard = () => {
               className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
             >
               <LogOut className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Cerrar Sesión</span>
+              <span className="hidden sm:inline">{t('navigation.logout')}</span>
             </Button>
           </div>
         </div>
@@ -181,17 +185,17 @@ const Dashboard = () => {
         {/* Welcome Section */}
         <div className="mb-4 sm:mb-6 lg:mb-8 animate-fade-in">
           <div className="flex items-center gap-2 mb-1">
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold">¡Bienvenido de vuelta!</h2>
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold">{t('dashboard.welcomeBack')}</h2>
             {studentProfile?.student_type && (
               <Badge variant={isOnlineStudent ? 'secondary' : 'default'}>
-                {isOnlineStudent ? '🌐 Online' : '📍 Presencial'}
+                {isOnlineStudent ? `🌐 ${t('common.online')}` : `📍 ${t('common.presencial')}`}
               </Badge>
             )}
           </div>
           <p className="text-sm sm:text-base text-muted-foreground">
             {isOnlineStudent 
-              ? 'Gestiona tus clases online y conecta con profesores' 
-              : 'Continúa tu viaje de aprendizaje del español'}
+              ? t('dashboard.onlineStudentMessage')
+              : t('dashboard.presencialStudentMessage')}
           </p>
         </div>
 
@@ -205,17 +209,17 @@ const Dashboard = () => {
                     <Search className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold">Encuentra tu Profesor o Tutor</h3>
+                    <h3 className="font-semibold">{t('dashboard.findTeacher')}</h3>
                     <p className="text-sm text-muted-foreground">
                       {teacherProfile && tutorProfile 
-                        ? 'Ya tienes profesor y tutor asignados'
-                        : 'Explora perfiles y solicita clases'}
+                        ? t('dashboard.alreadyAssigned')
+                        : t('dashboard.exploreProfiles')}
                     </p>
                   </div>
                 </div>
                 <Button onClick={() => navigate('/browse-teachers')}>
                   <Globe className="h-4 w-4 mr-2" />
-                  Buscar Profesores
+                  {t('dashboard.searchTeachers')}
                 </Button>
               </div>
             </CardContent>
@@ -229,25 +233,25 @@ const Dashboard = () => {
           {/* Room - Only for Presencial */}
           {!isOnlineStudent && (
             <QuickStatCard
-              title="Mi Cuarto"
-              value={studentProfile?.room || 'Sin Asignar'}
-              subtitle={studentProfile?.room ? 'Tu cuarto asignado' : 'Contacta a tu profesor'}
+              title={t('dashboard.myRoom')}
+              value={studentProfile?.room || t('dashboard.notAssigned')}
+              subtitle={studentProfile?.room ? t('dashboard.myRoom') : t('dashboard.contactTeacher')}
               icon={<Award className="h-4 w-4 text-accent" />}
               isLoading={profileLoading}
             />
           )}
 
           <QuickStatCard
-            title="Nivel Actual"
-            value={studentProfile?.level || 'Sin Nivel'}
-            subtitle={studentProfile?.level ? 'Nivel actual' : 'Completa el examen'}
+            title={t('dashboard.currentLevel')}
+            value={studentProfile?.level || t('dashboard.noLevel')}
+            subtitle={studentProfile?.level ? t('dashboard.currentLevel') : t('dashboard.completeTest')}
             icon={<Award className="h-4 w-4 text-secondary" />}
             isLoading={profileLoading}
           />
 
           {/* Teacher Card */}
           <StaffCard
-            title="Mi Profesor"
+            title={t('dashboard.myTeacher')}
             staffName={teacherProfile?.full_name}
             isLoading={profileLoading || teacherLoading}
             iconColor="text-primary"
@@ -261,13 +265,13 @@ const Dashboard = () => {
             onBooking={handleTeacherBooking}
             onViewSchedule={() => setClassScheduleOpen(true)}
             onViewProfile={handleViewTeacherProfile}
-            bookingLabel="Reservar Clase"
-            scheduleLabel="Ver Horario de Clases"
+            bookingLabel={t('dashboard.bookClass')}
+            scheduleLabel={t('dashboard.viewClassSchedule')}
           />
 
           {/* Tutor Card */}
           <StaffCard
-            title="Mi Tutor"
+            title={t('dashboard.myTutor')}
             staffName={tutorProfile?.full_name}
             isLoading={profileLoading || tutorLoading}
             iconColor="text-secondary"
@@ -281,14 +285,14 @@ const Dashboard = () => {
             onBooking={handleTutorBooking}
             onViewSchedule={() => setTutoringScheduleOpen(true)}
             onViewProfile={handleViewTutorProfile}
-            bookingLabel="Reservar Tutoría"
-            scheduleLabel="Ver Horario de Tutorías"
+            bookingLabel={t('dashboard.bookTutoring')}
+            scheduleLabel={t('dashboard.viewTutoringSchedule')}
           />
 
           <QuickStatCard
-            title="Tareas"
+            title={t('dashboard.tasks')}
             value={tasks?.length || 0}
-            subtitle={tasks && tasks.length > 0 ? 'Tareas pendientes' : 'Sin tareas pendientes'}
+            subtitle={tasks && tasks.length > 0 ? t('dashboard.pendingTasks') : t('dashboard.noPendingTasks')}
             icon={<BookOpen className="h-4 w-4 text-accent" />}
             isLoading={tasksLoading}
           />
@@ -308,18 +312,18 @@ const Dashboard = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Calendar className="h-5 w-5 text-secondary" />
-                  Horario Semanal
+                  {t('dashboard.weeklySchedule')}
                 </CardTitle>
                 <CardDescription>
-                  Ve tu horario de clases y actividades
+                  {t('dashboard.viewScheduleDesc')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Consulta el horario completo más abajo o en la sección de horarios.
+                  {t('dashboard.checkSchedule')}
                 </p>
                 <Button variant="outline" className="w-full" onClick={handleScrollToCalendar}>
-                  Ver Horario Completo
+                  {t('dashboard.fullSchedule')}
                 </Button>
               </CardContent>
             </Card>
@@ -339,10 +343,10 @@ const Dashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5 text-primary" />
-                Mi Perfil
+                {t('dashboard.myProfile')}
               </CardTitle>
               <CardDescription>
-                Ver y actualizar tu información
+                {t('dashboard.viewUpdateInfo')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -351,12 +355,12 @@ const Dashboard = () => {
                   <span className="font-medium">Email:</span> {user?.email}
                 </div>
                 <div>
-                  <span className="font-medium">Estado:</span>{' '}
-                  <span className="text-green-600 font-medium">Activo</span>
+                  <span className="font-medium">{t('dashboard.status')}:</span>{' '}
+                  <span className="text-green-600 font-medium">{t('dashboard.active')}</span>
                 </div>
               </div>
               <Button variant="outline" className="w-full mt-4" onClick={() => setEditProfileOpen(true)}>
-                Editar Perfil
+                {t('dashboard.editProfile')}
               </Button>
             </CardContent>
           </Card>
@@ -443,6 +447,8 @@ const Dashboard = () => {
           participantName={videoCallStaff.name}
           participantAvatar={videoCallStaff.avatar}
           participantRole={videoCallStaff.role}
+          roomId={`student-${user?.id}-${videoCallStaff.role}-${videoCallStaff.id}`}
+          studentId={user?.id}
         />
       )}
 

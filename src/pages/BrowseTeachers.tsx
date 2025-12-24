@@ -43,25 +43,20 @@ const BrowseTeachers = () => {
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
   const [requestMessage, setRequestMessage] = useState('');
 
-  // Fetch approved teachers with ratings
+  // Fetch approved teachers with ratings using secure view
   const { data: teachers, isLoading: teachersLoading } = useQuery({
     queryKey: ['browse-teachers'],
     queryFn: async () => {
-      const { data: rolesData } = await supabase
-        .from('user_roles')
-        .select('user_id')
+      // Use the secure view that only exposes non-sensitive data
+      const { data: staffData, error } = await supabase
+        .from('public_staff_profiles' as any)
+        .select('*')
         .eq('role', 'teacher');
 
-      if (!rolesData || rolesData.length === 0) return [];
-
-      const teacherIds = rolesData.map(r => r.user_id);
-      const { data: profilesData, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url, timezone, languages_spoken, availability, experience, is_approved, hourly_rate, currency')
-        .in('id', teacherIds)
-        .eq('is_approved', true);
-
       if (error) throw error;
+      if (!staffData || staffData.length === 0) return [];
+
+      const teacherIds = staffData.map((s: any) => s.id);
 
       // Fetch ratings for all teachers
       const { data: reviewsData } = await supabase
@@ -75,7 +70,7 @@ const BrowseTeachers = () => {
         ratingMap.set(r.staff_id, { total: current.total + r.rating, count: current.count + 1 });
       });
 
-      return (profilesData || []).map(p => {
+      return staffData.map((p: any) => {
         const stats = ratingMap.get(p.id);
         return {
           ...p,
@@ -87,25 +82,20 @@ const BrowseTeachers = () => {
     },
   });
 
-  // Fetch approved tutors with ratings
+  // Fetch approved tutors with ratings using secure view
   const { data: tutors, isLoading: tutorsLoading } = useQuery({
     queryKey: ['browse-tutors'],
     queryFn: async () => {
-      const { data: rolesData } = await supabase
-        .from('user_roles')
-        .select('user_id')
+      // Use the secure view that only exposes non-sensitive data
+      const { data: staffData, error } = await supabase
+        .from('public_staff_profiles' as any)
+        .select('*')
         .eq('role', 'tutor');
 
-      if (!rolesData || rolesData.length === 0) return [];
-
-      const tutorIds = rolesData.map(r => r.user_id);
-      const { data: profilesData, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url, timezone, languages_spoken, availability, experience, is_approved, hourly_rate, currency')
-        .in('id', tutorIds)
-        .eq('is_approved', true);
-
       if (error) throw error;
+      if (!staffData || staffData.length === 0) return [];
+
+      const tutorIds = staffData.map((s: any) => s.id);
 
       // Fetch ratings for all tutors
       const { data: reviewsData } = await supabase
@@ -119,7 +109,7 @@ const BrowseTeachers = () => {
         ratingMap.set(r.staff_id, { total: current.total + r.rating, count: current.count + 1 });
       });
 
-      return (profilesData || []).map(p => {
+      return staffData.map((p: any) => {
         const stats = ratingMap.get(p.id);
         return {
           ...p,

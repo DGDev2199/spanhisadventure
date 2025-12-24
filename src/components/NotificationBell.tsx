@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Bell } from "lucide-react";
@@ -12,7 +13,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
-import { es } from "date-fns/locale";
+import { es, enUS } from "date-fns/locale";
 
 interface Notification {
   id: string;
@@ -24,8 +25,11 @@ interface Notification {
 }
 
 export function NotificationBell() {
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
+
+  const dateLocale = i18n.language === 'es' ? es : enUS;
 
   const { data: notifications = [] } = useQuery({
     queryKey: ["notifications"],
@@ -142,7 +146,7 @@ export function NotificationBell() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
         <div className="flex items-center justify-between px-4 py-2 border-b">
-          <h3 className="font-semibold">Notificaciones</h3>
+          <h3 className="font-semibold">{t('notifications.title')}</h3>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
@@ -150,14 +154,14 @@ export function NotificationBell() {
               onClick={() => markAllAsReadMutation.mutate()}
               className="text-xs"
             >
-              Marcar todo como leído
+              {t('notifications.markAllRead')}
             </Button>
           )}
         </div>
         <ScrollArea className="h-[400px]">
           {notifications.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground text-sm">
-              No tienes notificaciones
+              {t('notifications.noNotifications')}
             </div>
           ) : (
             notifications.map((notification) => (
@@ -183,7 +187,7 @@ export function NotificationBell() {
                     <p className="text-xs text-muted-foreground mt-1">
                       {formatDistanceToNow(new Date(notification.created_at), {
                         addSuffix: true,
-                        locale: es,
+                        locale: dateLocale,
                       })}
                     </p>
                   </div>

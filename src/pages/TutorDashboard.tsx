@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeatureFlag } from '@/contexts/FeatureFlagsContext';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useState } from 'react';
 import logo from '@/assets/logo.png';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 import { StaffHoursCard } from '@/components/StaffHoursCard';
 import { TeacherTutorChatDialog } from '@/components/TeacherTutorChatDialog';
@@ -27,6 +29,7 @@ import { StaffMessagesPanel } from '@/components/StaffMessagesPanel';
 import { useNavigate } from 'react-router-dom';
 
 const TutorDashboard = () => {
+  const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   
@@ -123,6 +126,7 @@ const TutorDashboard = () => {
                 <span className="hidden sm:inline">Comunidad</span>
               </Button>
             )}
+            <LanguageSwitcher />
             <NotificationBell />
             <Button
               onClick={() => setAssignMultipleOpen(true)}

@@ -37,6 +37,7 @@ interface StaffMember {
 }
 
 const BrowseTeachers = () => {
+  const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -331,8 +332,9 @@ const BrowseTeachers = () => {
               className="bg-white/10 border-white/20 text-white hover:bg-white/20"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver
+              {t('navigation.back')}
             </Button>
+            <LanguageSwitcher />
             <NotificationBell />
           </div>
         </div>
@@ -341,10 +343,9 @@ const BrowseTeachers = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold mb-2">Encuentra tu Profesor o Tutor</h2>
+          <h2 className="text-2xl font-bold mb-2">{t('browse.findTeacher')}</h2>
           <p className="text-muted-foreground">
-            Explora los perfiles de nuestros profesores y tutores disponibles. 
-            Envía una solicitud para comenzar tus clases.
+            {t('browse.description')}
           </p>
         </div>
 
@@ -352,11 +353,11 @@ const BrowseTeachers = () => {
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="teachers" className="gap-2">
               <GraduationCap className="h-4 w-4" />
-              Profesores ({teachers?.length || 0})
+              {t('browse.teachers')} ({teachers?.length || 0})
             </TabsTrigger>
             <TabsTrigger value="tutors" className="gap-2">
               <UserCheck className="h-4 w-4" />
-              Tutores ({tutors?.length || 0})
+              {t('browse.tutors')} ({tutors?.length || 0})
             </TabsTrigger>
           </TabsList>
 

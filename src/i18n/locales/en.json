@@ -283,7 +283,8 @@
     "no": "No",
     "online": "Online",
     "presencial": "In-person",
-    "progress": "Progress"
+    "progress": "Progress",
+    "or": "or"
   },
   "placementTest": {
     "title": "Placement Test",

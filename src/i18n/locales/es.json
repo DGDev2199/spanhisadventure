@@ -283,7 +283,8 @@
     "no": "No",
     "online": "Online",
     "presencial": "Presencial",
-    "progress": "Progreso"
+    "progress": "Progreso",
+    "or": "o"
   },
   "placementTest": {
     "title": "Examen de Nivelación",

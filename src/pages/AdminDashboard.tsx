@@ -34,6 +34,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
 
 const AdminDashboard = () => {
+  const { t } = useTranslation();
   const { signOut, userRole } = useAuth();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
@@ -302,9 +303,10 @@ const AdminDashboard = () => {
                 className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
               >
                 <UsersRound className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Comunidad</span>
+                <span className="hidden sm:inline">{t('navigation.community')}</span>
               </Button>
             )}
+            <LanguageSwitcher />
             <NotificationBell />
             <Button
               onClick={() => setEditProfileOpen(true)}
@@ -321,7 +323,7 @@ const AdminDashboard = () => {
               className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
             >
               <LogOut className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Cerrar Sesión</span>
+              <span className="hidden sm:inline">{t('navigation.logout')}</span>
             </Button>
           </div>
         </div>

@@ -123,7 +123,7 @@ const TutorDashboard = () => {
                 className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
               >
                 <UsersRound className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Comunidad</span>
+                <span className="hidden sm:inline">{t('navigation.community')}</span>
               </Button>
             )}
             <LanguageSwitcher />
@@ -161,7 +161,7 @@ const TutorDashboard = () => {
               className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
             >
               <LogOut className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Cerrar</span>
+              <span className="hidden sm:inline">{t('navigation.close')}</span>
             </Button>
           </div>
         </div>
@@ -170,9 +170,9 @@ const TutorDashboard = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-4 sm:py-8">
         <div className="mb-6 sm:mb-8">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-2">Tutor Overview</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-2">{t('tutor.overview')}</h2>
           <p className="text-sm sm:text-base text-muted-foreground">
-            Manage your tutoring sessions and provide personalized support
+            {t('tutor.description')}
           </p>
         </div>
 

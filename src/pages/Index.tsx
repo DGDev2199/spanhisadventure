@@ -7,28 +7,26 @@ import { Compass, BookOpen, Users, Award, Calendar } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { useEffect } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
-
 const Index = () => {
-  const { t } = useTranslation();
+  const {
+    t
+  } = useTranslation();
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
-
+  const {
+    user,
+    loading
+  } = useAuth();
   useEffect(() => {
     if (!loading && user) {
       navigate('/dashboard');
     }
   }, [user, loading, navigate]);
-
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
+    return <div className="flex min-h-screen items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       {/* Language Switcher - Fixed Position */}
       <div className="absolute top-4 right-4 z-50">
         <LanguageSwitcher />
@@ -47,19 +45,10 @@ const Index = () => {
               {t('landing.subtitle')}
             </p>
             <div className="flex flex-col sm:flex-row gap-4 animate-in slide-in-from-bottom-8 duration-700 delay-200">
-              <Button
-                size="lg"
-                onClick={() => navigate('/auth')}
-                className="bg-white text-primary hover:bg-white/90 shadow-lg"
-              >
+              <Button size="lg" onClick={() => navigate('/auth')} className="bg-white text-primary hover:bg-white/90 shadow-lg">
                 {t('landing.getStarted')}
               </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => navigate('/auth')}
-                className="border-white text-white hover:bg-white/10"
-              >
+              <Button size="lg" variant="outline" onClick={() => navigate('/auth')} className="bg-white text-primary hover:bg-white/90 shadow-lg">
                 {t('landing.signIn')}
               </Button>
             </div>
@@ -141,11 +130,7 @@ const Index = () => {
               <p className="text-lg mb-8 text-white/90">
                 {t('landing.joinToday')}
               </p>
-              <Button
-                size="lg"
-                onClick={() => navigate('/auth')}
-                className="bg-white text-primary hover:bg-white/90 shadow-lg"
-              >
+              <Button size="lg" onClick={() => navigate('/auth')} className="bg-white text-primary hover:bg-white/90 shadow-lg">
                 {t('landing.createAccount')}
               </Button>
             </CardContent>
@@ -159,16 +144,10 @@ const Index = () => {
           <div className="flex flex-col items-center">
             <img src={logo} alt="Spanish Adventure" className="h-12 mb-4" />
             <div className="flex flex-wrap justify-center gap-6 mb-4 text-sm">
-              <button 
-                onClick={() => navigate('/privacy')} 
-                className="text-white/80 hover:text-white transition-colors"
-              >
+              <button onClick={() => navigate('/privacy')} className="text-white/80 hover:text-white transition-colors">
                 {t('landing.privacyPolicy')}
               </button>
-              <button 
-                onClick={() => navigate('/terms')} 
-                className="text-white/80 hover:text-white transition-colors"
-              >
+              <button onClick={() => navigate('/terms')} className="text-white/80 hover:text-white transition-colors">
                 {t('landing.termsOfService')}
               </button>
             </div>
@@ -176,8 +155,6 @@ const Index = () => {
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ import { z } from 'zod';
 import logo from '@/assets/logo.png';
 import { TimeZoneSelector } from '@/components/TimeZoneSelector';
 import { AvatarUpload } from '@/components/AvatarUpload';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 // Validation schemas
 const loginSchema = z.object({
@@ -39,6 +41,7 @@ const registerSchema = z.object({
 
 const Auth = () => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -328,12 +331,17 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      {/* Language Switcher */}
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher />
+      </div>
+      
       <div className="w-full max-w-md animate-fade-in">
         {/* Logo and Title */}
         <div className="text-center mb-6 sm:mb-8">
           <img src={logo} alt="Spanish Adventure" className="h-16 sm:h-20 mx-auto mb-3 sm:mb-4" />
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">Spanish Adventure</h1>
-          <p className="text-sm sm:text-base text-white/90">Tu aventura hacia la fluidez comienza aquí</p>
+          <p className="text-sm sm:text-base text-white/90">{t('auth.welcomeSubtitle')}</p>
         </div>
 
         {/* Auth Card */}
@@ -341,21 +349,21 @@ const Auth = () => {
           <CardHeader className="space-y-1 pb-4">
             <CardTitle className="flex items-center gap-2 text-xl sm:text-2xl">
               <Compass className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-              Bienvenido
+              {t('auth.welcome')}
             </CardTitle>
-            <CardDescription className="text-sm">Inicia sesión o crea una cuenta nueva</CardDescription>
+            <CardDescription className="text-sm">{t('auth.login')} {t('common.or')} {t('auth.register')}</CardDescription>
           </CardHeader>
           <CardContent className="pb-6">
             <Tabs defaultValue="login" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6 h-10 sm:h-11">
-                <TabsTrigger value="login" className="text-sm sm:text-base">Iniciar Sesión</TabsTrigger>
-                <TabsTrigger value="register" className="text-sm sm:text-base">Registrarse</TabsTrigger>
+                <TabsTrigger value="login" className="text-sm sm:text-base">{t('auth.login')}</TabsTrigger>
+                <TabsTrigger value="register" className="text-sm sm:text-base">{t('auth.register')}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login">
                 <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
                   <div className="space-y-1.5 sm:space-y-2">
-                    <Label htmlFor="login-email" className="text-sm">Email</Label>
+                    <Label htmlFor="login-email" className="text-sm">{t('auth.email')}</Label>
                     <Input
                       id="login-email"
                       type="email"
@@ -376,7 +384,7 @@ const Auth = () => {
                     )}
                   </div>
                   <div className="space-y-1.5 sm:space-y-2">
-                    <Label htmlFor="login-password" className="text-sm">Contraseña</Label>
+                    <Label htmlFor="login-password" className="text-sm">{t('auth.password')}</Label>
                     <Input
                       id="login-password"
                       type="password"
@@ -396,11 +404,11 @@ const Auth = () => {
                       </p>
                     )}
                     <p className="text-xs text-muted-foreground">
-                      Mínimo 6 caracteres
+                      {t('auth.minPassword')}
                     </p>
                   </div>
                   <Button type="submit" className="w-full h-10 sm:h-11 touch-target" disabled={loading}>
-                    {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+                    {loading ? t('auth.loggingIn') : t('auth.login')}
                   </Button>
                   
                   <div className="relative my-4">
@@ -409,7 +417,7 @@ const Auth = () => {
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
                       <span className="bg-card px-2 text-muted-foreground">
-                        O continúa con
+                        {t('auth.continueWith')}
                       </span>
                     </div>
                   </div>

@@ -60,6 +60,7 @@
     "myRoom": "Mi Cuarto",
     "notAssigned": "Sin Asignar",
     "contactTeacher": "Contacta a tu profesor",
+    "contactAdmin": "Contacta al admin",
     "currentLevel": "Nivel Actual",
     "noLevel": "Sin Nivel",
     "completeTest": "Completa el examen",
@@ -79,7 +80,8 @@
     "bookClass": "Reservar Clase",
     "bookTutoring": "Reservar Tutoría",
     "viewClassSchedule": "Ver Horario de Clases",
-    "viewTutoringSchedule": "Ver Horario de Tutorías"
+    "viewTutoringSchedule": "Ver Horario de Tutorías",
+    "assigned": "Asignado"
   },
   "admin": {
     "title": "Panel de Administración",
@@ -296,6 +298,51 @@
     "startTest": "Iniciar Examen",
     "viewResults": "Ver Resultados",
     "oralPending": "Oral pendiente"
+  },
+  "placementTestCard": {
+    "notStartedDesc": "Completa tu examen de nivelación para determinar tu nivel",
+    "pendingDesc": "Tu examen está siendo revisado por el profesor",
+    "completedDesc": "Examen completado y nivel asignado",
+    "notStartedInfo": "Realiza el examen automatizado para comenzar. Tu profesor luego realizará una evaluación oral para finalizar tu nivel.",
+    "startTest": "Iniciar Examen de Nivelación",
+    "submittedSuccess": "Examen enviado exitosamente",
+    "writtenScore": "Puntuación Escrita",
+    "pendingReviewInfo": "Tu profesor revisará tus respuestas y programará una evaluación oral pronto.",
+    "waitingReview": "Esperando Revisión del Profesor",
+    "testCompleted": "Examen completado",
+    "assignedLevel": "Nivel Asignado",
+    "oralCompleted": "Evaluación oral completada",
+    "testFinished": "Examen Finalizado"
+  },
+  "test": {
+    "submitted": "¡Examen enviado exitosamente! Tu profesor lo revisará pronto.",
+    "submitError": "Error al enviar el examen. Por favor intenta de nuevo.",
+    "micError": "No se pudo acceder al micrófono",
+    "completed": "¡Examen Completado!",
+    "completedDesc": "Tu examen escrito ha sido enviado exitosamente.",
+    "oralReviewPending": "Tu profesor revisará los resultados y programará una evaluación oral para determinar tu nivel final.",
+    "backToDashboard": "Volver al Dashboard",
+    "notAvailable": "Preguntas No Disponibles",
+    "notAvailableDesc": "El examen de nivelación no está disponible en este momento. Por favor contacta a tu administrador.",
+    "question": "Pregunta",
+    "of": "de",
+    "level": "Nivel",
+    "recordInstruction": "Graba tu respuesta en audio haciendo clic en el botón del micrófono",
+    "stopRecording": "Detener Grabación",
+    "recordAnswer": "Grabar Respuesta",
+    "recording": "Grabando...",
+    "audioRecorded": "Audio grabado",
+    "writeWhatYouHeard": "Escribe lo que escuchaste",
+    "writeHere": "Escribe aquí tu respuesta...",
+    "submitting": "Enviando...",
+    "submit": "Enviar Examen",
+    "answeredQuestions": "Preguntas respondidas: {{answered}} de {{total}}"
+  },
+  "tasks": {
+    "myTasks": "Mis Tareas",
+    "completeAssigned": "Completa tus tareas asignadas",
+    "dueDate": "Entrega",
+    "downloadFile": "Descargar Archivo"
   },
   "schedule": {
     "monday": "Lunes",

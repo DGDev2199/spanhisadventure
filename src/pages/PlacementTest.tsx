@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,8 +13,10 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ArrowLeft, CheckCircle, Mic, Square, Volume2 } from 'lucide-react';
 import logo from '@/assets/logo.png';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 const PlacementTest = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -103,11 +106,11 @@ const PlacementTest = () => {
       queryClient.invalidateQueries({ queryKey: ['student-profile'] });
       queryClient.invalidateQueries({ queryKey: ['teacher-students'] });
       setTestComplete(true);
-      toast.success('¡Examen enviado exitosamente! Tu profesor lo revisará pronto.');
+      toast.success(t('test.submitted'));
     },
     onError: (error) => {
       console.error('Mutation error:', error);
-      toast.error('Error al enviar el examen. Por favor intenta de nuevo.');
+      toast.error(t('test.submitError'));
     }
   });
 
@@ -137,7 +140,7 @@ const PlacementTest = () => {
       mediaRecorder.start();
       setIsRecording(true);
     } catch (error) {
-      toast.error('No se pudo acceder al micrófono');
+      toast.error(t('test.micError'));
     }
   };
 
@@ -264,17 +267,17 @@ const PlacementTest = () => {
             <div className="flex justify-center mb-4">
               <CheckCircle className="h-16 w-16 text-green-600" />
             </div>
-            <CardTitle className="text-2xl">¡Examen Completado!</CardTitle>
+            <CardTitle className="text-2xl">{t('test.completed')}</CardTitle>
             <CardDescription>
-              Tu examen escrito ha sido enviado exitosamente.
+              {t('test.completedDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-center text-muted-foreground">
-              Tu profesor revisará los resultados y programará una evaluación oral para determinar tu nivel final.
+              {t('test.oralReviewPending')}
             </p>
             <Button onClick={() => navigate('/dashboard')} className="w-full">
-              Volver al Dashboard
+              {t('test.backToDashboard')}
             </Button>
           </CardContent>
         </Card>
@@ -287,14 +290,14 @@ const PlacementTest = () => {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="max-w-md w-full shadow-lg">
           <CardHeader>
-            <CardTitle>Preguntas No Disponibles</CardTitle>
+            <CardTitle>{t('test.notAvailable')}</CardTitle>
             <CardDescription>
-              El examen de nivelación no está disponible en este momento. Por favor contacta a tu administrador.
+              {t('test.notAvailableDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => navigate('/dashboard')} className="w-full">
-              Volver al Dashboard
+              {t('test.backToDashboard')}
             </Button>
           </CardContent>
         </Card>
@@ -309,18 +312,21 @@ const PlacementTest = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b bg-primary text-white">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate('/dashboard')}
-            className="text-white hover:bg-white/10"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Atrás
-          </Button>
-          <img src={logo} alt="Spanish Adventure" className="h-10" />
-          <h1 className="text-lg font-bold">Examen de Nivelación</h1>
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/dashboard')}
+              className="text-white hover:bg-white/10"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              {t('navigation.back')}
+            </Button>
+            <img src={logo} alt="Spanish Adventure" className="h-10" />
+            <h1 className="text-lg font-bold">{t('placementTest.title')}</h1>
+          </div>
+          <LanguageSwitcher />
         </div>
       </header>
 
@@ -338,10 +344,10 @@ const PlacementTest = () => {
           <CardHeader>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-muted-foreground">
-                Pregunta {currentQuestion + 1} de {questions.length}
+                {t('test.question')} {currentQuestion + 1} {t('test.of')} {questions.length}
               </span>
               <span className="text-sm font-medium text-primary">
-                Nivel: {question.level}
+                {t('test.level')}: {question.level}
               </span>
             </div>
             <CardTitle className="text-xl">{question.question}</CardTitle>
@@ -386,7 +392,7 @@ const PlacementTest = () => {
             {question.question_type === 'audio_response' && (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Graba tu respuesta en audio haciendo clic en el botón del micrófono
+                  {t('test.recordInstruction')}
                 </p>
                 <div className="flex flex-col items-center gap-4 p-6 border-2 border-dashed rounded-lg">
                   <Button
@@ -398,25 +404,25 @@ const PlacementTest = () => {
                     {isRecording ? (
                       <>
                         <Square className="h-5 w-5 mr-2" />
-                        Detener Grabación
+                        {t('test.stopRecording')}
                       </>
                     ) : (
                       <>
                         <Mic className="h-5 w-5 mr-2" />
-                        Grabar Respuesta
+                        {t('test.recordAnswer')}
                       </>
                     )}
                   </Button>
                   {isRecording && (
                     <div className="flex items-center gap-2 text-destructive">
                       <div className="h-3 w-3 rounded-full bg-destructive animate-pulse" />
-                      <span className="text-sm font-medium">Grabando...</span>
+                      <span className="text-sm font-medium">{t('test.recording')}</span>
                     </div>
                   )}
                   {audioBlob && !isRecording && (
                     <div className="flex flex-col items-center gap-2">
                       <audio controls src={URL.createObjectURL(audioBlob)} />
-                      <p className="text-sm text-green-600 font-medium">✓ Audio grabado</p>
+                      <p className="text-sm text-green-600 font-medium">✓ {t('test.audioRecorded')}</p>
                     </div>
                   )}
                 </div>
@@ -435,11 +441,11 @@ const PlacementTest = () => {
                   </div>
                 </div>
                 <div>
-                  <Label>Escribe lo que escuchaste:</Label>
+                  <Label>{t('test.writeWhatYouHeard')}:</Label>
                   <Textarea
                     value={answers[question.id] || ''}
                     onChange={(e) => handleAnswer(question.id, e.target.value)}
-                    placeholder="Escribe aquí tu respuesta..."
+                    placeholder={t('test.writeHere')}
                     rows={4}
                     className="mt-2"
                   />

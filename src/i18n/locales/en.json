@@ -60,6 +60,7 @@
     "myRoom": "My Room",
     "notAssigned": "Not Assigned",
     "contactTeacher": "Contact your teacher",
+    "contactAdmin": "Contact the admin",
     "currentLevel": "Current Level",
     "noLevel": "No Level",
     "completeTest": "Complete the test",
@@ -79,7 +80,8 @@
     "bookClass": "Book Class",
     "bookTutoring": "Book Tutoring",
     "viewClassSchedule": "View Class Schedule",
-    "viewTutoringSchedule": "View Tutoring Schedule"
+    "viewTutoringSchedule": "View Tutoring Schedule",
+    "assigned": "Assigned"
   },
   "admin": {
     "title": "Admin Dashboard",
@@ -296,6 +298,51 @@
     "startTest": "Start Test",
     "viewResults": "View Results",
     "oralPending": "Oral pending"
+  },
+  "placementTestCard": {
+    "notStartedDesc": "Complete your placement test to determine your level",
+    "pendingDesc": "Your test is being reviewed by the teacher",
+    "completedDesc": "Test completed and level assigned",
+    "notStartedInfo": "Take the automated test to get started. Your teacher will then conduct an oral assessment to finalize your level.",
+    "startTest": "Start Placement Test",
+    "submittedSuccess": "Test submitted successfully",
+    "writtenScore": "Written Score",
+    "pendingReviewInfo": "Your teacher will review your answers and schedule an oral assessment soon.",
+    "waitingReview": "Waiting for Teacher Review",
+    "testCompleted": "Test completed",
+    "assignedLevel": "Assigned Level",
+    "oralCompleted": "Oral assessment completed",
+    "testFinished": "Test Finished"
+  },
+  "test": {
+    "submitted": "Test submitted successfully! Your teacher will review it soon.",
+    "submitError": "Error submitting test. Please try again.",
+    "micError": "Could not access microphone",
+    "completed": "Test Completed!",
+    "completedDesc": "Your written test has been submitted successfully.",
+    "oralReviewPending": "Your teacher will review the results and schedule an oral assessment to determine your final level.",
+    "backToDashboard": "Back to Dashboard",
+    "notAvailable": "Questions Not Available",
+    "notAvailableDesc": "The placement test is not available at this time. Please contact your administrator.",
+    "question": "Question",
+    "of": "of",
+    "level": "Level",
+    "recordInstruction": "Record your answer by clicking the microphone button",
+    "stopRecording": "Stop Recording",
+    "recordAnswer": "Record Answer",
+    "recording": "Recording...",
+    "audioRecorded": "Audio recorded",
+    "writeWhatYouHeard": "Write what you heard",
+    "writeHere": "Write your answer here...",
+    "submitting": "Submitting...",
+    "submit": "Submit Test",
+    "answeredQuestions": "Questions answered: {{answered}} of {{total}}"
+  },
+  "tasks": {
+    "myTasks": "My Tasks",
+    "completeAssigned": "Complete your assigned tasks",
+    "dueDate": "Due",
+    "downloadFile": "Download File"
   },
   "schedule": {
     "monday": "Monday",

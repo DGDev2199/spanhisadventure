@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { User, MessageSquare, Video, Calendar, ExternalLink } from 'lucide-react';
@@ -37,9 +38,14 @@ export const StaffCard = memo(({
   showVideoCall = false,
   showBooking = false,
   showSchedule = false,
-  bookingLabel = 'Reservar Clase',
-  scheduleLabel = 'Ver Horario'
+  bookingLabel,
+  scheduleLabel
 }: StaffCardProps) => {
+  const { t } = useTranslation();
+  
+  const defaultBookingLabel = bookingLabel || t('dashboard.bookClass');
+  const defaultScheduleLabel = scheduleLabel || t('dashboard.viewClassSchedule');
+
   return (
     <Card className="shadow-md hover:shadow-lg transition-shadow">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -61,11 +67,11 @@ export const StaffCard = memo(({
           ) : staffName ? (
             staffName
           ) : (
-            <span className="text-muted-foreground text-base">No asignado</span>
+            <span className="text-muted-foreground text-base">{t('dashboard.notAssigned')}</span>
           )}
         </div>
         <p className="text-xs text-muted-foreground mt-1">
-          {staffName ? `${title} Asignado` : 'Contacta al admin'}
+          {staffName ? `${title} ${t('dashboard.assigned')}` : t('dashboard.contactAdmin')}
         </p>
         {staffId && staffName && (
           <div className="space-y-2 mt-3">
@@ -99,7 +105,7 @@ export const StaffCard = memo(({
                 onClick={onBooking}
               >
                 <Calendar className="h-4 w-4 mr-2" />
-                {bookingLabel}
+                {defaultBookingLabel}
               </Button>
             )}
             {showSchedule && onViewSchedule && (
@@ -110,7 +116,7 @@ export const StaffCard = memo(({
                 onClick={onViewSchedule}
               >
                 <Calendar className="h-4 w-4 mr-2" />
-                {scheduleLabel}
+                {defaultScheduleLabel}
               </Button>
             )}
           </div>

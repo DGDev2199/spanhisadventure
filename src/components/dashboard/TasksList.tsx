@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -19,6 +20,8 @@ interface TasksListProps {
 }
 
 export const TasksList = memo(({ tasks, onCompleteTask }: TasksListProps) => {
+  const { t } = useTranslation();
+  
   if (!tasks || tasks.length === 0) return null;
 
   return (
@@ -26,10 +29,10 @@ export const TasksList = memo(({ tasks, onCompleteTask }: TasksListProps) => {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <BookOpen className="h-5 w-5 text-primary" />
-          Mis Tareas
+          {t('tasks.myTasks')}
         </CardTitle>
         <CardDescription>
-          Completa tus tareas asignadas
+          {t('tasks.completeAssigned')}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -48,7 +51,7 @@ export const TasksList = memo(({ tasks, onCompleteTask }: TasksListProps) => {
                 )}
                 {task.due_date && (
                   <p className="text-xs text-muted-foreground mt-1">
-                    Entrega: {new Date(task.due_date).toLocaleDateString()}
+                    {t('tasks.dueDate')}: {new Date(task.due_date).toLocaleDateString()}
                   </p>
                 )}
                 {task.attachment_url && (
@@ -59,7 +62,7 @@ export const TasksList = memo(({ tasks, onCompleteTask }: TasksListProps) => {
                     onClick={() => window.open(task.attachment_url, '_blank')}
                   >
                     <Download className="h-4 w-4 mr-2" />
-                    Descargar Archivo
+                    {t('tasks.downloadFile')}
                   </Button>
                 )}
               </div>

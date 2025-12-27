@@ -219,6 +219,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "class_reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: true
+            referencedRelation: "staff_bookings_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "class_reviews_staff_id_fkey"
             columns: ["staff_id"]
             isOneToOne: false
@@ -578,6 +585,13 @@ export type Database = {
             columns: ["booking_id"]
             isOneToOne: false
             referencedRelation: "class_bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_earnings_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "staff_bookings_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1824,6 +1838,109 @@ export type Database = {
           timezone: string | null
         }
         Relationships: []
+      }
+      staff_bookings_view: {
+        Row: {
+          booking_date: string | null
+          created_at: string | null
+          end_time: string | null
+          id: string | null
+          meeting_url: string | null
+          notes: string | null
+          paid_at: string | null
+          payment_status: string | null
+          platform_fee: number | null
+          price: number | null
+          staff_earnings: number | null
+          start_time: string | null
+          status: string | null
+          student_id: string | null
+          teacher_id: string | null
+          tutor_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          booking_date?: string | null
+          created_at?: string | null
+          end_time?: string | null
+          id?: string | null
+          meeting_url?: string | null
+          notes?: string | null
+          paid_at?: never
+          payment_status?: never
+          platform_fee?: never
+          price?: never
+          staff_earnings?: never
+          start_time?: string | null
+          status?: string | null
+          student_id?: string | null
+          teacher_id?: string | null
+          tutor_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          booking_date?: string | null
+          created_at?: string | null
+          end_time?: string | null
+          id?: string | null
+          meeting_url?: string | null
+          notes?: string | null
+          paid_at?: never
+          payment_status?: never
+          platform_fee?: never
+          price?: never
+          staff_earnings?: never
+          start_time?: string | null
+          status?: string | null
+          student_id?: string | null
+          teacher_id?: string | null
+          tutor_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_bookings_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_bookings_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "public_staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_bookings_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_bookings_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "public_staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_bookings_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_bookings_tutor_id_fkey"
+            columns: ["tutor_id"]
+            isOneToOne: false
+            referencedRelation: "public_staff_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {

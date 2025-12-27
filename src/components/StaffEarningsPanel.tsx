@@ -11,30 +11,37 @@ import { es } from 'date-fns/locale';
 export const StaffEarningsPanel = () => {
   const { user, userRole } = useAuth();
 
-  // Fetch earnings for current staff member
+  // Fetch earnings for current staff member using secure view that hides sensitive payment data
   const { data: bookings, isLoading } = useQuery({
     queryKey: ['staff-earnings', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
       
-      const query = supabase
-        .from('class_bookings')
-        .select(`
-          *,
-          student:profiles!class_bookings_student_id_fkey(full_name)
-        `)
-        .gt('price', 0)
+      // Use the secure view that only shows staff_earnings (not price/platform_fee)
+      const column = userRole === 'teacher' ? 'teacher_id' : 'tutor_id';
+      const { data: bookingsData, error } = await supabase
+        .from('staff_bookings_view' as any)
+        .select('*')
+        .eq(column, user.id)
+        .not('staff_earnings', 'is', null)
         .order('booking_date', { ascending: false });
 
-      if (userRole === 'teacher') {
-        query.eq('teacher_id', user.id);
-      } else {
-        query.eq('tutor_id', user.id);
-      }
-      
-      const { data, error } = await query;
       if (error) throw error;
-      return data;
+      if (!bookingsData || bookingsData.length === 0) return [];
+      
+      // Fetch student names separately
+      const studentIds = [...new Set(bookingsData.map((b: any) => b.student_id))];
+      const { data: students } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', studentIds);
+      
+      const studentMap = new Map(students?.map(s => [s.id, s]) || []);
+      
+      return bookingsData.map((booking: any) => ({
+        ...booking,
+        student: studentMap.get(booking.student_id) || null
+      }));
     },
     enabled: !!user?.id,
   });

@@ -33,25 +33,37 @@ export const StaffBookingsPanel = () => {
   const [staffChatOpen, setStaffChatOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
-  // Fetch bookings for teacher/tutor
+  // Fetch bookings for teacher/tutor using secure view that hides sensitive payment data
   const { data: bookings, isLoading } = useQuery({
     queryKey: ['staff-class-bookings', user?.id, userRole],
     queryFn: async () => {
       if (!user?.id) return [];
       
+      // Use the secure view that hides price/platform_fee from staff
       const column = userRole === 'teacher' ? 'teacher_id' : 'tutor_id';
-      const { data, error } = await supabase
-        .from('class_bookings')
-        .select(`
-          *,
-          student:profiles!class_bookings_student_id_fkey(full_name, avatar_url)
-        `)
+      const { data: bookingsData, error } = await supabase
+        .from('staff_bookings_view' as any)
+        .select('*')
         .eq(column, user.id)
         .order('booking_date', { ascending: true })
         .order('start_time', { ascending: true });
       
       if (error) throw error;
-      return data as unknown as Booking[];
+      if (!bookingsData || bookingsData.length === 0) return [];
+      
+      // Fetch student data separately
+      const studentIds = [...new Set(bookingsData.map((b: any) => b.student_id))];
+      const { data: students } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .in('id', studentIds);
+      
+      const studentMap = new Map(students?.map(s => [s.id, s]) || []);
+      
+      return bookingsData.map((booking: any) => ({
+        ...booking,
+        student: studentMap.get(booking.student_id) || null
+      })) as Booking[];
     },
     enabled: !!user?.id && (userRole === 'teacher' || userRole === 'tutor')
   });

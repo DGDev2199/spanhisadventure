@@ -28,6 +28,21 @@ interface Review {
   student: { full_name: string; avatar_url: string | null } | null;
 }
 
+interface StaffProfile {
+  id: string;
+  full_name: string;
+  avatar_url: string | null;
+  bio: string | null;
+  timezone: string | null;
+  languages_spoken: string[] | null;
+  availability: string | null;
+  experience: string | null;
+  staff_type: string | null;
+  hourly_rate: number | null;
+  currency: string | null;
+  intro_video_url?: string | null;
+}
+
 export const StaffProfileDialog = ({
   open,
   onOpenChange,
@@ -36,17 +51,19 @@ export const StaffProfileDialog = ({
   onRequestClick,
   hasRequested,
 }: StaffProfileDialogProps) => {
-  // Fetch staff profile
+  // Fetch staff profile using secure view that hides sensitive data
   const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['staff-profile', staffId],
-    queryFn: async () => {
+    queryFn: async (): Promise<StaffProfile | null> => {
+      // Use secure view that masks email, hourly_rate, and other sensitive fields
+      // based on the viewer's relationship to the profile
       const { data, error } = await supabase
-        .from('profiles')
+        .from('safe_profiles_view' as any)
         .select('*')
         .eq('id', staffId)
         .single();
       if (error) throw error;
-      return data;
+      return data as unknown as StaffProfile;
     },
     enabled: open && !!staffId,
   });

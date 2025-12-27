@@ -91,13 +91,21 @@ export const useStudentAssignments = (userId: string | undefined) => {
   });
 };
 
+interface StaffProfileData {
+  id: string;
+  full_name: string;
+  email: string | null;
+  avatar_url: string | null;
+}
+
 export const useStaffProfile = (staffId: string | null | undefined, type: 'teacher' | 'tutor') => {
   return useQuery({
     queryKey: [`${type}-profile`, staffId],
-    queryFn: async () => {
+    queryFn: async (): Promise<StaffProfileData | null> => {
       if (!staffId) return null;
+      // Use secure view - email will be null for non-authorized viewers
       const { data, error } = await supabase
-        .from('profiles')
+        .from('safe_profiles_view' as any)
         .select('id, full_name, email, avatar_url')
         .eq('id', staffId)
         .maybeSingle();
@@ -105,7 +113,7 @@ export const useStaffProfile = (staffId: string | null | undefined, type: 'teach
         console.error(`Error loading ${type} profile:`, error);
         return null;
       }
-      return data;
+      return data as unknown as StaffProfileData | null;
     },
     enabled: !!staffId,
     staleTime: 10 * 60 * 1000, // 10 minutes - staff profiles rarely change

@@ -29,6 +29,7 @@ import { AdminApprovalPanel } from '@/components/AdminApprovalPanel';
 import { VideoCallHistoryAdmin } from '@/components/VideoCallHistoryAdmin';
 import { EarningsPanel } from '@/components/EarningsPanel';
 import { ModalityRequestsPanel } from '@/components/ModalityRequestsPanel';
+import { ManageCurriculumDialog } from '@/components/ManageCurriculumDialog';
 import { useSwipeable } from 'react-swipeable';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
@@ -60,6 +61,7 @@ const AdminDashboard = () => {
   const [resetScheduleDialogOpen, setResetScheduleDialogOpen] = useState(false);
   const [assignMultipleSchedulesOpen, setAssignMultipleSchedulesOpen] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [curriculumDialogOpen, setCurriculumDialogOpen] = useState(false);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
@@ -358,6 +360,11 @@ const AdminDashboard = () => {
               <Clock className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Gestionar Horas</span>
               <span className="sm:hidden">Horas</span>
+            </Button>
+            <Button onClick={() => setCurriculumDialogOpen(true)} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
+              <BookOpen className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Gestionar Currículo</span>
+              <span className="sm:hidden">Currículo</span>
             </Button>
             {userRole === 'admin' && (
               <Button onClick={() => setResetScheduleDialogOpen(true)} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm border-destructive text-destructive hover:bg-destructive/10">
@@ -899,6 +906,12 @@ const AdminDashboard = () => {
       <RoleBasedEditProfileDialog
         open={editProfileOpen}
         onOpenChange={setEditProfileOpen}
+      />
+
+      {/* Manage Curriculum Dialog */}
+      <ManageCurriculumDialog
+        open={curriculumDialogOpen}
+        onOpenChange={setCurriculumDialogOpen}
       />
     </div>
   );

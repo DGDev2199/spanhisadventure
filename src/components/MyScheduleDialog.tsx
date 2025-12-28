@@ -12,6 +12,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { DaySelector } from "@/components/ui/day-selector";
 
 interface MyScheduleDialogProps {
   open: boolean;
@@ -48,6 +50,9 @@ const DAYS = [
 
 const TIME_SLOTS = Array.from({ length: 14 }, (_, i) => `${(7 + i).toString().padStart(2, '0')}:00`);
 
+// Order for calendar view: Mon-Sat, then Sun
+const CALENDAR_DAYS = DAYS.slice(1, 7).concat(DAYS[0]);
+
 type StudentSchedule = {
   studentId: string;
   studentName: string;
@@ -69,7 +74,9 @@ export function MyScheduleDialog({
   const [currentStudentIndex, setCurrentStudentIndex] = useState(0);
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [isExporting, setIsExporting] = useState(false);
+  const [selectedMobileDay, setSelectedMobileDay] = useState(1); // Default to Monday
   const calendarRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   const handleExport = async () => {
     if (!calendarRef.current) return;
@@ -152,11 +159,27 @@ export function MyScheduleDialog({
     return acc;
   }, [] as StudentSchedule[]) || [];
 
-  const handlers = useSwipeable({
+  const studentHandlers = useSwipeable({
     onSwipedLeft: () => setCurrentStudentIndex(prev => 
       Math.min(studentSchedules.length - 1, prev + 1)
     ),
     onSwipedRight: () => setCurrentStudentIndex(prev => Math.max(0, prev - 1)),
+    trackMouse: false,
+    trackTouch: true,
+    preventScrollOnSwipe: true,
+  });
+
+  const dayHandlers = useSwipeable({
+    onSwipedLeft: () => {
+      const currentIndex = CALENDAR_DAYS.findIndex(d => d.value === selectedMobileDay);
+      const newIndex = currentIndex < CALENDAR_DAYS.length - 1 ? currentIndex + 1 : 0;
+      setSelectedMobileDay(CALENDAR_DAYS[newIndex].value);
+    },
+    onSwipedRight: () => {
+      const currentIndex = CALENDAR_DAYS.findIndex(d => d.value === selectedMobileDay);
+      const newIndex = currentIndex > 0 ? currentIndex - 1 : CALENDAR_DAYS.length - 1;
+      setSelectedMobileDay(CALENDAR_DAYS[newIndex].value);
+    },
     trackMouse: false,
     trackTouch: true,
     preventScrollOnSwipe: true,
@@ -173,7 +196,7 @@ export function MyScheduleDialog({
 
   const renderStudentCard = (student: StudentSchedule) => (
     <Card key={student.studentId} className="border">
-      <CardContent className="p-4">
+      <CardContent className="p-3 sm:p-4">
         <div className="flex items-center gap-2 mb-3">
           <User className="h-4 w-4 text-primary" />
           <span className="font-medium">{student.studentName}</span>
@@ -191,16 +214,104 @@ export function MyScheduleDialog({
     </Card>
   );
 
+  // Mobile single-day calendar view
+  const renderMobileCalendar = () => {
+    const currentDayInfo = DAYS.find(d => d.value === selectedMobileDay);
+
+    return (
+      <div {...dayHandlers} className="space-y-4">
+        <DaySelector
+          days={CALENDAR_DAYS}
+          selectedDay={selectedMobileDay}
+          onSelectDay={setSelectedMobileDay}
+        />
+        
+        <p className="text-xs text-muted-foreground text-center">
+          Desliza para cambiar de día
+        </p>
+
+        <div className="space-y-2">
+          {TIME_SLOTS.map((timeSlot) => {
+            const slotSchedules = getScheduleForSlot(selectedMobileDay, timeSlot);
+            const hasSchedule = slotSchedules.length > 0;
+            
+            return (
+              <div key={timeSlot} className="flex gap-2 items-stretch">
+                <div className="w-14 text-xs text-muted-foreground py-2 flex-shrink-0">
+                  {timeSlot}
+                </div>
+                <div className={cn(
+                  "flex-1 p-2 rounded-lg border min-h-[44px] transition-colors",
+                  hasSchedule ? currentDayInfo?.color : "bg-muted/20"
+                )}>
+                  {hasSchedule && (
+                    <div className="flex flex-col gap-1">
+                      {slotSchedules.map((s, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm">
+                          <User className="h-3 w-3" />
+                          <span className="font-medium">{s.studentName}</span>
+                          <span className="text-xs opacity-75">
+                            {s.start_time.slice(0, 5)} - {s.end_time.slice(0, 5)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // Desktop full calendar view
+  const renderDesktopCalendar = () => (
+    <div ref={calendarRef} className="p-2 bg-background">
+      <div className="grid grid-cols-8 gap-1 mb-2">
+        <div className="p-2 text-xs font-medium text-muted-foreground">Hora</div>
+        {CALENDAR_DAYS.map((day) => (
+          <div key={day.value} className={cn("p-2 text-xs font-medium text-center rounded", day.color)}>
+            {day.label}
+          </div>
+        ))}
+      </div>
+      {TIME_SLOTS.map((timeSlot) => (
+        <div key={timeSlot} className="grid grid-cols-8 gap-1 mb-1">
+          <div className="p-1 text-xs text-muted-foreground">{timeSlot}</div>
+          {CALENDAR_DAYS.map((day) => {
+            const slotSchedules = getScheduleForSlot(day.value, timeSlot);
+            return (
+              <div key={day.value} className={cn(
+                "p-1 min-h-[32px] rounded text-xs border",
+                slotSchedules.length > 0 ? day.color : "bg-muted/30"
+              )}>
+                {slotSchedules.length > 0 && (
+                  <div className="truncate font-medium">
+                    {slotSchedules[0].studentName?.split(' ')[0]}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-4xl w-[95vw] md:w-full max-h-[90vh] md:max-h-[85vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-primary" />
-              <DialogTitle>Mi Horario de {userRole === "teacher" ? "Clases" : "Tutorías"}</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg">
+                Mi Horario de {userRole === "teacher" ? "Clases" : "Tutorías"}
+              </DialogTitle>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-1">
                 <Button
                   variant={viewMode === 'list' ? 'default' : 'ghost'}
@@ -217,7 +328,7 @@ export function MyScheduleDialog({
                   <LayoutGrid className="h-4 w-4" />
                 </Button>
               </div>
-              {viewMode === 'calendar' && schedules && schedules.length > 0 && (
+              {viewMode === 'calendar' && schedules && schedules.length > 0 && !isMobile && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -276,7 +387,7 @@ export function MyScheduleDialog({
             No tienes horarios asignados
           </p>
         ) : viewMode === 'list' ? (
-          <div {...handlers} className="flex-1 min-h-0">
+          <div {...studentHandlers} className="flex-1 min-h-0">
             <ScrollArea className="hidden md:block h-[50vh]">
               <div className="space-y-3 pr-4">
                 {studentSchedules.map(student => renderStudentCard(student))}
@@ -291,36 +402,7 @@ export function MyScheduleDialog({
           </div>
         ) : (
           <ScrollArea className="flex-1 min-h-0 h-[55vh]">
-            <div className="min-w-[600px]">
-              <div className="grid grid-cols-8 gap-1 mb-2">
-                <div className="p-2 text-xs font-medium text-muted-foreground">Hora</div>
-                {DAYS.slice(1, 7).concat(DAYS[0]).map((day) => (
-                  <div key={day.value} className={cn("p-2 text-xs font-medium text-center rounded", day.color)}>
-                    {day.label}
-                  </div>
-                ))}
-              </div>
-              {TIME_SLOTS.map((timeSlot) => (
-                <div key={timeSlot} className="grid grid-cols-8 gap-1 mb-1">
-                  <div className="p-1 text-xs text-muted-foreground">{timeSlot}</div>
-                  {DAYS.slice(1, 7).concat(DAYS[0]).map((day) => {
-                    const slotSchedules = getScheduleForSlot(day.value, timeSlot);
-                    return (
-                      <div key={day.value} className={cn(
-                        "p-1 min-h-[32px] rounded text-xs border",
-                        slotSchedules.length > 0 ? day.color : "bg-muted/30"
-                      )}>
-                        {slotSchedules.length > 0 && (
-                          <div className="truncate font-medium">
-                            {slotSchedules[0].studentName?.split(' ')[0]}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
+            {isMobile ? renderMobileCalendar() : renderDesktopCalendar()}
           </ScrollArea>
         )}
       </DialogContent>

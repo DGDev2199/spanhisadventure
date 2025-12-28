@@ -11,6 +11,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { cn } from "@/lib/utils";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { DaySelector } from "@/components/ui/day-selector";
+import { useSwipeable } from "react-swipeable";
 
 interface ClassScheduleDialogProps {
   open: boolean;
@@ -30,6 +33,9 @@ const DAYS = [
 
 const TIME_SLOTS = Array.from({ length: 14 }, (_, i) => `${(7 + i).toString().padStart(2, '0')}:00`);
 
+// Order for calendar view: Mon-Sat, then Sun
+const CALENDAR_DAYS = DAYS.slice(1, 7).concat(DAYS[0]);
+
 export function ClassScheduleDialog({
   open,
   onOpenChange,
@@ -37,7 +43,25 @@ export function ClassScheduleDialog({
 }: ClassScheduleDialogProps) {
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   const [isExporting, setIsExporting] = useState(false);
+  const [selectedMobileDay, setSelectedMobileDay] = useState(1); // Default to Monday
   const calendarRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
+
+  const handlers = useSwipeable({
+    onSwipedLeft: () => {
+      const currentIndex = CALENDAR_DAYS.findIndex(d => d.value === selectedMobileDay);
+      const newIndex = currentIndex < CALENDAR_DAYS.length - 1 ? currentIndex + 1 : 0;
+      setSelectedMobileDay(CALENDAR_DAYS[newIndex].value);
+    },
+    onSwipedRight: () => {
+      const currentIndex = CALENDAR_DAYS.findIndex(d => d.value === selectedMobileDay);
+      const newIndex = currentIndex > 0 ? currentIndex - 1 : CALENDAR_DAYS.length - 1;
+      setSelectedMobileDay(CALENDAR_DAYS[newIndex].value);
+    },
+    trackMouse: false,
+    trackTouch: true,
+    preventScrollOnSwipe: true,
+  });
 
   const { data: schedules, isLoading } = useQuery({
     queryKey: ["class-schedule", studentId, open],
@@ -126,12 +150,132 @@ export function ClassScheduleDialog({
     }
   };
 
+  // Mobile single-day calendar view
+  const renderMobileCalendar = () => {
+    const currentDayInfo = DAYS.find(d => d.value === selectedMobileDay);
+    const daySchedules = schedules?.filter(s => s.day_of_week === selectedMobileDay) || [];
+
+    return (
+      <div {...handlers} className="space-y-4">
+        <DaySelector
+          days={CALENDAR_DAYS}
+          selectedDay={selectedMobileDay}
+          onSelectDay={setSelectedMobileDay}
+        />
+        
+        <p className="text-xs text-muted-foreground text-center">
+          Desliza para cambiar de día
+        </p>
+
+        <div className="space-y-2">
+          {TIME_SLOTS.map((timeSlot) => {
+            const slotSchedules = getScheduleForSlot(selectedMobileDay, timeSlot);
+            const hasSchedule = slotSchedules.length > 0;
+            
+            return (
+              <div key={timeSlot} className="flex gap-2 items-stretch">
+                <div className="w-14 text-xs text-muted-foreground py-2 flex-shrink-0">
+                  {timeSlot}
+                </div>
+                <div className={cn(
+                  "flex-1 p-2 rounded-lg border min-h-[44px] transition-colors",
+                  hasSchedule ? currentDayInfo?.color : "bg-muted/20"
+                )}>
+                  {hasSchedule && (
+                    <div className="flex flex-col gap-1">
+                      {slotSchedules.map((s, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm">
+                          <User className="h-3 w-3" />
+                          <span className="font-medium">{s.teacherName}</span>
+                          <span className="text-xs opacity-75">
+                            {s.start_time.slice(0, 5)} - {s.end_time.slice(0, 5)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  // Desktop full calendar view
+  const renderDesktopCalendar = () => (
+    <TooltipProvider>
+      <div ref={calendarRef} className="p-2 bg-background">
+        <div className="grid grid-cols-8 gap-1 mb-2">
+          <div className="p-2 text-xs font-medium text-muted-foreground">Hora</div>
+          {CALENDAR_DAYS.map((day) => (
+            <div key={day.value} className={cn("p-2 text-xs font-medium text-center rounded", day.color)}>
+              {day.label}
+            </div>
+          ))}
+        </div>
+        {TIME_SLOTS.map((timeSlot) => (
+          <div key={timeSlot} className="grid grid-cols-8 gap-1 mb-1">
+            <div className="p-1 text-xs text-muted-foreground">{timeSlot}</div>
+            {CALENDAR_DAYS.map((day) => {
+              const slotSchedules = getScheduleForSlot(day.value, timeSlot);
+              const hasSchedule = slotSchedules.length > 0;
+              
+              const cell = (
+                <div className={cn(
+                  "p-1 min-h-[32px] rounded text-xs border cursor-default",
+                  hasSchedule ? day.color : "bg-muted/30"
+                )}>
+                  {hasSchedule && (
+                    <div className="truncate font-medium">
+                      {slotSchedules[0].teacherName?.split(' ')[0]}
+                    </div>
+                  )}
+                </div>
+              );
+              
+              if (!hasSchedule) {
+                return <div key={day.value}>{cell}</div>;
+              }
+              
+              return (
+                <Tooltip key={day.value}>
+                  <TooltipTrigger asChild>
+                    {cell}
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs">
+                    <div className="space-y-1">
+                      <p className="font-semibold">{day.fullLabel}</p>
+                      {slotSchedules.map((s, i) => (
+                        <div key={i} className="text-sm">
+                          <p className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {s.start_time.slice(0, 5)} - {s.end_time.slice(0, 5)}
+                          </p>
+                          <p className="flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            {s.teacherName}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </TooltipProvider>
+  );
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-4xl w-[95vw] md:w-full max-h-[90vh] md:max-h-[85vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
               <Calendar className="h-5 w-5 text-primary" />
               Mi Horario de Clases
             </DialogTitle>
@@ -152,7 +296,7 @@ export function ClassScheduleDialog({
                   <LayoutGrid className="h-4 w-4" />
                 </Button>
               </div>
-              {viewMode === 'calendar' && schedules && schedules.length > 0 && (
+              {viewMode === 'calendar' && schedules && schedules.length > 0 && !isMobile && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -160,7 +304,7 @@ export function ClassScheduleDialog({
                   disabled={isExporting}
                 >
                   <Download className="h-4 w-4 mr-1" />
-                  {isExporting ? "Exportando..." : "Exportar"}
+                  {isExporting ? "..." : "Exportar"}
                 </Button>
               )}
             </div>
@@ -185,7 +329,7 @@ export function ClassScheduleDialog({
             <div className="space-y-3 pr-4">
               {Object.entries(schedulesByDay || {}).map(([dayValue, dayData]) => (
                 <Card key={dayValue} className="border">
-                  <CardContent className="p-4">
+                  <CardContent className="p-3 sm:p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <Badge className={cn("px-2 py-1", dayData.color)}>
                         {dayData.fullLabel}
@@ -193,12 +337,12 @@ export function ClassScheduleDialog({
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {dayData.items.map((item, idx) => (
-                        <Badge key={idx} variant="outline" className="flex items-center gap-1.5 px-3 py-1.5">
+                        <Badge key={idx} variant="outline" className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 text-xs">
                           <Clock className="h-3 w-3" />
-                          <span className="text-xs font-medium">{item.startTime} - {item.endTime}</span>
-                          <span className="text-xs text-muted-foreground">•</span>
-                          <User className="h-3 w-3" />
-                          <span className="text-xs">{item.teacherName}</span>
+                          <span className="font-medium">{item.startTime} - {item.endTime}</span>
+                          <span className="text-muted-foreground hidden sm:inline">•</span>
+                          <User className="h-3 w-3 hidden sm:inline" />
+                          <span className="hidden sm:inline">{item.teacherName}</span>
                         </Badge>
                       ))}
                     </div>
@@ -209,69 +353,7 @@ export function ClassScheduleDialog({
           </ScrollArea>
         ) : (
           <ScrollArea className="flex-1 min-h-0 h-[55vh]">
-            <TooltipProvider>
-              <div ref={calendarRef} className="min-w-[600px] p-2 bg-background">
-                <div className="grid grid-cols-8 gap-1 mb-2">
-                  <div className="p-2 text-xs font-medium text-muted-foreground">Hora</div>
-                  {DAYS.slice(1, 7).concat(DAYS[0]).map((day) => (
-                    <div key={day.value} className={cn("p-2 text-xs font-medium text-center rounded", day.color)}>
-                      {day.label}
-                    </div>
-                  ))}
-                </div>
-                {TIME_SLOTS.map((timeSlot) => (
-                  <div key={timeSlot} className="grid grid-cols-8 gap-1 mb-1">
-                    <div className="p-1 text-xs text-muted-foreground">{timeSlot}</div>
-                    {DAYS.slice(1, 7).concat(DAYS[0]).map((day) => {
-                      const slotSchedules = getScheduleForSlot(day.value, timeSlot);
-                      const hasSchedule = slotSchedules.length > 0;
-                      
-                      const cell = (
-                        <div className={cn(
-                          "p-1 min-h-[32px] rounded text-xs border cursor-default",
-                          hasSchedule ? day.color : "bg-muted/30"
-                        )}>
-                          {hasSchedule && (
-                            <div className="truncate font-medium">
-                              {slotSchedules[0].teacherName?.split(' ')[0]}
-                            </div>
-                          )}
-                        </div>
-                      );
-                      
-                      if (!hasSchedule) {
-                        return <div key={day.value}>{cell}</div>;
-                      }
-                      
-                      return (
-                        <Tooltip key={day.value}>
-                          <TooltipTrigger asChild>
-                            {cell}
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-xs">
-                            <div className="space-y-1">
-                              <p className="font-semibold">{day.fullLabel}</p>
-                              {slotSchedules.map((s, i) => (
-                                <div key={i} className="text-sm">
-                                  <p className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {s.start_time.slice(0, 5)} - {s.end_time.slice(0, 5)}
-                                  </p>
-                                  <p className="flex items-center gap-1">
-                                    <User className="h-3 w-3" />
-                                    {s.teacherName}
-                                  </p>
-                                </div>
-                              ))}
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
-            </TooltipProvider>
+            {isMobile ? renderMobileCalendar() : renderDesktopCalendar()}
           </ScrollArea>
         )}
       </DialogContent>

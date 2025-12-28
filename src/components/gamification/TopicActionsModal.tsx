@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +19,8 @@ import {
   useUpdateTopicProgress 
 } from "@/hooks/useGamification";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { BookingDialog } from "@/components/BookingDialog";
 import { 
   BookOpen, 
   FileText, 
@@ -48,12 +52,68 @@ export const TopicActionsModal = ({
 }: TopicActionsModalProps) => {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { data: materials = [] } = useTopicMaterials(topic.id);
   const { data: allProgress = [] } = useStudentTopicProgress(studentId);
   const updateProgress = useUpdateTopicProgress();
   
+  const [showBookingDialog, setShowBookingDialog] = useState(false);
+  
   const currentProgress = allProgress.find(p => p.topic_id === topic.id);
   const currentStatus = currentProgress?.status || 'not_started';
+
+  // Fetch student's assigned teacher
+  const { data: studentProfile } = useQuery({
+    queryKey: ['student-profile-for-booking', studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('student_profiles')
+        .select('teacher_id, tutor_id')
+        .eq('user_id', studentId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: open
+  });
+
+  // Fetch teacher info if assigned
+  const { data: teacherProfile } = useQuery({
+    queryKey: ['teacher-profile-for-booking', studentProfile?.teacher_id],
+    queryFn: async () => {
+      if (!studentProfile?.teacher_id) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, avatar_url')
+        .eq('id', studentProfile.teacher_id)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!studentProfile?.teacher_id
+  });
+
+  // Fetch available tests for the student
+  const { data: availableTests = [] } = useQuery({
+    queryKey: ['available-tests-for-student', studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('test_assignments')
+        .select(`
+          id,
+          status,
+          test:custom_tests(id, title, test_type)
+        `)
+        .eq('student_id', studentId)
+        .in('status', ['pending', 'in_progress']);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: open
+  });
 
   const getMaterialIcon = (type: string) => {
     switch (type) {
@@ -87,13 +147,25 @@ export const TopicActionsModal = ({
   };
 
   const handleScheduleExtraClass = () => {
-    toast.info(t('progress.scheduleExtraClass', 'Función de agendar clase extra próximamente'));
-    // TODO: Integrar con sistema de booking existente
+    if (!teacherProfile) {
+      toast.error(t('progress.noTeacherAssigned', 'No tienes un profesor asignado'));
+      return;
+    }
+    setShowBookingDialog(true);
   };
 
   const handleTakePracticeTest = () => {
-    toast.info(t('progress.practiceTest', 'Función de examen de práctica próximamente'));
-    // TODO: Integrar con sistema de tests existente
+    if (availableTests.length === 0) {
+      toast.info(t('progress.noTestsAvailable', 'No hay exámenes de práctica disponibles'));
+      return;
+    }
+    
+    // Navigate to the first available test
+    const firstTest = availableTests[0];
+    if (firstTest?.test?.id) {
+      onOpenChange(false);
+      navigate(`/take-custom-test/${firstTest.test.id}`);
+    }
   };
 
   return (
@@ -230,6 +302,18 @@ export const TopicActionsModal = ({
           </div>
         </div>
       </DialogContent>
+
+      {/* Booking Dialog */}
+      {teacherProfile && (
+        <BookingDialog
+          open={showBookingDialog}
+          onOpenChange={setShowBookingDialog}
+          staffId={teacherProfile.id}
+          staffName={teacherProfile.full_name}
+          staffAvatar={teacherProfile.avatar_url}
+          staffRole="teacher"
+        />
+      )}
     </Dialog>
   );
 };

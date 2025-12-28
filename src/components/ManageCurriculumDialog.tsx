@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -38,7 +38,9 @@ import {
   FileText,
   Video,
   Link as LinkIcon,
-  ClipboardList
+  ClipboardList,
+  Upload,
+  Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -65,6 +67,8 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
   const [materialType, setMaterialType] = useState<string>("document");
   const [materialUrl, setMaterialUrl] = useState("");
   const [materialTopicId, setMaterialTopicId] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getTopicsForWeek = (weekId: string) => {
     return allTopics.filter(t => t.week_id === weekId);
@@ -155,6 +159,39 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
       case 'link': return <LinkIcon className="h-4 w-4" />;
       case 'exercise': return <ClipboardList className="h-4 w-4" />;
       default: return <BookOpen className="h-4 w-4" />;
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `material-${Date.now()}.${fileExt}`;
+      const filePath = `materials/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('task-attachments')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('task-attachments')
+        .getPublicUrl(filePath);
+
+      setMaterialUrl(urlData.publicUrl);
+      toast.success(t('curriculum.fileUploaded', 'Archivo subido correctamente'));
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error(t('errors.uploadFailed', 'Error al subir archivo'));
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -332,12 +369,33 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label>URL del contenido</Label>
-                    <Input
-                      value={materialUrl}
-                      onChange={(e) => setMaterialUrl(e.target.value)}
-                      placeholder="https://..."
-                    />
+                    <Label>Contenido (URL o subir archivo)</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={materialUrl}
+                        onChange={(e) => setMaterialUrl(e.target.value)}
+                        placeholder="https://... o sube un documento"
+                        className="flex-1"
+                      />
+                      <Button 
+                        variant="outline" 
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                      >
+                        {isUploading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Upload className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.mp3,.mp4"
+                      />
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <Button onClick={handleAddMaterial} disabled={!materialTitle.trim()}>

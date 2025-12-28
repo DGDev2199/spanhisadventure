@@ -12,12 +12,12 @@ interface PlacementTestCardProps {
   oralCompleted?: boolean;
 }
 
-export const PlacementTestCard = memo(({ 
+function PlacementTestCardComponent({ 
   status, 
   writtenScore, 
   level, 
   oralCompleted 
-}: PlacementTestCardProps) => {
+}: PlacementTestCardProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
@@ -105,6 +105,7 @@ export const PlacementTestCard = memo(({
       </CardContent>
     </Card>
   );
-});
+}
 
+export const PlacementTestCard = memo(PlacementTestCardComponent);
 PlacementTestCard.displayName = 'PlacementTestCard';

@@ -9,13 +9,13 @@ interface QuickStatCardProps {
   isLoading?: boolean;
 }
 
-export const QuickStatCard = memo(({
+function QuickStatCardComponent({
   title,
   value,
   subtitle,
   icon,
   isLoading = false
-}: QuickStatCardProps) => {
+}: QuickStatCardProps) {
   return (
     <Card className="shadow-md hover:shadow-lg transition-all duration-300 animate-fade-in">
       <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
@@ -32,6 +32,7 @@ export const QuickStatCard = memo(({
       </CardContent>
     </Card>
   );
-});
+}
 
+export const QuickStatCard = memo(QuickStatCardComponent);
 QuickStatCard.displayName = 'QuickStatCard';

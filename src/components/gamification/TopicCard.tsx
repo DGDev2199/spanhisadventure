@@ -59,27 +59,27 @@ export const TopicCard = ({ topic, status, onClick, isLocked = false }: TopicCar
     <button
       onClick={onClick}
       className={cn(
-        "w-full p-4 rounded-lg border-2 transition-all duration-200 text-left",
+        "w-full p-3 sm:p-4 rounded-lg border-2 transition-all duration-200 text-left",
         config.bg,
         isLocked 
           ? "cursor-default opacity-75 hover:opacity-90" 
           : "hover:scale-[1.02] hover:shadow-md cursor-pointer"
       )}
     >
-      <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 mt-0.5">
+      <div className="flex items-start gap-2 sm:gap-3">
+        <div className="flex-shrink-0 mt-0.5 [&>svg]:h-4 [&>svg]:w-4 sm:[&>svg]:h-5 sm:[&>svg]:w-5">
           {config.icon}
         </div>
         <div className="flex-1 min-w-0">
-          <h4 className={cn("font-medium truncate", config.textColor)}>
+          <h4 className={cn("font-medium truncate text-sm sm:text-base", config.textColor)}>
             {topic.name}
           </h4>
-          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-            {isLocked && <Sparkles className="h-3 w-3" />}
+          <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 flex items-center gap-1">
+            {isLocked && <Sparkles className="h-2.5 w-2.5 sm:h-3 sm:w-3" />}
             {config.label}
           </p>
           {topic.description && (
-            <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 line-clamp-2">
               {topic.description}
             </p>
           )}

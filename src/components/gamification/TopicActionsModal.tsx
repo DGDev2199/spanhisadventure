@@ -29,6 +29,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 interface TopicActionsModalProps {
   open: boolean;
@@ -97,33 +98,34 @@ export const TopicActionsModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-primary" />
-            {topic.name}
+      <DialogContent className="w-[95vw] max-w-md mx-auto p-4 sm:p-6">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+            <span className="truncate">{topic.name}</span>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {/* Current Status */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Estado actual:</span>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs sm:text-sm text-muted-foreground">Estado:</span>
             <Badge 
               variant={
                 currentStatus === 'completed' ? 'default' :
                 currentStatus === 'needs_review' ? 'secondary' :
                 'outline'
               }
-              className={
+              className={cn(
+                "text-xs sm:text-sm",
                 currentStatus === 'completed' ? 'bg-green-500 hover:bg-green-600' :
                 currentStatus === 'needs_review' ? 'bg-yellow-500 hover:bg-yellow-600 text-white' :
                 currentStatus === 'in_progress' ? 'bg-blue-500 hover:bg-blue-600 text-white' :
                 ''
-              }
+              )}
             >
               {currentStatus === 'completed' && '✅ Dominado'}
-              {currentStatus === 'needs_review' && '⚠️ Necesita práctica'}
+              {currentStatus === 'needs_review' && '⚠️ Práctica'}
               {currentStatus === 'in_progress' && '🔵 En progreso'}
               {currentStatus === 'not_started' && '⬜ No iniciado'}
             </Badge>
@@ -134,25 +136,31 @@ export const TopicActionsModal = ({
             <>
               <Separator />
               <div className="space-y-2">
-                <p className="text-sm font-medium">Cambiar estado:</p>
+                <p className="text-xs sm:text-sm font-medium">Cambiar estado:</p>
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     size="sm"
                     variant={currentStatus === 'completed' ? 'default' : 'outline'}
-                    className={currentStatus === 'completed' ? 'bg-green-500 hover:bg-green-600' : ''}
+                    className={cn(
+                      "text-xs sm:text-sm h-8 sm:h-9",
+                      currentStatus === 'completed' ? 'bg-green-500 hover:bg-green-600' : ''
+                    )}
                     onClick={() => handleStatusChange('completed')}
                   >
-                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                    Dominado
+                    <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                    <span className="truncate">Dominado</span>
                   </Button>
                   <Button
                     size="sm"
                     variant={currentStatus === 'needs_review' ? 'default' : 'outline'}
-                    className={currentStatus === 'needs_review' ? 'bg-yellow-500 hover:bg-yellow-600' : ''}
+                    className={cn(
+                      "text-xs sm:text-sm h-8 sm:h-9",
+                      currentStatus === 'needs_review' ? 'bg-yellow-500 hover:bg-yellow-600' : ''
+                    )}
                     onClick={() => handleStatusChange('needs_review')}
                   >
-                    <AlertCircle className="h-4 w-4 mr-1" />
-                    Necesita práctica
+                    <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                    <span className="truncate">Práctica</span>
                   </Button>
                 </div>
               </div>
@@ -163,31 +171,31 @@ export const TopicActionsModal = ({
 
           {/* Material extra */}
           <div>
-            <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
+            <h4 className="text-xs sm:text-sm font-medium mb-2 flex items-center gap-2">
+              <BookOpen className="h-3 w-3 sm:h-4 sm:w-4" />
               {t('progress.extraMaterial', 'Material Extra')}
             </h4>
             {materials.length > 0 ? (
-              <ScrollArea className="h-32">
-                <div className="space-y-2">
+              <ScrollArea className="h-24 sm:h-32">
+                <div className="space-y-1.5 sm:space-y-2">
                   {materials.map((material) => (
                     <button
                       key={material.id}
                       onClick={() => handleOpenMaterial(material.content_url)}
-                      className="w-full p-2 rounded-lg border bg-muted/50 hover:bg-muted transition-colors flex items-center gap-2 text-left"
+                      className="w-full p-1.5 sm:p-2 rounded-lg border bg-muted/50 hover:bg-muted transition-colors flex items-center gap-2 text-left"
                     >
-                      {getMaterialIcon(material.material_type)}
-                      <span className="flex-1 text-sm truncate">{material.title}</span>
+                      <span className="flex-shrink-0">{getMaterialIcon(material.material_type)}</span>
+                      <span className="flex-1 text-xs sm:text-sm truncate">{material.title}</span>
                       {material.content_url && (
-                        <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                        <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                       )}
                     </button>
                   ))}
                 </div>
               </ScrollArea>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                {t('progress.noMaterials', 'No hay material extra disponible')}
+              <p className="text-xs sm:text-sm text-muted-foreground text-center py-3 sm:py-4">
+                {t('progress.noMaterials', 'No hay material extra')}
               </p>
             )}
           </div>
@@ -196,25 +204,27 @@ export const TopicActionsModal = ({
 
           {/* Action buttons */}
           <div className="space-y-2">
-            <h4 className="text-sm font-medium">
+            <h4 className="text-xs sm:text-sm font-medium">
               {t('progress.actions', 'Acciones')}
             </h4>
-            <div className="grid grid-cols-1 gap-2">
+            <div className="grid grid-cols-1 gap-1.5 sm:gap-2">
               <Button
                 variant="outline"
-                className="justify-start"
+                size="sm"
+                className="justify-start h-8 sm:h-9 text-xs sm:text-sm"
                 onClick={handleTakePracticeTest}
               >
-                <ClipboardList className="h-4 w-4 mr-2" />
-                {t('progress.takePracticeTest', 'Hacer examen de práctica')}
+                <ClipboardList className="h-3 w-3 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
+                <span className="truncate">{t('progress.takePracticeTest', 'Hacer examen de práctica')}</span>
               </Button>
               <Button
                 variant="outline"
-                className="justify-start"
+                size="sm"
+                className="justify-start h-8 sm:h-9 text-xs sm:text-sm"
                 onClick={handleScheduleExtraClass}
               >
-                <Calendar className="h-4 w-4 mr-2" />
-                {t('progress.scheduleExtraClass', 'Agendar clase extra')}
+                <Calendar className="h-3 w-3 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
+                <span className="truncate">{t('progress.scheduleExtraClass', 'Agendar clase extra')}</span>
               </Button>
             </div>
           </div>

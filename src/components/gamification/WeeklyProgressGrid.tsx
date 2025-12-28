@@ -86,7 +86,7 @@ export const WeeklyProgressGrid = ({
       </CardHeader>
       <CardContent>
         {/* Grid de 12 semanas */}
-        <div className="grid grid-cols-4 md:grid-cols-6 gap-3 mb-6">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3 mb-4 sm:mb-6">
           {weeks.map((week) => {
             const status = getWeekStatus(week.week_number, currentWeek, completedWeeks);
             const isSelected = selectedWeek?.id === week.id;
@@ -96,35 +96,35 @@ export const WeeklyProgressGrid = ({
                 key={week.id}
                 onClick={() => handleWeekClick(week)}
                 className={cn(
-                  "relative p-3 rounded-xl transition-all duration-200 border-2 text-center cursor-pointer",
+                  "relative p-2 sm:p-3 rounded-lg sm:rounded-xl transition-all duration-200 border-2 text-center cursor-pointer",
                   status === 'completed' && "bg-green-100 border-green-500 text-green-800 dark:bg-green-900/30 dark:border-green-500 dark:text-green-300",
-                  status === 'current' && "bg-blue-100 border-blue-500 text-blue-800 dark:bg-blue-900/30 dark:border-blue-500 dark:text-blue-300 ring-2 ring-blue-300 ring-offset-2",
+                  status === 'current' && "bg-blue-100 border-blue-500 text-blue-800 dark:bg-blue-900/30 dark:border-blue-500 dark:text-blue-300 ring-2 ring-blue-300 ring-offset-1 sm:ring-offset-2",
                   status === 'locked' && "bg-muted/50 border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary/40 hover:bg-muted/70",
                   isSelected && "scale-105 shadow-lg",
                   "hover:scale-105 hover:shadow-md"
                 )}
               >
                 {/* Status icon */}
-                <div className="absolute -top-1.5 -right-1.5">
+                <div className="absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5">
                   {status === 'completed' && (
-                    <CheckCircle2 className="h-5 w-5 text-green-600 bg-white dark:bg-background rounded-full" />
+                    <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 bg-white dark:bg-background rounded-full" />
                   )}
                   {status === 'current' && (
-                    <Circle className="h-5 w-5 text-blue-600 fill-blue-600" />
+                    <Circle className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 fill-blue-600" />
                   )}
                   {status === 'locked' && (
-                    <Lock className="h-4 w-4 text-muted-foreground" />
+                    <Lock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                   )}
                 </div>
 
                 {/* Week number */}
-                <div className="text-lg font-bold">{week.week_number}</div>
+                <div className="text-base sm:text-lg font-bold">{week.week_number}</div>
                 
                 {/* Level badge */}
                 <Badge 
                   variant="secondary" 
                   className={cn(
-                    "text-[10px] px-1.5 py-0 mt-1 text-white",
+                    "text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 mt-0.5 sm:mt-1 text-white",
                     getLevelColor(week.level)
                   )}
                 >
@@ -143,40 +143,40 @@ export const WeeklyProgressGrid = ({
               ? "border-dashed border-muted-foreground/30 bg-muted/20" 
               : "border-primary/20 bg-primary/5"
           )}>
-            <CardHeader className="pb-2">
+            <CardHeader className="pb-2 px-3 sm:px-6">
               {/* Banner motivacional para semanas bloqueadas */}
               {isPreviewMode && (
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 border border-amber-200 dark:border-amber-700 mb-3">
-                  <span className="text-2xl">🚀</span>
-                  <div>
-                    <p className="font-semibold text-amber-800 dark:text-amber-300">
+                <div className="flex items-center gap-2 p-2 sm:p-3 rounded-lg bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 border border-amber-200 dark:border-amber-700 mb-2 sm:mb-3">
+                  <span className="text-xl sm:text-2xl">🚀</span>
+                  <div className="min-w-0">
+                    <p className="font-semibold text-amber-800 dark:text-amber-300 text-sm sm:text-base truncate">
                       ¡Esto te espera en la Semana {selectedWeek.week_number}!
                     </p>
-                    <p className="text-xs text-amber-700 dark:text-amber-400">
-                      Sigue practicando para desbloquear este contenido
+                    <p className="text-[10px] sm:text-xs text-amber-700 dark:text-amber-400">
+                      Sigue practicando para desbloquear
                     </p>
                   </div>
                 </div>
               )}
               
-              <CardTitle className="text-lg flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  {isPreviewMode && <Lock className="h-4 w-4 text-muted-foreground" />}
-                  Semana {selectedWeek.week_number}: {selectedWeek.title}
+              <CardTitle className="text-base sm:text-lg flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 sm:justify-between">
+                <span className="flex items-center gap-2 min-w-0 truncate">
+                  {isPreviewMode && <Lock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />}
+                  <span className="truncate">Semana {selectedWeek.week_number}: {selectedWeek.title}</span>
                 </span>
-                <Badge className={cn("text-white", getLevelColor(selectedWeek.level))}>
+                <Badge className={cn("text-white text-xs w-fit flex-shrink-0", getLevelColor(selectedWeek.level))}>
                   {selectedWeek.level}
                 </Badge>
               </CardTitle>
               {selectedWeek.description && (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2">
                   {selectedWeek.description}
                 </p>
               )}
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-3 sm:px-6">
               {/* Topics grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
                 {getTopicsForWeek(selectedWeek.id).map((topic) => {
                   const topicProgress = getTopicProgress(topic.id);
                   return (
@@ -190,7 +190,7 @@ export const WeeklyProgressGrid = ({
                   );
                 })}
                 {getTopicsForWeek(selectedWeek.id).length === 0 && (
-                  <p className="text-muted-foreground text-sm col-span-full text-center py-4">
+                  <p className="text-muted-foreground text-xs sm:text-sm col-span-full text-center py-4">
                     {t('progress.noTopics', 'No hay temas asignados a esta semana')}
                   </p>
                 )}

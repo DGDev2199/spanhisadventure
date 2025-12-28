@@ -303,28 +303,27 @@ const Dashboard = () => {
           />
         </div>
 
-        {/* Gamification Section */}
+        {/* Progress Section - Weekly + Student Progress together */}
         {user?.id && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            {/* Weekly Progress Grid - Main feature */}
-            <div className="lg:col-span-2">
-              <WeeklyProgressGrid 
-                studentId={user.id}
-                studentLevel={studentProfile?.level || null}
-                isEditable={false}
-              />
-            </div>
+          <div className="space-y-6 mb-6">
+            {/* Weekly Progress Grid */}
+            <WeeklyProgressGrid 
+              studentId={user.id}
+              studentLevel={studentProfile?.level || null}
+              isEditable={false}
+            />
             
-            {/* Gamification sidebar */}
-            <div className="space-y-6">
-              <GamificationPanel userId={user.id} />
-              <LeaderboardCard currentUserId={user.id} limit={5} />
-            </div>
+            {/* Student Progress View - immediately after */}
+            <Card className="shadow-md">
+              <CardContent className="pt-6">
+                <StudentProgressView studentId={user.id} isEditable={false} />
+              </CardContent>
+            </Card>
           </div>
         )}
 
-        {/* Main Content Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Other Content Cards */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           {/* PlacementTestCard - only show if no completed weeks */}
           {!hasCompletedWeeks && (
             <PlacementTestCard
@@ -357,15 +356,6 @@ const Dashboard = () => {
             </Card>
           )}
 
-          {/* Student Progress Section - moved below WeeklyProgressGrid */}
-          <Card className="shadow-md lg:col-span-2">
-            <CardContent className="pt-6">
-              {user?.id && (
-                <StudentProgressView studentId={user.id} isEditable={false} />
-              )}
-            </CardContent>
-          </Card>
-
           {/* Profile Card */}
           <Card className="shadow-md">
             <CardHeader>
@@ -393,6 +383,14 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Gamification Section - at the end */}
+        {user?.id && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <GamificationPanel userId={user.id} />
+            <LeaderboardCard currentUserId={user.id} limit={5} />
+          </div>
+        )}
 
         {/* Tasks Section */}
         <TasksList 

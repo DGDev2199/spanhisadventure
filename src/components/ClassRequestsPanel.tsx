@@ -48,11 +48,11 @@ export const ClassRequestsPanel = () => {
       const { data, error } = await query.order('created_at', { ascending: false });
       if (error) throw error;
 
-      // Fetch student profiles
+      // Fetch student profiles using secure view
       if (data && data.length > 0) {
         const studentIds = data.map(r => r.student_id);
         const { data: profiles } = await supabase
-          .from('profiles')
+          .from('safe_profiles_view')
           .select('id, full_name, avatar_url, email, timezone')
           .in('id', studentIds);
 

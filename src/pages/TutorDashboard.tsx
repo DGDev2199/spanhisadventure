@@ -74,9 +74,9 @@ const TutorDashboard = () => {
       const tutorIds = studentData.map(s => s.tutor_id).filter(Boolean);
       const allIds = [...new Set([...userIds, ...teacherIds, ...tutorIds])];
       
-      // Get all profiles
+      // Get all profiles using secure view
       const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
+        .from('safe_profiles_view')
         .select('id, full_name, email')
         .in('id', allIds);
       

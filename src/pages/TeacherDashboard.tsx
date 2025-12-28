@@ -106,7 +106,7 @@ const TeacherDashboard = () => {
       if (allUserIds.length === 0) return [];
 
       const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
+        .from('safe_profiles_view')
         .select('id, full_name, email')
         .in('id', allUserIds);
 

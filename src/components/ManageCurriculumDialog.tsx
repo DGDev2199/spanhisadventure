@@ -212,11 +212,11 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
           </TabsList>
 
           <TabsContent value="weeks" className="mt-4 flex-1 overflow-hidden">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full max-h-[calc(85vh-140px)]">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-[calc(85vh-160px)]">
               {/* Weeks list */}
               <div className="flex flex-col min-h-0">
                 <h3 className="font-medium mb-3 flex-shrink-0">Semanas del Programa</h3>
-                <ScrollArea className="flex-1 border rounded-lg p-2">
+                <ScrollArea className="h-[calc(85vh-220px)] border rounded-lg p-2">
                   <div className="space-y-2">
                     {weeks.map((week) => (
                       <button
@@ -254,7 +254,7 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
                     : 'Selecciona una semana'}
                 </h3>
                 {selectedWeek ? (
-                  <ScrollArea className="flex-1 border rounded-lg p-2">
+                  <ScrollArea className="h-[calc(85vh-220px)] border rounded-lg p-2">
                     <div className="space-y-3">
                       {/* Existing topics */}
                       <div className="space-y-2">

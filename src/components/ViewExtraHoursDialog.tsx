@@ -25,7 +25,7 @@ export function ViewExtraHoursDialog({ open, onOpenChange, userId, isAdmin = fal
         .from('extra_hours')
         .select(`
           *,
-          profiles!extra_hours_created_by_fkey(full_name),
+          creator:profiles!extra_hours_created_by_fkey(full_name),
           approver:profiles!extra_hours_approved_by_fkey(full_name)
         `)
         .eq('user_id', userId)
@@ -35,7 +35,7 @@ export function ViewExtraHoursDialog({ open, onOpenChange, userId, isAdmin = fal
       return data;
     },
     enabled: open,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 2 * 60 * 1000,
   });
 
   const approveMutation = useMutation({

@@ -383,6 +383,9 @@ export type Database = {
       direct_messages: {
         Row: {
           created_at: string
+          file_name: string | null
+          file_type: string | null
+          file_url: string | null
           id: string
           message: string
           read: boolean
@@ -391,6 +394,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
           id?: string
           message: string
           read?: boolean
@@ -399,6 +405,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
           id?: string
           message?: string
           read?: boolean

@@ -13,7 +13,7 @@ import logo from '@/assets/logo.png';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 import { StaffHoursCard } from '@/components/StaffHoursCard';
-import { TeacherTutorChatDialog } from '@/components/TeacherTutorChatDialog';
+
 import { StudentProgressView } from '@/components/StudentProgressView';
 import { MyScheduleDialog } from '@/components/MyScheduleDialog';
 import { AssignMultipleStudentsDialog } from '@/components/AssignMultipleStudentsDialog';
@@ -41,8 +41,6 @@ const TutorDashboard = () => {
   const isVideoCallsEnabled = useFeatureFlag('video_calls');
   const isEarningsEnabled = useFeatureFlag('earnings_panel');
   const isBasicChatEnabled = useFeatureFlag('basic_chat');
-  const [chatOpen, setChatOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string } | null>(null);
   const [progressDialogOpen, setProgressDialogOpen] = useState(false);
   const [progressStudent, setProgressStudent] = useState<{ id: string; name: string } | null>(null);
   const [myScheduleOpen, setMyScheduleOpen] = useState(false);
@@ -97,10 +95,6 @@ const TutorDashboard = () => {
     }
   });
 
-  const openChat = (studentId: string, studentName: string) => {
-    setSelectedStudent({ id: studentId, name: studentName });
-    setChatOpen(true);
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -304,14 +298,6 @@ const TutorDashboard = () => {
                             <TrendingUp className="h-4 w-4 mr-1" />
                             Progreso
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => openChat(student.user_id, student.profiles?.full_name)}
-                          >
-                            <MessageSquare className="h-4 w-4 mr-1" />
-                            Chat
-                          </Button>
                           {isVideoCallsEnabled && student.student_type === 'online' && (
                             <Button 
                               size="sm" 
@@ -343,15 +329,6 @@ const TutorDashboard = () => {
         </div>
       </main>
 
-      {/* Chat Dialog */}
-      {selectedStudent && (
-        <TeacherTutorChatDialog
-          open={chatOpen}
-          onOpenChange={setChatOpen}
-          studentId={selectedStudent.id}
-          studentName={selectedStudent.name}
-        />
-      )}
 
       {/* Progress Dialog */}
       {progressStudent && (

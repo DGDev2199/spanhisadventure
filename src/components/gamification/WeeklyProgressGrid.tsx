@@ -50,16 +50,19 @@ export const WeeklyProgressGrid = ({
   };
 
   const handleWeekClick = (week: ProgramWeek) => {
-    const status = getWeekStatus(week.week_number, currentWeek, completedWeeks);
-    if (status !== 'locked') {
-      setSelectedWeek(selectedWeek?.id === week.id ? null : week);
-    }
+    setSelectedWeek(selectedWeek?.id === week.id ? null : week);
   };
 
-  const handleTopicClick = (topic: WeekTopic) => {
+  const handleTopicClick = (topic: WeekTopic, isLocked: boolean) => {
+    if (isLocked) return; // No abrir modal para temas bloqueados
     setSelectedTopic(topic);
     setShowTopicModal(true);
   };
+
+  // Determinar si la semana seleccionada está en modo preview (bloqueada)
+  const isPreviewMode = selectedWeek 
+    ? getWeekStatus(selectedWeek.week_number, currentWeek, completedWeeks) === 'locked'
+    : false;
 
   const getLevelColor = (level: string): string => {
     const colors: Record<string, string> = {
@@ -92,14 +95,13 @@ export const WeeklyProgressGrid = ({
               <button
                 key={week.id}
                 onClick={() => handleWeekClick(week)}
-                disabled={status === 'locked'}
                 className={cn(
-                  "relative p-3 rounded-xl transition-all duration-200 border-2 text-center",
+                  "relative p-3 rounded-xl transition-all duration-200 border-2 text-center cursor-pointer",
                   status === 'completed' && "bg-green-100 border-green-500 text-green-800 dark:bg-green-900/30 dark:border-green-500 dark:text-green-300",
                   status === 'current' && "bg-blue-100 border-blue-500 text-blue-800 dark:bg-blue-900/30 dark:border-blue-500 dark:text-blue-300 ring-2 ring-blue-300 ring-offset-2",
-                  status === 'locked' && "bg-muted border-muted-foreground/20 text-muted-foreground cursor-not-allowed opacity-60",
+                  status === 'locked' && "bg-muted/50 border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary/40 hover:bg-muted/70",
                   isSelected && "scale-105 shadow-lg",
-                  status !== 'locked' && "hover:scale-105 hover:shadow-md cursor-pointer"
+                  "hover:scale-105 hover:shadow-md"
                 )}
               >
                 {/* Status icon */}
@@ -135,10 +137,31 @@ export const WeeklyProgressGrid = ({
 
         {/* Detalle de la semana seleccionada */}
         {selectedWeek && (
-          <Card className="border-2 border-primary/20 bg-primary/5">
+          <Card className={cn(
+            "border-2",
+            isPreviewMode 
+              ? "border-dashed border-muted-foreground/30 bg-muted/20" 
+              : "border-primary/20 bg-primary/5"
+          )}>
             <CardHeader className="pb-2">
+              {/* Banner motivacional para semanas bloqueadas */}
+              {isPreviewMode && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-gradient-to-r from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 border border-amber-200 dark:border-amber-700 mb-3">
+                  <span className="text-2xl">🚀</span>
+                  <div>
+                    <p className="font-semibold text-amber-800 dark:text-amber-300">
+                      ¡Esto te espera en la Semana {selectedWeek.week_number}!
+                    </p>
+                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                      Sigue practicando para desbloquear este contenido
+                    </p>
+                  </div>
+                </div>
+              )}
+              
               <CardTitle className="text-lg flex items-center justify-between">
-                <span>
+                <span className="flex items-center gap-2">
+                  {isPreviewMode && <Lock className="h-4 w-4 text-muted-foreground" />}
                   Semana {selectedWeek.week_number}: {selectedWeek.title}
                 </span>
                 <Badge className={cn("text-white", getLevelColor(selectedWeek.level))}>
@@ -161,7 +184,8 @@ export const WeeklyProgressGrid = ({
                       key={topic.id}
                       topic={topic}
                       status={topicProgress?.status || 'not_started'}
-                      onClick={() => handleTopicClick(topic)}
+                      onClick={() => handleTopicClick(topic, isPreviewMode)}
+                      isLocked={isPreviewMode}
                     />
                   );
                 })}

@@ -19,7 +19,7 @@ interface TasksListProps {
   onCompleteTask: (taskId: string) => void;
 }
 
-export const TasksList = memo(({ tasks, onCompleteTask }: TasksListProps) => {
+function TasksListComponent({ tasks, onCompleteTask }: TasksListProps) {
   const { t } = useTranslation();
   
   if (!tasks || tasks.length === 0) return null;
@@ -72,6 +72,7 @@ export const TasksList = memo(({ tasks, onCompleteTask }: TasksListProps) => {
       </CardContent>
     </Card>
   );
-});
+}
 
+export const TasksList = memo(TasksListComponent);
 TasksList.displayName = 'TasksList';

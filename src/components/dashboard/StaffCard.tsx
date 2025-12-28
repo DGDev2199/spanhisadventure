@@ -23,7 +23,7 @@ interface StaffCardProps {
   scheduleLabel?: string;
 }
 
-export const StaffCard = memo(({
+function StaffCardComponent({
   title,
   staffName,
   isLoading,
@@ -40,7 +40,7 @@ export const StaffCard = memo(({
   showSchedule = false,
   bookingLabel,
   scheduleLabel
-}: StaffCardProps) => {
+}: StaffCardProps) {
   const { t } = useTranslation();
   
   const defaultBookingLabel = bookingLabel || t('dashboard.bookClass');
@@ -124,6 +124,7 @@ export const StaffCard = memo(({
       </CardContent>
     </Card>
   );
-});
+}
 
+export const StaffCard = memo(StaffCardComponent);
 StaffCard.displayName = 'StaffCard';

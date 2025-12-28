@@ -21,7 +21,7 @@ interface AssignedTestsListProps {
   assignments: TestAssignment[];
 }
 
-export const AssignedTestsList = memo(({ assignments }: AssignedTestsListProps) => {
+function AssignedTestsListComponent({ assignments }: AssignedTestsListProps) {
   const navigate = useNavigate();
   
   if (!assignments || assignments.length === 0) return null;
@@ -94,6 +94,7 @@ export const AssignedTestsList = memo(({ assignments }: AssignedTestsListProps) 
       </CardContent>
     </Card>
   );
-});
+}
 
+export const AssignedTestsList = memo(AssignedTestsListComponent);
 AssignedTestsList.displayName = 'AssignedTestsList';

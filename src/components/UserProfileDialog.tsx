@@ -59,7 +59,7 @@ export const UserProfileDialog = ({ open, onOpenChange, userId }: UserProfileDia
     queryKey: ['user-profile', userId],
     queryFn: async () => {
       const { data } = await supabase
-        .from('profiles')
+        .from('safe_profiles_view')
         .select('*')
         .eq('id', userId)
         .single();

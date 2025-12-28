@@ -49,10 +49,10 @@ export function TestDetailsDialog({
 
       if (assignmentsError) throw assignmentsError;
 
-      // Get student profiles
+      // Get student profiles using secure view
       const studentIds = assignments?.map(a => a.student_id) || [];
       const { data: profiles } = await supabase
-        .from('profiles')
+        .from('safe_profiles_view')
         .select('id, full_name, email')
         .in('id', studentIds);
 

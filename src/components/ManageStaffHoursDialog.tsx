@@ -97,7 +97,7 @@ export function ManageStaffHoursDialog({ open, onOpenChange }: ManageStaffHoursD
           .select('user_id, role')
           .in('role', ['teacher', 'tutor']),
         supabase
-          .from('profiles')
+          .from('safe_profiles_view')
           .select('id, full_name, email'),
         supabase
           .from('staff_hours')

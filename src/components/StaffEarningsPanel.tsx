@@ -29,10 +29,10 @@ export const StaffEarningsPanel = () => {
       if (error) throw error;
       if (!bookingsData || bookingsData.length === 0) return [];
       
-      // Fetch student names separately
+      // Fetch student names separately using secure view
       const studentIds = [...new Set(bookingsData.map((b: any) => b.student_id))];
       const { data: students } = await supabase
-        .from('profiles')
+        .from('safe_profiles_view')
         .select('id, full_name')
         .in('id', studentIds);
       

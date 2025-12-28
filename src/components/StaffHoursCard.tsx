@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,9 +12,14 @@ interface StaffHoursCardProps {
   userId: string;
 }
 
-export function StaffHoursCard({ userId }: StaffHoursCardProps) {
+export const StaffHoursCard = memo(function StaffHoursCard({ userId }: StaffHoursCardProps) {
   const [showAddHours, setShowAddHours] = useState(false);
   const [showViewHours, setShowViewHours] = useState(false);
+
+  const handleOpenAddHours = useCallback(() => setShowAddHours(true), []);
+  const handleCloseAddHours = useCallback((open: boolean) => setShowAddHours(open), []);
+  const handleOpenViewHours = useCallback(() => setShowViewHours(true), []);
+  const handleCloseViewHours = useCallback((open: boolean) => setShowViewHours(open), []);
 
   const { data: hoursData, isLoading } = useQuery({
     queryKey: ['staff-hours', userId],
@@ -29,6 +34,7 @@ export function StaffHoursCard({ userId }: StaffHoursCardProps) {
       return data;
     },
     enabled: !!userId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   if (isLoading) {
@@ -90,14 +96,14 @@ export function StaffHoursCard({ userId }: StaffHoursCardProps) {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setShowViewHours(true)}
+                onClick={handleOpenViewHours}
               >
                 <History className="h-4 w-4 mr-2" />
                 Ver Historial
               </Button>
               <Button
                 size="sm"
-                onClick={() => setShowAddHours(true)}
+                onClick={handleOpenAddHours}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Agregar Horas
@@ -175,15 +181,15 @@ export function StaffHoursCard({ userId }: StaffHoursCardProps) {
 
       <AddExtraHoursDialog
         open={showAddHours}
-        onOpenChange={setShowAddHours}
+        onOpenChange={handleCloseAddHours}
         userId={userId}
       />
 
       <ViewExtraHoursDialog
         open={showViewHours}
-        onOpenChange={setShowViewHours}
+        onOpenChange={handleCloseViewHours}
         userId={userId}
       />
     </>
   );
-}
+});

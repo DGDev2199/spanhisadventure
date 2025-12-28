@@ -35,6 +35,7 @@ export function ViewExtraHoursDialog({ open, onOpenChange, userId, isAdmin = fal
       return data;
     },
     enabled: open,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
   const approveMutation = useMutation({

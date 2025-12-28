@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useUserRankings } from "@/hooks/useGamification";
-import { Trophy, Medal, Award, Crown } from "lucide-react";
+import { Trophy, Medal, Award, Crown, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface LeaderboardCardProps {
@@ -15,6 +17,7 @@ interface LeaderboardCardProps {
 export const LeaderboardCard = ({ currentUserId, limit = 10 }: LeaderboardCardProps) => {
   const { t } = useTranslation();
   const { data: rankings = [], isLoading } = useUserRankings();
+  const [isOpen, setIsOpen] = useState(false);
 
   const displayRankings = rankings.slice(0, limit);
   const currentUserRanking = rankings.find(r => r.id === currentUserId);
@@ -52,7 +55,7 @@ export const LeaderboardCard = ({ currentUserId, limit = 10 }: LeaderboardCardPr
       <Card>
         <CardContent className="p-6">
           <div className="animate-pulse space-y-3">
-            {[...Array(5)].map((_, i) => (
+            {[...Array(3)].map((_, i) => (
               <div key={i} className="h-12 bg-muted rounded" />
             ))}
           </div>
@@ -63,97 +66,114 @@ export const LeaderboardCard = ({ currentUserId, limit = 10 }: LeaderboardCardPr
 
   return (
     <Card>
-      <CardHeader className="pb-2 sm:pb-3">
-        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-          <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
-          {t('gamification.leaderboard', 'Ranking')}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="px-3 sm:px-6">
-        <ScrollArea className="h-[200px] sm:h-[300px] pr-2 sm:pr-4">
-          <div className="space-y-1.5 sm:space-y-2">
-            {displayRankings.map((user) => {
-              const isCurrentUser = user.id === currentUserId;
-              return (
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <CollapsibleTrigger asChild>
+          <CardHeader className="pb-2 sm:pb-3 cursor-pointer hover:bg-muted/50 transition-colors rounded-t-lg">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+              <Trophy className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
+              {t('gamification.leaderboard', 'Ranking')}
+              {currentUserRanking && (
+                <Badge variant="secondary" className="ml-auto mr-2 text-xs">
+                  #{currentUserRanking.rank}
+                </Badge>
+              )}
+              {isOpen ? (
+                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              )}
+            </CardTitle>
+          </CardHeader>
+        </CollapsibleTrigger>
+        
+        <CollapsibleContent>
+          <CardContent className="px-3 sm:px-6 pt-0">
+            <ScrollArea className="h-[200px] sm:h-[300px] pr-2 sm:pr-4">
+              <div className="space-y-1.5 sm:space-y-2">
+                {displayRankings.map((user) => {
+                  const isCurrentUser = user.id === currentUserId;
+                  return (
+                    <div
+                      key={user.id}
+                      className={cn(
+                        "flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg border transition-colors",
+                        getRankBg(user.rank, isCurrentUser),
+                        isCurrentUser && "ring-1 ring-primary"
+                      )}
+                    >
+                      {/* Rank */}
+                      <div className="flex-shrink-0 w-6 sm:w-8 flex justify-center">
+                        {getRankIcon(user.rank)}
+                      </div>
+
+                      {/* Avatar */}
+                      <Avatar className="h-6 w-6 sm:h-8 sm:w-8">
+                        <AvatarImage src={user.avatar_url || undefined} />
+                        <AvatarFallback className="text-[10px] sm:text-xs">
+                          {user.full_name?.charAt(0) || '?'}
+                        </AvatarFallback>
+                      </Avatar>
+
+                      {/* Name */}
+                      <div className="flex-1 min-w-0">
+                        <p className={cn(
+                          "text-xs sm:text-sm font-medium truncate",
+                          isCurrentUser && "text-primary"
+                        )}>
+                          {user.full_name}
+                          {isCurrentUser && " (Tú)"}
+                        </p>
+                        <div className="hidden sm:flex items-center gap-1">
+                          <Award className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs text-muted-foreground">
+                            {user.badge_count} insignias
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Points */}
+                      <Badge variant="secondary" className="flex-shrink-0 text-[10px] sm:text-xs px-1.5 sm:px-2">
+                        {user.total_points.toLocaleString()}
+                      </Badge>
+                    </div>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+
+            {/* Current user if not in top */}
+            {!isCurrentUserInTop && currentUserRanking && (
+              <>
+                <div className="text-center text-muted-foreground text-xs sm:text-sm py-1 sm:py-2">• • •</div>
                 <div
-                  key={user.id}
                   className={cn(
-                    "flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg border transition-colors",
-                    getRankBg(user.rank, isCurrentUser),
-                    isCurrentUser && "ring-1 ring-primary"
+                    "flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg border",
+                    "bg-primary/10 border-primary/30 ring-1 ring-primary"
                   )}
                 >
-                  {/* Rank */}
                   <div className="flex-shrink-0 w-6 sm:w-8 flex justify-center">
-                    {getRankIcon(user.rank)}
+                    <span className="text-xs sm:text-sm font-medium">#{currentUserRanking.rank}</span>
                   </div>
-
-                  {/* Avatar */}
                   <Avatar className="h-6 w-6 sm:h-8 sm:w-8">
-                    <AvatarImage src={user.avatar_url || undefined} />
+                    <AvatarImage src={currentUserRanking.avatar_url || undefined} />
                     <AvatarFallback className="text-[10px] sm:text-xs">
-                      {user.full_name?.charAt(0) || '?'}
+                      {currentUserRanking.full_name?.charAt(0) || '?'}
                     </AvatarFallback>
                   </Avatar>
-
-                  {/* Name */}
                   <div className="flex-1 min-w-0">
-                    <p className={cn(
-                      "text-xs sm:text-sm font-medium truncate",
-                      isCurrentUser && "text-primary"
-                    )}>
-                      {user.full_name}
-                      {isCurrentUser && " (Tú)"}
+                    <p className="text-xs sm:text-sm font-medium truncate text-primary">
+                      {currentUserRanking.full_name} (Tú)
                     </p>
-                    <div className="hidden sm:flex items-center gap-1">
-                      <Award className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">
-                        {user.badge_count} insignias
-                      </span>
-                    </div>
                   </div>
-
-                  {/* Points */}
-                  <Badge variant="secondary" className="flex-shrink-0 text-[10px] sm:text-xs px-1.5 sm:px-2">
-                    {user.total_points.toLocaleString()}
+                  <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 sm:px-2">
+                    {currentUserRanking.total_points.toLocaleString()}
                   </Badge>
                 </div>
-              );
-            })}
-          </div>
-        </ScrollArea>
-
-        {/* Current user if not in top */}
-        {!isCurrentUserInTop && currentUserRanking && (
-          <>
-            <div className="text-center text-muted-foreground text-xs sm:text-sm py-1 sm:py-2">• • •</div>
-            <div
-              className={cn(
-                "flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 rounded-lg border",
-                "bg-primary/10 border-primary/30 ring-1 ring-primary"
-              )}
-            >
-              <div className="flex-shrink-0 w-6 sm:w-8 flex justify-center">
-                <span className="text-xs sm:text-sm font-medium">#{currentUserRanking.rank}</span>
-              </div>
-              <Avatar className="h-6 w-6 sm:h-8 sm:w-8">
-                <AvatarImage src={currentUserRanking.avatar_url || undefined} />
-                <AvatarFallback className="text-[10px] sm:text-xs">
-                  {currentUserRanking.full_name?.charAt(0) || '?'}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs sm:text-sm font-medium truncate text-primary">
-                  {currentUserRanking.full_name} (Tú)
-                </p>
-              </div>
-              <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 sm:px-2">
-                {currentUserRanking.total_points.toLocaleString()}
-              </Badge>
-            </div>
-          </>
-        )}
-      </CardContent>
+              </>
+            )}
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
     </Card>
   );
 };

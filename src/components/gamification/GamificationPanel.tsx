@@ -43,40 +43,40 @@ export const GamificationPanel = ({ userId }: GamificationPanelProps) => {
           {t('gamification.title', 'Mi Progreso')}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 sm:space-y-4">
         {/* Total Points */}
-        <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20">
-          <div className="flex items-center gap-2">
-            <Star className="h-6 w-6 text-yellow-500 fill-yellow-500" />
-            <span className="font-medium">{t('gamification.points', 'Puntos')}</span>
+        <div className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Star className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-500 fill-yellow-500" />
+            <span className="font-medium text-sm sm:text-base">{t('gamification.points', 'Puntos')}</span>
           </div>
-          <span className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+          <span className="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400">
             {totalPoints.toLocaleString()}
           </span>
         </div>
 
         {/* Earned Badges */}
         <div>
-          <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-            <Award className="h-4 w-4" />
-            {t('gamification.earnedBadges', 'Insignias Ganadas')} ({earnedBadges.length})
+          <h4 className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 flex items-center gap-1.5 sm:gap-2">
+            <Award className="h-3 w-3 sm:h-4 sm:w-4" />
+            {t('gamification.earnedBadges', 'Insignias')} ({earnedBadges.length})
           </h4>
           {earnedBadges.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2">
               {earnedBadges.map((badge) => badge && (
                 <Badge
                   key={badge.id}
                   variant="secondary"
-                  className="px-3 py-1.5 text-sm bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20"
+                  className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20"
                   title={badge.description || badge.name}
                 >
                   <span className="mr-1">{badge.icon}</span>
-                  {badge.name}
+                  <span className="hidden sm:inline">{badge.name}</span>
                 </Badge>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               {t('gamification.noBadges', 'Completa tareas para ganar insignias')}
             </p>
           )}
@@ -84,23 +84,23 @@ export const GamificationPanel = ({ userId }: GamificationPanelProps) => {
 
         {/* Next Badge */}
         {nextBadge && (
-          <div className="p-3 rounded-lg bg-muted/50 border">
-            <div className="flex items-start justify-between mb-2">
-              <div>
-                <h4 className="text-sm font-medium flex items-center gap-1">
+          <div className="p-2 sm:p-3 rounded-lg bg-muted/50 border">
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <div className="min-w-0">
+                <h4 className="text-xs sm:text-sm font-medium flex items-center gap-1">
                   <span className="opacity-50">{nextBadge.icon}</span>
-                  {t('gamification.nextBadge', 'Próxima insignia')}
+                  <span className="truncate">{t('gamification.nextBadge', 'Próxima')}</span>
                 </h4>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 truncate">
                   {nextBadge.name}
                 </p>
               </div>
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="outline" className="text-[10px] sm:text-xs flex-shrink-0">
                 +{nextBadge.points_reward} pts
               </Badge>
             </div>
-            <Progress value={getProgressToNextBadge()} className="h-2" />
-            <p className="text-xs text-muted-foreground mt-1">
+            <Progress value={getProgressToNextBadge()} className="h-1.5 sm:h-2" />
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 line-clamp-2">
               {nextBadge.description}
             </p>
           </div>

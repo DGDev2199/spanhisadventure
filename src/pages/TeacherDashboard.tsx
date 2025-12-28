@@ -131,16 +131,33 @@ const TeacherDashboard = () => {
     queryKey: ['teacher-tasks', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      const { data, error } = await supabase
+      
+      // Fetch tasks without join
+      const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
-        .select(`
-          *,
-          profiles!tasks_student_id_fkey(full_name)
-        `)
+        .select('*')
         .eq('teacher_id', user.id)
         .order('due_date', { ascending: true });
-      if (error) throw error;
-      return data;
+      
+      if (tasksError) throw tasksError;
+      if (!tasksData || tasksData.length === 0) return [];
+      
+      // Get unique student IDs
+      const studentIds = [...new Set(tasksData.map(t => t.student_id).filter(Boolean))];
+      
+      if (studentIds.length === 0) return tasksData;
+      
+      // Fetch student names from safe view
+      const { data: profilesData } = await supabase
+        .from('safe_profiles_view')
+        .select('id, full_name')
+        .in('id', studentIds);
+      
+      // Merge data
+      return tasksData.map(task => ({
+        ...task,
+        student_name: profilesData?.find(p => p.id === task.student_id)?.full_name || 'Unknown'
+      }));
     }
   });
 

@@ -340,44 +340,86 @@ const AdminDashboard = () => {
               Manage students, teachers, tutors, and all platform activities
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Button onClick={() => setAssignMultipleSchedulesOpen(true)} variant="default" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
-              <Users className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Asignar Horarios Múltiples</span>
-              <span className="sm:hidden">Horarios</span>
+          {/* Admin Action Buttons Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-2 sm:gap-3 w-full">
+            <Button 
+              onClick={() => setAssignMultipleSchedulesOpen(true)} 
+              variant="outline"
+              className="flex flex-col items-center justify-center h-20 sm:h-24 gap-1.5 sm:gap-2 bg-primary/5 hover:bg-primary/10 border-primary/20 hover:border-primary/40 transition-all hover:shadow-lg hover:-translate-y-0.5 group"
+            >
+              <Users className="h-6 w-6 sm:h-7 sm:w-7 text-primary group-hover:scale-110 transition-transform" />
+              <span className="text-[10px] sm:text-xs font-medium text-center leading-tight text-primary">
+                Asignar Horarios
+              </span>
             </Button>
-            <Button onClick={() => setPlacementTestDialogOpen(true)} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
-              <FileCheck className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Gestionar Test</span>
-              <span className="sm:hidden">Test</span>
+            
+            <Button 
+              onClick={() => setPlacementTestDialogOpen(true)} 
+              variant="outline"
+              className="flex flex-col items-center justify-center h-20 sm:h-24 gap-1.5 sm:gap-2 bg-secondary/30 hover:bg-secondary/50 border-secondary/40 hover:border-secondary/60 transition-all hover:shadow-lg hover:-translate-y-0.5 group"
+            >
+              <FileCheck className="h-6 w-6 sm:h-7 sm:w-7 text-secondary-foreground group-hover:scale-110 transition-transform" />
+              <span className="text-[10px] sm:text-xs font-medium text-center leading-tight text-secondary-foreground">
+                Gestionar Test
+              </span>
             </Button>
-            <Button onClick={() => setRoomsDialogOpen(true)} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
-              <Home className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Gestionar Habitaciones</span>
-              <span className="sm:hidden">Habitaciones</span>
+            
+            <Button 
+              onClick={() => setRoomsDialogOpen(true)} 
+              variant="outline"
+              className="flex flex-col items-center justify-center h-20 sm:h-24 gap-1.5 sm:gap-2 bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 hover:border-amber-500/50 transition-all hover:shadow-lg hover:-translate-y-0.5 group"
+            >
+              <Home className="h-6 w-6 sm:h-7 sm:w-7 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform" />
+              <span className="text-[10px] sm:text-xs font-medium text-center leading-tight text-amber-700 dark:text-amber-300">
+                Habitaciones
+              </span>
             </Button>
-            <Button onClick={() => setStaffHoursDialogOpen(true)} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
-              <Clock className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Gestionar Horas</span>
-              <span className="sm:hidden">Horas</span>
+            
+            <Button 
+              onClick={() => setStaffHoursDialogOpen(true)} 
+              variant="outline"
+              className="flex flex-col items-center justify-center h-20 sm:h-24 gap-1.5 sm:gap-2 bg-orange-500/10 hover:bg-orange-500/20 border-orange-500/30 hover:border-orange-500/50 transition-all hover:shadow-lg hover:-translate-y-0.5 group"
+            >
+              <Clock className="h-6 w-6 sm:h-7 sm:w-7 text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform" />
+              <span className="text-[10px] sm:text-xs font-medium text-center leading-tight text-orange-700 dark:text-orange-300">
+                Gestionar Horas
+              </span>
             </Button>
-            <Button onClick={() => setCurriculumDialogOpen(true)} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
-              <BookOpen className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Gestionar Currículo</span>
-              <span className="sm:hidden">Currículo</span>
+            
+            <Button 
+              onClick={() => setCurriculumDialogOpen(true)} 
+              variant="outline"
+              className="flex flex-col items-center justify-center h-20 sm:h-24 gap-1.5 sm:gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 hover:border-emerald-500/50 transition-all hover:shadow-lg hover:-translate-y-0.5 group"
+            >
+              <BookOpen className="h-6 w-6 sm:h-7 sm:w-7 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
+              <span className="text-[10px] sm:text-xs font-medium text-center leading-tight text-emerald-700 dark:text-emerald-300">
+                Currículo
+              </span>
             </Button>
+            
+            <Button 
+              onClick={() => setCreateEventDialogOpen(true)} 
+              variant="outline"
+              className="flex flex-col items-center justify-center h-20 sm:h-24 gap-1.5 sm:gap-2 bg-primary/5 hover:bg-primary/10 border-primary/20 hover:border-primary/40 transition-all hover:shadow-lg hover:-translate-y-0.5 group"
+            >
+              <Calendar className="h-6 w-6 sm:h-7 sm:w-7 text-primary group-hover:scale-110 transition-transform" />
+              <span className="text-[10px] sm:text-xs font-medium text-center leading-tight text-primary">
+                Crear Evento
+              </span>
+            </Button>
+            
             {userRole === 'admin' && (
-              <Button onClick={() => setResetScheduleDialogOpen(true)} variant="outline" size="sm" className="w-full sm:w-auto text-xs sm:text-sm border-destructive text-destructive hover:bg-destructive/10">
-                <RotateCcw className="h-4 w-4 mr-2" />
-                <span className="hidden sm:inline">Reiniciar Horarios</span>
-                <span className="sm:hidden">Reiniciar</span>
+              <Button 
+                onClick={() => setResetScheduleDialogOpen(true)} 
+                variant="outline"
+                className="flex flex-col items-center justify-center h-20 sm:h-24 gap-1.5 sm:gap-2 bg-destructive/5 hover:bg-destructive/10 border-destructive/20 hover:border-destructive/40 transition-all hover:shadow-lg hover:-translate-y-0.5 group"
+              >
+                <RotateCcw className="h-6 w-6 sm:h-7 sm:w-7 text-destructive group-hover:scale-110 transition-transform" />
+                <span className="text-[10px] sm:text-xs font-medium text-center leading-tight text-destructive">
+                  Reiniciar
+                </span>
               </Button>
             )}
-            <Button onClick={() => setCreateEventDialogOpen(true)} size="sm" className="w-full sm:w-auto text-xs sm:text-sm">
-              <Calendar className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Crear Evento</span>
-              <span className="sm:hidden">Evento</span>
-            </Button>
           </div>
         </div>
 

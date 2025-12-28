@@ -1,15 +1,26 @@
 import { WeekTopic } from "@/hooks/useGamification";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, AlertCircle, Circle, HelpCircle } from "lucide-react";
+import { CheckCircle2, AlertCircle, Circle, HelpCircle, Lock, Sparkles } from "lucide-react";
 
 interface TopicCardProps {
   topic: WeekTopic;
   status: 'not_started' | 'in_progress' | 'needs_review' | 'completed';
   onClick: () => void;
+  isLocked?: boolean;
 }
 
-export const TopicCard = ({ topic, status, onClick }: TopicCardProps) => {
+export const TopicCard = ({ topic, status, onClick, isLocked = false }: TopicCardProps) => {
   const getStatusConfig = () => {
+    // Si está bloqueado, mostrar estilo especial de preview
+    if (isLocked) {
+      return {
+        bg: 'bg-muted/40 border-dashed border-muted-foreground/20',
+        icon: <Lock className="h-5 w-5 text-muted-foreground/60" />,
+        label: 'Próximamente',
+        textColor: 'text-muted-foreground/70',
+      };
+    }
+
     switch (status) {
       case 'completed':
         return {
@@ -48,9 +59,11 @@ export const TopicCard = ({ topic, status, onClick }: TopicCardProps) => {
     <button
       onClick={onClick}
       className={cn(
-        "w-full p-4 rounded-lg border-2 transition-all duration-200",
-        "hover:scale-[1.02] hover:shadow-md cursor-pointer text-left",
-        config.bg
+        "w-full p-4 rounded-lg border-2 transition-all duration-200 text-left",
+        config.bg,
+        isLocked 
+          ? "cursor-default opacity-75 hover:opacity-90" 
+          : "hover:scale-[1.02] hover:shadow-md cursor-pointer"
       )}
     >
       <div className="flex items-start gap-3">
@@ -61,7 +74,8 @@ export const TopicCard = ({ topic, status, onClick }: TopicCardProps) => {
           <h4 className={cn("font-medium truncate", config.textColor)}>
             {topic.name}
           </h4>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+            {isLocked && <Sparkles className="h-3 w-3" />}
             {config.label}
           </p>
           {topic.description && (

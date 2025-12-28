@@ -12,7 +12,7 @@ interface StaffHoursCardProps {
   userId: string;
 }
 
-export const StaffHoursCard = memo(function StaffHoursCard({ userId }: StaffHoursCardProps) {
+function StaffHoursCardComponent({ userId }: StaffHoursCardProps) {
   const [showAddHours, setShowAddHours] = useState(false);
   const [showViewHours, setShowViewHours] = useState(false);
 
@@ -111,65 +111,65 @@ export const StaffHoursCard = memo(function StaffHoursCard({ userId }: StaffHour
             </div>
           </div>
         </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white/80 dark:bg-gray-800/80 p-4 rounded-lg">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-              <Calendar className="h-4 w-4" />
-              Horas de Horario
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white/80 dark:bg-gray-800/80 p-4 rounded-lg">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                <Calendar className="h-4 w-4" />
+                Horas de Horario
+              </div>
+              <div className="text-2xl font-bold text-primary">
+                {hoursData.calculated_hours.toFixed(2)}h
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Calculadas automáticamente
+              </p>
             </div>
-            <div className="text-2xl font-bold text-primary">
-              {hoursData.calculated_hours.toFixed(2)}h
+
+            <div className="bg-white/80 dark:bg-gray-800/80 p-4 rounded-lg">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                <TrendingUp className="h-4 w-4" />
+                Ajuste Manual
+              </div>
+              <div className={`text-2xl font-bold ${
+                hoursData.manual_adjustment_hours > 0 
+                  ? 'text-green-600' 
+                  : hoursData.manual_adjustment_hours < 0 
+                  ? 'text-red-600' 
+                  : 'text-muted-foreground'
+              }`}>
+                {hoursData.manual_adjustment_hours > 0 ? '+' : ''}{hoursData.manual_adjustment_hours.toFixed(2)}h
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {hoursData.manual_adjustment_hours === 0 ? 'Sin ajustes' : 'Por admin'}
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Calculadas automáticamente
-            </p>
+
+            <div className="bg-gradient-to-br from-primary to-primary/80 p-4 rounded-lg text-white">
+              <div className="flex items-center gap-2 text-sm text-white/80 mb-1">
+                <Clock className="h-4 w-4" />
+                Total Semanal
+              </div>
+              <div className="text-3xl font-bold">
+                {hoursData.total_hours.toFixed(2)}h
+              </div>
+              <p className="text-xs text-white/80 mt-1">
+                Horas totales
+              </p>
+            </div>
           </div>
 
-          <div className="bg-white/80 dark:bg-gray-800/80 p-4 rounded-lg">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-              <TrendingUp className="h-4 w-4" />
-              Ajuste Manual
+          {hoursData.last_calculated_at && (
+            <div className="text-xs text-muted-foreground text-center pt-2 border-t">
+              Última actualización: {new Date(hoursData.last_calculated_at).toLocaleString('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
             </div>
-            <div className={`text-2xl font-bold ${
-              hoursData.manual_adjustment_hours > 0 
-                ? 'text-green-600' 
-                : hoursData.manual_adjustment_hours < 0 
-                ? 'text-red-600' 
-                : 'text-muted-foreground'
-            }`}>
-              {hoursData.manual_adjustment_hours > 0 ? '+' : ''}{hoursData.manual_adjustment_hours.toFixed(2)}h
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {hoursData.manual_adjustment_hours === 0 ? 'Sin ajustes' : 'Por admin'}
-            </p>
-          </div>
-
-          <div className="bg-gradient-to-br from-primary to-primary/80 p-4 rounded-lg text-white">
-            <div className="flex items-center gap-2 text-sm text-white/80 mb-1">
-              <Clock className="h-4 w-4" />
-              Total Semanal
-            </div>
-            <div className="text-3xl font-bold">
-              {hoursData.total_hours.toFixed(2)}h
-            </div>
-            <p className="text-xs text-white/80 mt-1">
-              Horas totales
-            </p>
-          </div>
-        </div>
-
-        {hoursData.last_calculated_at && (
-          <div className="text-xs text-muted-foreground text-center pt-2 border-t">
-            Última actualización: {new Date(hoursData.last_calculated_at).toLocaleString('es-ES', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
-          </div>
-        )}
+          )}
 
           <Alert className="bg-blue-50 border-blue-200">
             <AlertDescription className="text-xs">
@@ -192,4 +192,6 @@ export const StaffHoursCard = memo(function StaffHoursCard({ userId }: StaffHour
       />
     </>
   );
-});
+}
+
+export const StaffHoursCard = memo(StaffHoursCardComponent);

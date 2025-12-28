@@ -40,6 +40,7 @@ export function ManageStaffHoursDialog({ open, onOpenChange }: ManageStaffHoursD
       return data;
     },
     enabled: open,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
   // Mutation to approve pending hours
@@ -89,36 +90,33 @@ export function ManageStaffHoursDialog({ open, onOpenChange }: ManageStaffHoursD
   const { data: staffData, isLoading } = useQuery({
     queryKey: ['staff-hours-management'],
     queryFn: async () => {
-      // Get all teachers and tutors
-      const { data: roles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role')
-        .in('role', ['teacher', 'tutor']);
+      // Execute queries in parallel for better performance
+      const [rolesResponse, profilesResponse, hoursResponse] = await Promise.all([
+        supabase
+          .from('user_roles')
+          .select('user_id, role')
+          .in('role', ['teacher', 'tutor']),
+        supabase
+          .from('profiles')
+          .select('id, full_name, email'),
+        supabase
+          .from('staff_hours')
+          .select('*')
+      ]);
 
-      if (rolesError) throw rolesError;
-
+      if (rolesResponse.error) throw rolesResponse.error;
+      
+      const roles = rolesResponse.data;
       const userIds = [...new Set(roles?.map(r => r.user_id) || [])];
-
-      // Get profiles
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .in('id', userIds);
-
-      if (profilesError) throw profilesError;
-
-      // Get hours data
-      const { data: hours, error: hoursError } = await supabase
-        .from('staff_hours')
-        .select('*')
-        .in('user_id', userIds);
-
-      if (hoursError) throw hoursError;
+      
+      // Filter profiles and hours to only include staff
+      const profiles = profilesResponse.data?.filter(p => userIds.includes(p.id)) || [];
+      const hours = hoursResponse.data?.filter(h => userIds.includes(h.user_id)) || [];
 
       // Merge data
       return userIds.map(userId => {
-        const profile = profiles?.find(p => p.id === userId);
-        const hoursData = hours?.find(h => h.user_id === userId);
+        const profile = profiles.find(p => p.id === userId);
+        const hoursData = hours.find(h => h.user_id === userId);
         const userRoles = roles?.filter(r => r.user_id === userId).map(r => r.role);
 
         return {
@@ -134,6 +132,7 @@ export function ManageStaffHoursDialog({ open, onOpenChange }: ManageStaffHoursD
       });
     },
     enabled: open,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
   // Mutation to adjust hours

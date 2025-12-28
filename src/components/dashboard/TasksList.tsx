@@ -2,8 +2,7 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { BookOpen, Download } from 'lucide-react';
+import { BookOpen, Download, Send, Sparkles } from 'lucide-react';
 
 interface Task {
   id: string;
@@ -31,19 +30,18 @@ function TasksListComponent({ tasks, onCompleteTask }: TasksListProps) {
           <BookOpen className="h-5 w-5 text-primary" />
           {t('tasks.myTasks')}
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="flex items-center gap-2">
           {t('tasks.completeAssigned')}
+          <span className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+            <Sparkles className="h-3 w-3" />
+            +5 puntos por tarea
+          </span>
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
           {tasks.map((task) => (
-            <div key={task.id} className="flex items-start gap-3 p-3 border rounded-lg hover:bg-accent/5 transition-colors">
-              <Checkbox
-                checked={task.completed}
-                onCheckedChange={() => onCompleteTask(task.id)}
-                className="mt-1"
-              />
+            <div key={task.id} className="flex items-start gap-3 p-4 border rounded-lg hover:bg-accent/5 transition-colors group">
               <div className="flex-1">
                 <h4 className="font-medium">{task.title}</h4>
                 {task.description && (
@@ -66,6 +64,14 @@ function TasksListComponent({ tasks, onCompleteTask }: TasksListProps) {
                   </Button>
                 )}
               </div>
+              <Button
+                onClick={() => onCompleteTask(task.id)}
+                size="sm"
+                className="flex-shrink-0 gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all"
+              >
+                <Send className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('tasks.submitTask', 'Enviar')}</span>
+              </Button>
             </div>
           ))}
         </div>

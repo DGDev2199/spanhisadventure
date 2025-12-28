@@ -30,7 +30,8 @@ import {
   useStudentTasks, 
   useStudentAssignments, 
   useStaffProfile, 
-  useCompleteTask 
+  useCompleteTask,
+  useHasCompletedWeeks 
 } from '@/hooks/useStudentDashboardData';
 import { StaffCard } from '@/components/dashboard/StaffCard';
 import { QuickStatCard } from '@/components/dashboard/QuickStatCard';
@@ -72,6 +73,7 @@ const Dashboard = () => {
   const { data: assignedTests } = useStudentAssignments(user?.id);
   const { data: teacherProfile, isLoading: teacherLoading } = useStaffProfile(studentProfile?.teacher_id, 'teacher');
   const { data: tutorProfile, isLoading: tutorLoading } = useStaffProfile(studentProfile?.tutor_id, 'tutor');
+  const { data: hasCompletedWeeks } = useHasCompletedWeeks(user?.id);
   const completeTaskMutation = useCompleteTask();
 
   // Memoized values
@@ -323,12 +325,15 @@ const Dashboard = () => {
 
         {/* Main Content Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <PlacementTestCard
-            status={studentProfile?.placement_test_status || 'not_started'}
-            writtenScore={studentProfile?.placement_test_written_score}
-            level={studentProfile?.level}
-            oralCompleted={studentProfile?.placement_test_oral_completed}
-          />
+          {/* PlacementTestCard - only show if no completed weeks */}
+          {!hasCompletedWeeks && (
+            <PlacementTestCard
+              status={studentProfile?.placement_test_status || 'not_started'}
+              writtenScore={studentProfile?.placement_test_written_score}
+              level={studentProfile?.level}
+              oralCompleted={studentProfile?.placement_test_oral_completed}
+            />
+          )}
 
           {!isOnlineStudent && (
             <Card className="shadow-md">
@@ -352,7 +357,7 @@ const Dashboard = () => {
             </Card>
           )}
 
-          {/* Student Progress Section */}
+          {/* Student Progress Section - moved below WeeklyProgressGrid */}
           <Card className="shadow-md lg:col-span-2">
             <CardContent className="pt-6">
               {user?.id && (

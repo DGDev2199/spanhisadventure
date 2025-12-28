@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 export const useStudentProfile = (userId: string | undefined) => {
   return useQuery({
@@ -120,21 +121,112 @@ export const useStaffProfile = (staffId: string | null | undefined, type: 'teach
   });
 };
 
+// Hook to check if student has any completed weeks
+export const useHasCompletedWeeks = (userId: string | undefined) => {
+  return useQuery({
+    queryKey: ['student-completed-weeks', userId],
+    queryFn: async () => {
+      if (!userId) return false;
+      const { data, error } = await supabase
+        .from('student_progress_weeks')
+        .select('id')
+        .eq('student_id', userId)
+        .eq('is_completed', true)
+        .limit(1);
+      if (error) {
+        console.error('Error checking completed weeks:', error);
+        return false;
+      }
+      return data && data.length > 0;
+    },
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
 export const useCompleteTask = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   
   return useMutation({
     mutationFn: async (taskId: string) => {
-      const { error } = await supabase
+      if (!user?.id) throw new Error('User not authenticated');
+      
+      // Update task as completed
+      const { error: taskError } = await supabase
         .from('tasks')
         .update({ completed: true })
         .eq('id', taskId);
       
-      if (error) throw error;
+      if (taskError) throw taskError;
+
+      // Award 5 points for completing the task
+      const { error: pointsError } = await supabase
+        .from('user_points')
+        .insert({
+          user_id: user.id,
+          points: 5,
+          reason: 'task_completed',
+          related_id: taskId,
+        });
+      
+      if (pointsError) {
+        console.error('Error awarding points:', pointsError);
+        // Don't throw - task was completed, points are bonus
+      }
+
+      // Check for first task badge
+      const { count } = await supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true })
+        .eq('student_id', user.id)
+        .eq('completed', true);
+
+      // If this is the first completed task, award "Primera Tarea" badge
+      if (count === 1) {
+        // Check if "Primera Tarea" badge exists
+        const { data: badge } = await supabase
+          .from('badges')
+          .select('id, points_reward')
+          .eq('name', 'Primera Tarea')
+          .single();
+
+        if (badge) {
+          // Award the badge
+          await supabase
+            .from('user_badges')
+            .insert({
+              user_id: user.id,
+              badge_id: badge.id,
+            });
+
+          // Award bonus points for badge
+          if (badge.points_reward) {
+            await supabase
+              .from('user_points')
+              .insert({
+                user_id: user.id,
+                points: badge.points_reward,
+                reason: 'badge_earned',
+                related_id: badge.id,
+              });
+          }
+        }
+      }
+
+      return { taskId, pointsEarned: 5, isFirstTask: count === 1 };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['student-tasks'] });
-      toast.success('Tarea completada!');
+      queryClient.invalidateQueries({ queryKey: ['user-total-points'] });
+      queryClient.invalidateQueries({ queryKey: ['user-rankings'] });
+      queryClient.invalidateQueries({ queryKey: ['user-badges'] });
+      
+      if (result.isFirstTask) {
+        toast.success('🎉 ¡Tarea completada! +5 puntos + Insignia "Primera Tarea"');
+      } else {
+        toast.success(`✅ ¡Tarea completada! +${result.pointsEarned} puntos`);
+      }
     },
     onError: () => {
       toast.error('Error al completar la tarea');

@@ -23,7 +23,7 @@ import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 import { TestDetailsDialog } from '@/components/TestDetailsDialog';
 import { FinalTestReviewDialog } from '@/components/FinalTestReviewDialog';
 import { StaffHoursCard } from '@/components/StaffHoursCard';
-import { TeacherTutorChatDialog } from '@/components/TeacherTutorChatDialog';
+
 import { StudentProgressView } from '@/components/StudentProgressView';
 import { MyScheduleDialog } from '@/components/MyScheduleDialog';
 import { AssignMultipleStudentsDialog } from '@/components/AssignMultipleStudentsDialog';
@@ -65,8 +65,6 @@ const TeacherDashboard = () => {
   const [isCreateTestDialogOpen, setIsCreateTestDialogOpen] = useState(false);
   const [isTestDetailsOpen, setIsTestDetailsOpen] = useState(false);
   const [isFinalReviewOpen, setIsFinalReviewOpen] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatStudent, setChatStudent] = useState<{ id: string; name: string } | null>(null);
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [selectedTest, setSelectedTest] = useState<any>(null);
   const [finalReviewData, setFinalReviewData] = useState<{ studentId: string; studentName: string; score: number } | null>(null);
@@ -524,18 +522,6 @@ const TeacherDashboard = () => {
                               <TrendingUp className="h-4 w-4 mr-1" />
                               Progreso
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setChatStudent({ id: student.user_id, name: student.profiles?.full_name });
-                                setChatOpen(true);
-                              }}
-                              className="flex-1 min-w-[90px]"
-                            >
-                              <MessageSquare className="h-4 w-4 mr-1" />
-                              Chat
-                            </Button>
                             {isVideoCallsEnabled && student.student_type === 'online' && (
                               <Button
                                 size="sm"
@@ -661,17 +647,6 @@ const TeacherDashboard = () => {
                           >
                             <TrendingUp className="h-4 w-4 mr-1" />
                             Progreso
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setChatStudent({ id: student.user_id, name: student.profiles?.full_name });
-                              setChatOpen(true);
-                            }}
-                          >
-                            <MessageSquare className="h-4 w-4 mr-1" />
-                            Chat
                           </Button>
                           {isVideoCallsEnabled && student.student_type === 'online' && (
                             <Button
@@ -1003,15 +978,6 @@ const TeacherDashboard = () => {
         />
       )}
 
-      {/* Chat Dialog */}
-      {chatStudent && (
-        <TeacherTutorChatDialog
-          open={chatOpen}
-          onOpenChange={setChatOpen}
-          studentId={chatStudent.id}
-          studentName={chatStudent.name}
-        />
-      )}
 
       {/* Progress Dialog */}
       {progressStudent && (

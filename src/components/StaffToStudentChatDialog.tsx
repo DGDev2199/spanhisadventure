@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
-import { Send, Trash2 } from 'lucide-react';
+import { Send, Trash2, Paperclip, X, FileText, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,12 +27,28 @@ interface StaffToStudentChatDialogProps {
   studentName: string;
 }
 
+const ALLOWED_FILE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'text/plain'
+];
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
 export const StaffToStudentChatDialog = ({ open, onOpenChange, studentId, studentName }: StaffToStudentChatDialogProps) => {
   const { user, userRole } = useAuth();
   const queryClient = useQueryClient();
   const [message, setMessage] = useState('');
   const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch direct messages between staff and student
   const { data: messages } = useQuery({
@@ -112,21 +128,52 @@ export const StaffToStudentChatDialog = ({ open, onOpenChange, studentId, studen
     mutationFn: async () => {
       if (!user?.id) throw new Error('User not authenticated');
       
+      let fileUrl = null;
+      let fileName = null;
+      let fileType = null;
+
+      // Upload file if present
+      if (selectedFile) {
+        setIsUploading(true);
+        const fileExt = selectedFile.name.split('.').pop();
+        const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('chat-files')
+          .upload(filePath, selectedFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('chat-files')
+          .getPublicUrl(filePath);
+
+        fileUrl = publicUrl;
+        fileName = selectedFile.name;
+        fileType = selectedFile.type;
+      }
+      
       const { error } = await supabase
         .from('direct_messages')
         .insert({
           sender_id: user.id,
           receiver_id: studentId,
-          message: message.trim()
+          message: message.trim() || (fileName ? `Archivo: ${fileName}` : ''),
+          file_url: fileUrl,
+          file_name: fileName,
+          file_type: fileType
         });
       
       if (error) throw error;
     },
     onSuccess: () => {
       setMessage('');
+      setSelectedFile(null);
+      setIsUploading(false);
       queryClient.invalidateQueries({ queryKey: ['staff-student-messages', user?.id, studentId] });
     },
     onError: () => {
+      setIsUploading(false);
       toast.error('Error al enviar mensaje');
     }
   });
@@ -159,8 +206,31 @@ export const StaffToStudentChatDialog = ({ open, onOpenChange, studentId, studen
   }, [messages]);
 
   const handleSend = () => {
-    if (!message.trim()) return;
+    if (!message.trim() && !selectedFile) return;
     sendMessageMutation.mutate();
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+      toast.error('Tipo de archivo no permitido. Usa imágenes, PDFs o documentos.');
+      return;
+    }
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('El archivo es demasiado grande. Máximo 10MB.');
+      return;
+    }
+
+    setSelectedFile(file);
+  };
+
+  const isImageFile = (fileType: string | null) => {
+    return fileType?.startsWith('image/');
   };
 
   const roleLabel = userRole === 'teacher' ? 'Profesor' : 'Tutor';
@@ -200,7 +270,37 @@ export const StaffToStudentChatDialog = ({ open, onOpenChange, studentId, studen
                 <div className="text-xs opacity-80 mb-1">
                   {msg.sender_id === user?.id ? roleLabel : studentName}
                 </div>
-                <div className="text-sm">{msg.message}</div>
+                
+                {/* File attachment */}
+                {msg.file_url && (
+                  <div className="mb-2">
+                    {isImageFile(msg.file_type) ? (
+                      <a href={msg.file_url} target="_blank" rel="noopener noreferrer">
+                        <img 
+                          src={msg.file_url} 
+                          alt={msg.file_name || 'Imagen adjunta'} 
+                          className="max-w-full max-h-48 rounded-md object-cover"
+                        />
+                      </a>
+                    ) : (
+                      <a 
+                        href={msg.file_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className={`flex items-center gap-2 p-2 rounded-md ${
+                          msg.sender_id === user?.id ? 'bg-primary-foreground/20' : 'bg-background'
+                        }`}
+                      >
+                        <FileText className="h-4 w-4" />
+                        <span className="text-sm truncate">{msg.file_name || 'Archivo adjunto'}</span>
+                      </a>
+                    )}
+                  </div>
+                )}
+                
+                {msg.message && !msg.message.startsWith('Archivo:') && (
+                  <div className="text-sm">{msg.message}</div>
+                )}
                 <div className="text-xs opacity-60 mt-1">
                   {new Date(msg.created_at).toLocaleString()}
                 </div>
@@ -209,8 +309,43 @@ export const StaffToStudentChatDialog = ({ open, onOpenChange, studentId, studen
           </div>
         </ScrollArea>
 
+        {/* Selected file preview */}
+        {selectedFile && (
+          <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
+            {selectedFile.type.startsWith('image/') ? (
+              <ImageIcon className="h-4 w-4 text-muted-foreground" />
+            ) : (
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            )}
+            <span className="text-sm truncate flex-1">{selectedFile.name}</span>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 w-6 p-0"
+              onClick={() => setSelectedFile(null)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+
         {/* Input */}
         <div className="flex gap-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            accept={ALLOWED_FILE_TYPES.join(',')}
+            onChange={handleFileSelect}
+          />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+          >
+            <Paperclip className="h-4 w-4" />
+          </Button>
           <Textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
@@ -226,9 +361,13 @@ export const StaffToStudentChatDialog = ({ open, onOpenChange, studentId, studen
           />
           <Button 
             onClick={handleSend} 
-            disabled={!message.trim() || sendMessageMutation.isPending}
+            disabled={(!message.trim() && !selectedFile) || sendMessageMutation.isPending || isUploading}
           >
-            <Send className="h-4 w-4" />
+            {isUploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </DialogContent>

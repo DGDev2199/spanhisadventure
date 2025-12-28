@@ -160,26 +160,26 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[85vh]">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <BookOpen className="h-5 w-5 text-primary" />
             {t('curriculum.manage', 'Gestionar Currículo')}
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="weeks" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="weeks" className="w-full flex-1 flex flex-col overflow-hidden">
+          <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
             <TabsTrigger value="weeks">Semanas y Temas</TabsTrigger>
             <TabsTrigger value="materials">Material Extra</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="weeks" className="mt-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <TabsContent value="weeks" className="mt-4 flex-1 overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full max-h-[calc(85vh-140px)]">
               {/* Weeks list */}
-              <div>
-                <h3 className="font-medium mb-3">Semanas del Programa</h3>
-                <ScrollArea className="h-[400px] border rounded-lg p-2">
+              <div className="flex flex-col min-h-0">
+                <h3 className="font-medium mb-3 flex-shrink-0">Semanas del Programa</h3>
+                <ScrollArea className="flex-1 border rounded-lg p-2">
                   <div className="space-y-2">
                     {weeks.map((week) => (
                       <button
@@ -210,15 +210,16 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
               </div>
 
               {/* Topics for selected week */}
-              <div>
-                <h3 className="font-medium mb-3">
+              <div className="flex flex-col min-h-0">
+                <h3 className="font-medium mb-3 flex-shrink-0">
                   {selectedWeek 
                     ? `Temas - Semana ${selectedWeek.week_number}` 
                     : 'Selecciona una semana'}
                 </h3>
                 {selectedWeek ? (
-                  <div className="space-y-4">
-                    <ScrollArea className="h-[280px] border rounded-lg p-2">
+                  <ScrollArea className="flex-1 border rounded-lg p-2">
+                    <div className="space-y-3">
+                      {/* Existing topics */}
                       <div className="space-y-2">
                         {getTopicsForWeek(selectedWeek.id).map((topic) => (
                           <div
@@ -260,36 +261,36 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
                           </p>
                         )}
                       </div>
-                    </ScrollArea>
 
-                    <Separator />
+                      <Separator />
 
-                    {/* Add new topic */}
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-medium">Agregar Tema</h4>
-                      <Input
-                        placeholder="Nombre del tema (ej: Verbos reflexivos)"
-                        value={newTopicName}
-                        onChange={(e) => setNewTopicName(e.target.value)}
-                      />
-                      <Textarea
-                        placeholder="Descripción (opcional)"
-                        value={newTopicDesc}
-                        onChange={(e) => setNewTopicDesc(e.target.value)}
-                        rows={2}
-                      />
-                      <Button 
-                        onClick={handleAddTopic}
-                        disabled={!newTopicName.trim()}
-                        className="w-full"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Agregar Tema
-                      </Button>
+                      {/* Add new topic - inside ScrollArea */}
+                      <div className="space-y-3 pb-2">
+                        <h4 className="text-sm font-medium">Agregar Tema</h4>
+                        <Input
+                          placeholder="Nombre del tema (ej: Verbos reflexivos)"
+                          value={newTopicName}
+                          onChange={(e) => setNewTopicName(e.target.value)}
+                        />
+                        <Textarea
+                          placeholder="Descripción (opcional)"
+                          value={newTopicDesc}
+                          onChange={(e) => setNewTopicDesc(e.target.value)}
+                          rows={2}
+                        />
+                        <Button 
+                          onClick={handleAddTopic}
+                          disabled={!newTopicName.trim()}
+                          className="w-full"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Agregar Tema
+                        </Button>
+                      </div>
                     </div>
-                  </div>
+                  </ScrollArea>
                 ) : (
-                  <div className="h-[400px] border rounded-lg flex items-center justify-center text-muted-foreground">
+                  <div className="flex-1 border rounded-lg flex items-center justify-center text-muted-foreground">
                     Selecciona una semana para ver sus temas
                   </div>
                 )}
@@ -297,7 +298,7 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
             </div>
           </TabsContent>
 
-          <TabsContent value="materials" className="mt-4">
+          <TabsContent value="materials" className="mt-4 flex-1 overflow-y-auto">
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
                 Para agregar material, selecciona una semana en la pestaña anterior y usa el botón + en cada tema.
@@ -321,7 +322,7 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="z-50">
                           <SelectItem value="document">📄 Documento</SelectItem>
                           <SelectItem value="video">🎥 Video</SelectItem>
                           <SelectItem value="link">🔗 Enlace</SelectItem>

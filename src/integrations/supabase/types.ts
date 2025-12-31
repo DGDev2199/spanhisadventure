@@ -64,6 +64,7 @@ export type Database = {
           status: string
           student_id: string
           teacher_id: string | null
+          topic_id: string | null
           tutor_id: string | null
           updated_at: string
         }
@@ -83,6 +84,7 @@ export type Database = {
           status?: string
           student_id: string
           teacher_id?: string | null
+          topic_id?: string | null
           tutor_id?: string | null
           updated_at?: string
         }
@@ -102,6 +104,7 @@ export type Database = {
           status?: string
           student_id?: string
           teacher_id?: string | null
+          topic_id?: string | null
           tutor_id?: string | null
           updated_at?: string
         }
@@ -160,6 +163,13 @@ export type Database = {
             columns: ["teacher_id"]
             isOneToOne: false
             referencedRelation: "user_rankings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_bookings_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "week_topics"
             referencedColumns: ["id"]
           },
           {
@@ -1139,6 +1149,7 @@ export type Database = {
           start_time: string
           teacher_id: string | null
           title: string
+          topic_id: string | null
           tutor_id: string | null
           updated_at: string
         }
@@ -1157,6 +1168,7 @@ export type Database = {
           start_time: string
           teacher_id?: string | null
           title: string
+          topic_id?: string | null
           tutor_id?: string | null
           updated_at?: string
         }
@@ -1175,6 +1187,7 @@ export type Database = {
           start_time?: string
           teacher_id?: string | null
           title?: string
+          topic_id?: string | null
           tutor_id?: string | null
           updated_at?: string
         }
@@ -1212,6 +1225,13 @@ export type Database = {
             columns: ["teacher_id"]
             isOneToOne: false
             referencedRelation: "user_rankings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_events_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "week_topics"
             referencedColumns: ["id"]
           },
           {

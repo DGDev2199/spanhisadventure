@@ -161,60 +161,87 @@ export const useCompleteTask = () => {
       if (taskError) throw taskError;
 
       // Award 5 points for completing the task
-      const { error: pointsError } = await supabase
-        .from('user_points')
-        .insert({
-          user_id: user.id,
-          points: 5,
-          reason: 'task_completed',
-          related_id: taskId,
-        });
-      
-      if (pointsError) {
-        console.error('Error awarding points:', pointsError);
-        // Don't throw - task was completed, points are bonus
+      try {
+        const { error: pointsError } = await supabase
+          .from('user_points')
+          .insert({
+            user_id: user.id,
+            points: 5,
+            reason: 'task_completed',
+            related_id: taskId,
+          });
+        
+        if (pointsError) {
+          console.error('Error awarding points:', pointsError);
+        }
+      } catch (err) {
+        console.error('Error in points insertion:', err);
       }
 
       // Check for first task badge
-      const { count } = await supabase
-        .from('tasks')
-        .select('*', { count: 'exact', head: true })
-        .eq('student_id', user.id)
-        .eq('completed', true);
+      let isFirstTask = false;
+      try {
+        const { count, error: countError } = await supabase
+          .from('tasks')
+          .select('*', { count: 'exact', head: true })
+          .eq('student_id', user.id)
+          .eq('completed', true);
 
-      // If this is the first completed task, award "Primera Tarea" badge
-      if (count === 1) {
-        // Check if "Primera Tarea" badge exists
-        const { data: badge } = await supabase
-          .from('badges')
-          .select('id, points_reward')
-          .eq('name', 'Primera Tarea')
-          .single();
+        if (countError) {
+          console.error('Error counting completed tasks:', countError);
+        } else if (count === 1) {
+          isFirstTask = true;
+          
+          // Check if "Primera Tarea" badge exists
+          const { data: badge, error: badgeError } = await supabase
+            .from('badges')
+            .select('id, points_reward')
+            .eq('name', 'Primera Tarea')
+            .maybeSingle();
 
-        if (badge) {
-          // Award the badge
-          await supabase
-            .from('user_badges')
-            .insert({
-              user_id: user.id,
-              badge_id: badge.id,
-            });
+          if (badgeError) {
+            console.error('Error fetching badge:', badgeError);
+          } else if (badge) {
+            // Check if user already has this badge
+            const { data: existingBadge } = await supabase
+              .from('user_badges')
+              .select('id')
+              .eq('user_id', user.id)
+              .eq('badge_id', badge.id)
+              .maybeSingle();
 
-          // Award bonus points for badge
-          if (badge.points_reward) {
-            await supabase
-              .from('user_points')
-              .insert({
-                user_id: user.id,
-                points: badge.points_reward,
-                reason: 'badge_earned',
-                related_id: badge.id,
-              });
+            if (!existingBadge) {
+              // Award the badge
+              const { error: awardError } = await supabase
+                .from('user_badges')
+                .insert({
+                  user_id: user.id,
+                  badge_id: badge.id,
+                });
+
+              if (awardError) {
+                console.error('Error awarding badge:', awardError);
+              }
+
+              // Award bonus points for badge
+              if (badge.points_reward) {
+                await supabase
+                  .from('user_points')
+                  .insert({
+                    user_id: user.id,
+                    points: badge.points_reward,
+                    reason: 'badge_earned',
+                    related_id: badge.id,
+                  });
+              }
+            }
           }
         }
+      } catch (err) {
+        console.error('Error in badge logic:', err);
       }
 
-      return { taskId, pointsEarned: 5, isFirstTask: count === 1 };
+      return { taskId, pointsEarned: 5, isFirstTask };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['student-tasks'] });

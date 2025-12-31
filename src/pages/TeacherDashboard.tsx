@@ -23,7 +23,7 @@ import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 import { TestDetailsDialog } from '@/components/TestDetailsDialog';
 import { FinalTestReviewDialog } from '@/components/FinalTestReviewDialog';
 import { StaffHoursCard } from '@/components/StaffHoursCard';
-
+import { TeacherTopicScheduler } from '@/components/TeacherTopicScheduler';
 import { StudentProgressView } from '@/components/StudentProgressView';
 import { MyScheduleDialog } from '@/components/MyScheduleDialog';
 import { AssignMultipleStudentsDialog } from '@/components/AssignMultipleStudentsDialog';
@@ -365,6 +365,13 @@ const TeacherDashboard = () => {
         {user?.id && (
           <div className="mb-8">
             <StaffHoursCard userId={user.id} />
+          </div>
+        )}
+
+        {/* Topic-based Class Scheduler */}
+        {user?.id && (
+          <div className="mb-8">
+            <TeacherTopicScheduler teacherId={user.id} />
           </div>
         )}
 

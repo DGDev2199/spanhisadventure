@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeatureFlag } from '@/contexts/FeatureFlagsContext';
+import FeatureGate from '@/components/FeatureGate';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogOut, User, BookOpen, Calendar, Users, Search, Globe, Award } from 'lucide-react';
@@ -53,6 +54,7 @@ const Dashboard = () => {
   const isBookingEnabled = useFeatureFlag('booking_system');
   const isVideoCallsEnabled = useFeatureFlag('video_calls');
   const isBasicChatEnabled = useFeatureFlag('basic_chat');
+  const isGamificationEnabled = useFeatureFlag('gamification');
 
   // Dialog states
   const [editProfileOpen, setEditProfileOpen] = useState(false);
@@ -306,12 +308,14 @@ const Dashboard = () => {
         {/* Progress Section - Weekly + Student Progress together */}
         {user?.id && (
           <div className="space-y-6 mb-6">
-            {/* Weekly Progress Grid */}
-            <WeeklyProgressGrid 
-              studentId={user.id}
-              studentLevel={studentProfile?.level || null}
-              isEditable={false}
-            />
+            {/* Weekly Progress Grid - only when gamification is enabled */}
+            {isGamificationEnabled && (
+              <WeeklyProgressGrid 
+                studentId={user.id}
+                studentLevel={studentProfile?.level || null}
+                isEditable={false}
+              />
+            )}
             
             {/* Student Progress View - immediately after */}
             <Card className="shadow-md">
@@ -384,8 +388,8 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Gamification Section - at the end */}
-        {user?.id && (
+        {/* Gamification Section - at the end, controlled by feature flag */}
+        {user?.id && isGamificationEnabled && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <GamificationPanel userId={user.id} />
             <LeaderboardCard currentUserId={user.id} limit={5} />

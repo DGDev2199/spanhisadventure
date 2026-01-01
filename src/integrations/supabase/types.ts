@@ -1923,7 +1923,12 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          reviewed_at: string | null
+          score: number | null
+          status: string | null
           student_id: string
+          student_notes: string | null
+          teacher_feedback: string | null
           teacher_id: string
           title: string
           updated_at: string
@@ -1935,7 +1940,12 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          reviewed_at?: string | null
+          score?: number | null
+          status?: string | null
           student_id: string
+          student_notes?: string | null
+          teacher_feedback?: string | null
           teacher_id: string
           title: string
           updated_at?: string
@@ -1947,7 +1957,12 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          reviewed_at?: string | null
+          score?: number | null
+          status?: string | null
           student_id?: string
+          student_notes?: string | null
+          teacher_feedback?: string | null
           teacher_id?: string
           title?: string
           updated_at?: string
@@ -2386,6 +2401,7 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           id: string
+          is_teacher_guide: boolean | null
           material_type: string
           title: string
           topic_id: string
@@ -2396,6 +2412,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           id?: string
+          is_teacher_guide?: boolean | null
           material_type: string
           title: string
           topic_id: string
@@ -2406,6 +2423,7 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           id?: string
+          is_teacher_guide?: boolean | null
           material_type?: string
           title?: string
           topic_id?: string

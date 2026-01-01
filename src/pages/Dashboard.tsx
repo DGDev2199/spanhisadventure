@@ -31,7 +31,7 @@ import {
   useStudentTasks, 
   useStudentAssignments, 
   useStaffProfile, 
-  useCompleteTask,
+  useSubmitTask,
   useHasCompletedWeeks 
 } from '@/hooks/useStudentDashboardData';
 import { StaffCard } from '@/components/dashboard/StaffCard';
@@ -76,7 +76,7 @@ const Dashboard = () => {
   const { data: teacherProfile, isLoading: teacherLoading } = useStaffProfile(studentProfile?.teacher_id, 'teacher');
   const { data: tutorProfile, isLoading: tutorLoading } = useStaffProfile(studentProfile?.tutor_id, 'tutor');
   const { data: hasCompletedWeeks } = useHasCompletedWeeks(user?.id);
-  const completeTaskMutation = useCompleteTask();
+  const submitTaskMutation = useSubmitTask();
 
   // Memoized values
   const isOnlineStudent = useMemo(() => studentProfile?.student_type === 'online', [studentProfile?.student_type]);
@@ -126,9 +126,7 @@ const Dashboard = () => {
     }
   }, [tutorProfile]);
 
-  const handleCompleteTask = useCallback((taskId: string) => {
-    completeTaskMutation.mutate(taskId);
-  }, [completeTaskMutation]);
+  // Task submission is now handled directly in TasksList
 
   const handleScrollToCalendar = useCallback(() => {
     document.getElementById('weekly-calendar')?.scrollIntoView({ behavior: 'smooth' });
@@ -399,7 +397,8 @@ const Dashboard = () => {
         {/* Tasks Section */}
         <TasksList 
           tasks={tasks || []} 
-          onCompleteTask={handleCompleteTask}
+          onSubmitTask={(taskId, notes) => submitTaskMutation.mutate({ taskId, studentNotes: notes })}
+          isSubmitting={submitTaskMutation.isPending}
         />
 
         {/* Assigned Tests Section */}

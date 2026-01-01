@@ -33,7 +33,7 @@ export const useStudentTasks = (userId: string | undefined) => {
         .from('tasks')
         .select('*')
         .eq('student_id', userId)
-        .eq('completed', false)
+        .in('status', ['pending', 'submitted'])
         .order('due_date', { ascending: true });
       if (error) throw error;
       return data;
@@ -144,95 +144,165 @@ export const useHasCompletedWeeks = (userId: string | undefined) => {
   });
 };
 
-export const useCompleteTask = () => {
+// Student submits a task (moves to submitted status, no points yet)
+export const useSubmitTask = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   
   return useMutation({
-    mutationFn: async (taskId: string) => {
+    mutationFn: async ({ taskId, studentNotes }: { taskId: string; studentNotes?: string }) => {
       if (!user?.id) throw new Error('User not authenticated');
       
-      // Update task as completed
+      // Check if task is already submitted
+      const { data: task } = await supabase
+        .from('tasks')
+        .select('status')
+        .eq('id', taskId)
+        .single();
+      
+      if (task?.status !== 'pending') {
+        throw new Error('Esta tarea ya fue enviada');
+      }
+      
+      // Update task as submitted
       const { error: taskError } = await supabase
         .from('tasks')
-        .update({ completed: true })
+        .update({ 
+          status: 'submitted',
+          student_notes: studentNotes || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', taskId)
+        .eq('student_id', user.id);
+      
+      if (taskError) throw taskError;
+
+      // Notify teacher about submitted task
+      const { data: taskData } = await supabase
+        .from('tasks')
+        .select('teacher_id, title')
+        .eq('id', taskId)
+        .single();
+      
+      if (taskData?.teacher_id) {
+        await supabase.rpc('create_notification', {
+          p_user_id: taskData.teacher_id,
+          p_title: 'Tarea Enviada para Revisión',
+          p_message: `Un estudiante ha enviado la tarea: ${taskData.title}`,
+          p_type: 'task',
+          p_related_id: taskId
+        });
+      }
+
+      return { taskId };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student-tasks'] });
+      toast.success('📤 Tarea enviada para revisión');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error al enviar la tarea');
+    }
+  });
+};
+
+// Teacher reviews and grades a task
+export const useReviewTask = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  
+  return useMutation({
+    mutationFn: async ({ 
+      taskId, 
+      score, 
+      feedback 
+    }: { 
+      taskId: string; 
+      score: number; 
+      feedback?: string 
+    }) => {
+      if (!user?.id) throw new Error('User not authenticated');
+      
+      // Get task details
+      const { data: task, error: fetchError } = await supabase
+        .from('tasks')
+        .select('student_id, title')
+        .eq('id', taskId)
+        .single();
+      
+      if (fetchError || !task) throw new Error('Tarea no encontrada');
+      
+      // Update task as reviewed
+      const { error: taskError } = await supabase
+        .from('tasks')
+        .update({ 
+          status: 'reviewed',
+          score,
+          teacher_feedback: feedback || null,
+          reviewed_at: new Date().toISOString(),
+          completed: true
+        })
         .eq('id', taskId);
       
       if (taskError) throw taskError;
 
-      // Award 5 points for completing the task
-      try {
-        const { error: pointsError } = await supabase
+      // Award points to student if score > 0
+      if (score > 0) {
+        await supabase
           .from('user_points')
           .insert({
-            user_id: user.id,
-            points: 5,
-            reason: 'task_completed',
+            user_id: task.student_id,
+            points: score,
+            reason: 'task_graded',
             related_id: taskId,
           });
-        
-        if (pointsError) {
-          console.error('Error awarding points:', pointsError);
-        }
-      } catch (err) {
-        console.error('Error in points insertion:', err);
       }
 
+      // Notify student about the grade
+      await supabase.rpc('create_notification', {
+        p_user_id: task.student_id,
+        p_title: 'Tarea Calificada',
+        p_message: `Tu tarea "${task.title}" ha sido calificada: ${score} puntos`,
+        p_type: 'task',
+        p_related_id: taskId
+      });
+
       // Check for first task badge
-      let isFirstTask = false;
       try {
-        const { count, error: countError } = await supabase
+        const { count } = await supabase
           .from('tasks')
           .select('*', { count: 'exact', head: true })
-          .eq('student_id', user.id)
-          .eq('completed', true);
+          .eq('student_id', task.student_id)
+          .eq('status', 'reviewed');
 
-        if (countError) {
-          console.error('Error counting completed tasks:', countError);
-        } else if (count === 1) {
-          isFirstTask = true;
-          
-          // Check if "Primera Tarea" badge exists
-          const { data: badge, error: badgeError } = await supabase
+        if (count === 1) {
+          const { data: badge } = await supabase
             .from('badges')
             .select('id, points_reward')
             .eq('name', 'Primera Tarea')
             .maybeSingle();
 
-          if (badgeError) {
-            console.error('Error fetching badge:', badgeError);
-          } else if (badge) {
-            // Check if user already has this badge
+          if (badge) {
             const { data: existingBadge } = await supabase
               .from('user_badges')
               .select('id')
-              .eq('user_id', user.id)
+              .eq('user_id', task.student_id)
               .eq('badge_id', badge.id)
               .maybeSingle();
 
             if (!existingBadge) {
-              // Award the badge
-              const { error: awardError } = await supabase
-                .from('user_badges')
-                .insert({
-                  user_id: user.id,
-                  badge_id: badge.id,
-                });
+              await supabase.from('user_badges').insert({
+                user_id: task.student_id,
+                badge_id: badge.id,
+              });
 
-              if (awardError) {
-                console.error('Error awarding badge:', awardError);
-              }
-
-              // Award bonus points for badge
               if (badge.points_reward) {
-                await supabase
-                  .from('user_points')
-                  .insert({
-                    user_id: user.id,
-                    points: badge.points_reward,
-                    reason: 'badge_earned',
-                    related_id: badge.id,
-                  });
+                await supabase.from('user_points').insert({
+                  user_id: task.student_id,
+                  points: badge.points_reward,
+                  reason: 'badge_earned',
+                  related_id: badge.id,
+                });
               }
             }
           }
@@ -241,22 +311,40 @@ export const useCompleteTask = () => {
         console.error('Error in badge logic:', err);
       }
 
-      return { taskId, pointsEarned: 5, isFirstTask };
+      return { taskId, score };
     },
     onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['teacher-submitted-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['student-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['user-total-points'] });
-      queryClient.invalidateQueries({ queryKey: ['user-rankings'] });
       queryClient.invalidateQueries({ queryKey: ['user-badges'] });
-      
-      if (result.isFirstTask) {
-        toast.success('🎉 ¡Tarea completada! +5 puntos + Insignia "Primera Tarea"');
-      } else {
-        toast.success(`✅ ¡Tarea completada! +${result.pointsEarned} puntos`);
-      }
+      toast.success(`✅ Tarea calificada: ${result.score} puntos`);
     },
-    onError: () => {
-      toast.error('Error al completar la tarea');
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error al calificar la tarea');
     }
+  });
+};
+
+// Hook for teacher to get submitted tasks from their students
+export const useTeacherSubmittedTasks = (teacherId: string | undefined) => {
+  return useQuery({
+    queryKey: ['teacher-submitted-tasks', teacherId],
+    queryFn: async () => {
+      if (!teacherId) return [];
+      const { data, error } = await supabase
+        .from('tasks')
+        .select(`
+          *,
+          student:safe_profiles_view!tasks_student_id_fkey(id, full_name, avatar_url)
+        `)
+        .eq('teacher_id', teacherId)
+        .eq('status', 'submitted')
+        .order('updated_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!teacherId,
+    staleTime: 1 * 60 * 1000,
   });
 };

@@ -332,17 +332,32 @@ export const useTeacherSubmittedTasks = (teacherId: string | undefined) => {
     queryKey: ['teacher-submitted-tasks', teacherId],
     queryFn: async () => {
       if (!teacherId) return [];
-      const { data, error } = await supabase
+      
+      // Fetch tasks without join
+      const { data: tasksData, error: tasksError } = await supabase
         .from('tasks')
-        .select(`
-          *,
-          student:safe_profiles_view!tasks_student_id_fkey(id, full_name, avatar_url)
-        `)
+        .select('*')
         .eq('teacher_id', teacherId)
         .eq('status', 'submitted')
         .order('updated_at', { ascending: false });
-      if (error) throw error;
-      return data;
+      
+      if (tasksError) throw tasksError;
+      if (!tasksData || tasksData.length === 0) return [];
+      
+      // Get unique student IDs
+      const studentIds = [...new Set(tasksData.map(t => t.student_id).filter(Boolean))];
+      
+      // Fetch student profiles separately
+      const { data: profilesData } = await supabase
+        .from('safe_profiles_view')
+        .select('id, full_name, avatar_url')
+        .in('id', studentIds);
+      
+      // Merge data
+      return tasksData.map(task => ({
+        ...task,
+        student: profilesData?.find(p => p.id === task.student_id) || null
+      }));
     },
     enabled: !!teacherId,
     staleTime: 1 * 60 * 1000,

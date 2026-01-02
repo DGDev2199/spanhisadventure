@@ -23,7 +23,9 @@ import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 import { TestDetailsDialog } from '@/components/TestDetailsDialog';
 import { FinalTestReviewDialog } from '@/components/FinalTestReviewDialog';
 import { StaffHoursCard } from '@/components/StaffHoursCard';
-import { TeacherTopicScheduler } from '@/components/TeacherTopicScheduler';
+import { TeacherTaskReviewPanel } from '@/components/TeacherTaskReviewPanel';
+import { TeacherScheduledClassesCard } from '@/components/TeacherScheduledClassesCard';
+import { TeacherMaterialsPanel } from '@/components/TeacherMaterialsPanel';
 import { StudentProgressView } from '@/components/StudentProgressView';
 import { MyScheduleDialog } from '@/components/MyScheduleDialog';
 import { AssignMultipleStudentsDialog } from '@/components/AssignMultipleStudentsDialog';
@@ -368,10 +370,30 @@ const TeacherDashboard = () => {
           </div>
         )}
 
-        {/* Topic-based Class Scheduler */}
+        {/* Task Review Panel - See submitted tasks from students */}
         {user?.id && (
           <div className="mb-8">
-            <TeacherTopicScheduler teacherId={user.id} />
+            <TeacherTaskReviewPanel teacherId={user.id} />
+          </div>
+        )}
+
+        {/* Scheduled Classes by Students */}
+        {user?.id && (
+          <div className="mb-8">
+            <TeacherScheduledClassesCard 
+              teacherId={user.id} 
+              onStartVideoCall={isVideoCallsEnabled ? (studentId, studentName) => {
+                setVideoCallStudent({ id: studentId, name: studentName });
+                setVideoCallOpen(true);
+              } : undefined}
+            />
+          </div>
+        )}
+
+        {/* Curriculum Materials and Teacher Guides */}
+        {user?.id && (
+          <div className="mb-8">
+            <TeacherMaterialsPanel />
           </div>
         )}
 

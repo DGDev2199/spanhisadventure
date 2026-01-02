@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { TimeZoneSelector } from "@/components/TimeZoneSelector";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { StaffVideoUpload } from "@/components/StaffVideoUpload";
+import { AvailabilitySelector } from "@/components/AvailabilitySelector";
 import { Eye, EyeOff, Globe, MapPin, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -352,13 +353,10 @@ export const RoleBasedEditProfileDialog = ({ open, onOpenChange }: RoleBasedEdit
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label>Disponibilidad</Label>
-                <Textarea
-                  value={formData.availability}
-                  onChange={(e) => setFormData({ ...formData, availability: e.target.value })}
-                />
-              </div>
+              <AvailabilitySelector
+                value={formData.availability}
+                onChange={(value) => setFormData({ ...formData, availability: value })}
+              />
               <div className="space-y-2">
                 <Label>Experiencia</Label>
                 <Textarea

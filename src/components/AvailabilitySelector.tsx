@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Plus, X, Clock } from 'lucide-react';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Plus, X, Clock } from "lucide-react";
 
 interface TimeSlot {
   day: number;
@@ -17,17 +17,17 @@ interface AvailabilitySelectorProps {
 }
 
 const DAYS = [
-  { value: 0, label: 'Domingo', short: 'Dom' },
-  { value: 1, label: 'Lunes', short: 'Lun' },
-  { value: 2, label: 'Martes', short: 'Mar' },
-  { value: 3, label: 'Miércoles', short: 'Mié' },
-  { value: 4, label: 'Jueves', short: 'Jue' },
-  { value: 5, label: 'Viernes', short: 'Vie' },
-  { value: 6, label: 'Sábado', short: 'Sáb' },
+  { value: 0, label: "Domingo", short: "Dom" },
+  { value: 1, label: "Lunes", short: "Lun" },
+  { value: 2, label: "Martes", short: "Mar" },
+  { value: 3, label: "Miércoles", short: "Mié" },
+  { value: 4, label: "Jueves", short: "Jue" },
+  { value: 5, label: "Viernes", short: "Vie" },
+  { value: 6, label: "Sábado", short: "Sáb" },
 ];
 
 const HOURS = Array.from({ length: 24 }, (_, i) => {
-  const hour = i.toString().padStart(2, '0');
+  const hour = i.toString().padStart(2, "0");
   return { value: `${hour}:00`, label: `${hour}:00` };
 });
 
@@ -49,18 +49,15 @@ export const AvailabilitySelector = ({ value, onChange }: AvailabilitySelectorPr
 
   const [newSlot, setNewSlot] = useState<Partial<TimeSlot>>({
     day: undefined,
-    startTime: '',
-    endTime: '',
+    startTime: "",
+    endTime: "",
   });
 
   const addSlot = () => {
     if (newSlot.day === undefined || !newSlot.startTime || !newSlot.endTime) return;
 
     const exists = slots.some(
-      s =>
-        s.day === newSlot.day &&
-        s.startTime === newSlot.startTime &&
-        s.endTime === newSlot.endTime
+      (s) => s.day === newSlot.day && s.startTime === newSlot.startTime && s.endTime === newSlot.endTime,
     );
 
     if (exists) return;
@@ -71,8 +68,8 @@ export const AvailabilitySelector = ({ value, onChange }: AvailabilitySelectorPr
 
     setNewSlot({
       day: undefined,
-      startTime: '',
-      endTime: '',
+      startTime: "",
+      endTime: "",
     });
   };
 
@@ -82,14 +79,16 @@ export const AvailabilitySelector = ({ value, onChange }: AvailabilitySelectorPr
     onChange(serializeAvailability(updated));
   };
 
-  const getDayLabel = (day: number) =>
-    DAYS.find(d => d.value === day)?.label || '';
+  const getDayLabel = (day: number) => DAYS.find((d) => d.value === day)?.label || "";
 
-  const slotsByDay = slots.reduce((acc, slot) => {
-    if (!acc[slot.day]) acc[slot.day] = [];
-    acc[slot.day].push(slot);
-    return acc;
-  }, {} as Record<number, TimeSlot[]>);
+  const slotsByDay = slots.reduce(
+    (acc, slot) => {
+      if (!acc[slot.day]) acc[slot.day] = [];
+      acc[slot.day].push(slot);
+      return acc;
+    },
+    {} as Record<number, TimeSlot[]>,
+  );
 
   return (
     <div className="space-y-4">
@@ -104,25 +103,16 @@ export const AvailabilitySelector = ({ value, onChange }: AvailabilitySelectorPr
             .sort(([a], [b]) => Number(a) - Number(b))
             .map(([day, daySlots]) => (
               <div key={day} className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium w-20">
-                  {getDayLabel(Number(day))}:
-                </span>
+                <span className="text-sm font-medium w-20">{getDayLabel(Number(day))}:</span>
 
                 <div className="flex flex-wrap gap-1">
                   {daySlots.map((slot, idx) => {
                     const globalIdx = slots.findIndex(
-                      s =>
-                        s.day === slot.day &&
-                        s.startTime === slot.startTime &&
-                        s.endTime === slot.endTime
+                      (s) => s.day === slot.day && s.startTime === slot.startTime && s.endTime === slot.endTime,
                     );
 
                     return (
-                      <Badge
-                        key={idx}
-                        variant="secondary"
-                        className="flex items-center gap-1 py-1"
-                      >
+                      <Badge key={idx} variant="secondary" className="flex items-center gap-1 py-1">
                         {slot.startTime} - {slot.endTime}
                         <button
                           type="button"
@@ -142,8 +132,7 @@ export const AvailabilitySelector = ({ value, onChange }: AvailabilitySelectorPr
 
       {slots.length === 0 && (
         <p className="text-sm text-muted-foreground">
-          No tienes horarios configurados. Agrega tu disponibilidad para que los
-          estudiantes puedan agendar clases.
+          No tienes horarios configurados. Agrega tu disponibilidad para que los estudiantes puedan agendar clases.
         </p>
       )}
 
@@ -152,16 +141,14 @@ export const AvailabilitySelector = ({ value, onChange }: AvailabilitySelectorPr
         <div className="space-y-1">
           <Label className="text-xs">Día</Label>
           <Select
-            value={newSlot.day !== undefined ? newSlot.day.toString() : ''}
-            onValueChange={(v) =>
-              setNewSlot({ ...newSlot, day: parseInt(v) })
-            }
+            value={newSlot.day !== undefined ? newSlot.day.toString() : ""}
+            onValueChange={(v) => setNewSlot({ ...newSlot, day: parseInt(v) })}
           >
             <SelectTrigger className="w-28">
               <SelectValue placeholder="Día" />
             </SelectTrigger>
             <SelectContent>
-              {DAYS.map(day => (
+              {DAYS.map((day) => (
                 <SelectItem key={day.value} value={day.value.toString()}>
                   {day.label}
                 </SelectItem>
@@ -172,17 +159,12 @@ export const AvailabilitySelector = ({ value, onChange }: AvailabilitySelectorPr
 
         <div className="space-y-1">
           <Label className="text-xs">Desde</Label>
-          <Select
-            value={newSlot.startTime || ''}
-            onValueChange={(v) =>
-              setNewSlot({ ...newSlot, startTime: v })
-            }
-          >
+          <Select value={newSlot.startTime || ""} onValueChange={(v) => setNewSlot({ ...newSlot, startTime: v })}>
             <SelectTrigger className="w-24">
               <SelectValue placeholder="Inicio" />
             </SelectTrigger>
             <SelectContent>
-              {HOURS.map(h => (
+              {HOURS.map((h) => (
                 <SelectItem key={h.value} value={h.value}>
                   {h.label}
                 </SelectItem>
@@ -193,23 +175,16 @@ export const AvailabilitySelector = ({ value, onChange }: AvailabilitySelectorPr
 
         <div className="space-y-1">
           <Label className="text-xs">Hasta</Label>
-          <Select
-            value={newSlot.endTime || ''}
-            onValueChange={(v) =>
-              setNewSlot({ ...newSlot, endTime: v })
-            }
-          >
+          <Select value={newSlot.endTime || ""} onValueChange={(v) => setNewSlot({ ...newSlot, endTime: v })}>
             <SelectTrigger className="w-24">
               <SelectValue placeholder="Fin" />
             </SelectTrigger>
             <SelectContent>
-              {HOURS
-                .filter(h => !newSlot.startTime || h.value > newSlot.startTime)
-                .map(h => (
-                  <SelectItem key={h.value} value={h.value}>
-                    {h.label}
-                  </SelectItem>
-                ))}
+              {HOURS.filter((h) => !newSlot.startTime || h.value > newSlot.startTime).map((h) => (
+                <SelectItem key={h.value} value={h.value}>
+                  {h.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -218,11 +193,7 @@ export const AvailabilitySelector = ({ value, onChange }: AvailabilitySelectorPr
           type="button"
           size="sm"
           onClick={addSlot}
-          disabled={
-            newSlot.day === undefined ||
-            !newSlot.startTime ||
-            !newSlot.endTime
-          }
+          disabled={newSlot.day === undefined || !newSlot.startTime || !newSlot.endTime}
         >
           <Plus className="h-4 w-4 mr-1" />
           Agregar
@@ -230,3 +201,4 @@ export const AvailabilitySelector = ({ value, onChange }: AvailabilitySelectorPr
       </div>
     </div>
   );
+};

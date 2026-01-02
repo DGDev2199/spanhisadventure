@@ -418,7 +418,7 @@ const Dashboard = () => {
         {/* Tasks Section */}
         <TasksList
           tasks={tasks || []}
-          onSubmitTask={(taskId, notes) => submitTaskMutation.mutate({ taskId, studentNotes: notes })}
+          useSubmitTask={(taskId, notes) => submitTaskMutation.mutate({ taskId, studentNotes: notes })}
           isSubmitting={submitTaskMutation.isPending}
         />
 

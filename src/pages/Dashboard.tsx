@@ -31,7 +31,6 @@ import {
   useStudentTasks,
   useStudentAssignments,
   useStaffProfile,
-  useSubmitTask,
   useHasCompletedWeeks,
 } from "@/hooks/useStudentDashboardData";
 import { StaffCard } from "@/components/dashboard/StaffCard";
@@ -76,6 +75,7 @@ const Dashboard = () => {
   const { data: teacherProfile, isLoading: teacherLoading } = useStaffProfile(studentProfile?.teacher_id, "teacher");
   const { data: tutorProfile, isLoading: tutorLoading } = useStaffProfile(studentProfile?.tutor_id, "tutor");
   const { data: hasCompletedWeeks } = useHasCompletedWeeks(user?.id);
+  const submitTaskMutation = useSubmitTask();
 
   // Memoized values
   const isOnlineStudent = useMemo(() => studentProfile?.student_type === "online", [studentProfile?.student_type]);

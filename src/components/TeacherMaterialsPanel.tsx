@@ -27,6 +27,7 @@ export const TeacherMaterialsPanel = () => {
   const { data: weeks = [] } = useProgramWeeks();
   const { data: allTopics = [] } = useAllWeekTopics();
   
+  const [isExpanded, setIsExpanded] = useState(false);
   const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set());
 
   // Fetch all materials including teacher guides
@@ -94,18 +95,43 @@ export const TeacherMaterialsPanel = () => {
     );
   }
 
+  const totalGuides = weeks.reduce((acc, week) => {
+    const topics = getTopicsForWeek(week.id);
+    return acc + topics.reduce((t, topic) => 
+      t + getMaterialsForTopic(topic.id).filter(m => m.is_teacher_guide).length, 0
+    );
+  }, 0);
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <BookOpen className="h-5 w-5 text-primary" />
-          Materiales y Guías del Currículo
-        </CardTitle>
-        <CardDescription>
-          Accede a los materiales extra y guías de enseñanza por tema
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+      <Card>
+        <CollapsibleTrigger className="w-full text-left">
+          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+            <CardTitle className="flex items-center gap-2">
+              {isExpanded ? (
+                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="h-5 w-5 text-muted-foreground" />
+              )}
+              <BookOpen className="h-5 w-5 text-primary" />
+              Materiales y Guías del Currículo
+              {totalGuides > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  <GraduationCap className="h-3 w-3 mr-1" />
+                  {totalGuides} guías
+                </Badge>
+              )}
+            </CardTitle>
+            <CardDescription className="ml-10">
+              {isExpanded 
+                ? "Accede a los materiales extra y guías de enseñanza por tema"
+                : "Clic para ver materiales y guías del currículo"
+              }
+            </CardDescription>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent>
         <ScrollArea className="max-h-[500px]">
           <div className="space-y-2">
             {weeks.map((week) => {
@@ -230,8 +256,10 @@ export const TeacherMaterialsPanel = () => {
               );
             })}
           </div>
-        </ScrollArea>
-      </CardContent>
+          </ScrollArea>
+        </CardContent>
+      </CollapsibleContent>
     </Card>
+  </Collapsible>
   );
 };

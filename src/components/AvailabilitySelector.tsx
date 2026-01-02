@@ -230,7 +230,3 @@ export const AvailabilitySelector = ({ value, onChange }: AvailabilitySelectorPr
       </div>
     </div>
   );
-};
->
-  );
-};

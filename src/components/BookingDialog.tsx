@@ -239,6 +239,11 @@ export const BookingDialog = ({
               locale={es}
               className="rounded-md border w-full"
             />
+            {!staffProfile?.availability && (
+              <p className="text-sm text-amber-600 mt-2 p-2 bg-amber-50 rounded border border-amber-200">
+                ⚠️ Este profesor aún no ha configurado su disponibilidad horaria.
+              </p>
+            )}
           </div>
 
           {/* Time Slots */}

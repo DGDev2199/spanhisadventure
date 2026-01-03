@@ -68,6 +68,7 @@ export interface StudentTopicProgress {
   student_id: string;
   topic_id: string;
   status: 'not_started' | 'in_progress' | 'needs_review' | 'completed';
+  color?: 'green' | 'yellow' | 'red' | 'blue' | null;
   updated_at: string;
 }
 
@@ -269,20 +270,29 @@ export const useUpdateTopicProgress = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ studentId, topicId, status, updatedBy }: { 
+    mutationFn: async ({ studentId, topicId, status, color, updatedBy }: { 
       studentId: string; 
       topicId: string; 
-      status: 'not_started' | 'in_progress' | 'needs_review' | 'completed';
+      status?: 'not_started' | 'in_progress' | 'needs_review' | 'completed';
+      color?: 'green' | 'yellow' | 'red' | 'blue' | null;
       updatedBy: string;
     }) => {
+      const updateData: Record<string, unknown> = {
+        student_id: studentId,
+        topic_id: topicId,
+        updated_by: updatedBy,
+      };
+      
+      if (status !== undefined) {
+        updateData.status = status;
+      }
+      if (color !== undefined) {
+        updateData.color = color;
+      }
+      
       const { error } = await supabase
         .from('student_topic_progress')
-        .upsert({
-          student_id: studentId,
-          topic_id: topicId,
-          status,
-          updated_by: updatedBy,
-        }, {
+        .upsert(updateData as any, {
           onConflict: 'student_id,topic_id',
         });
       if (error) throw error;

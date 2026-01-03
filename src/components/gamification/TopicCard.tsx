@@ -5,11 +5,12 @@ import { CheckCircle2, AlertCircle, Circle, HelpCircle, Lock, Sparkles } from "l
 interface TopicCardProps {
   topic: WeekTopic;
   status: 'not_started' | 'in_progress' | 'needs_review' | 'completed';
+  color?: 'green' | 'yellow' | 'red' | 'blue' | null;
   onClick: () => void;
   isLocked?: boolean;
 }
 
-export const TopicCard = ({ topic, status, onClick, isLocked = false }: TopicCardProps) => {
+export const TopicCard = ({ topic, status, color, onClick, isLocked = false }: TopicCardProps) => {
   const getStatusConfig = () => {
     // Si está bloqueado, mostrar estilo especial de preview
     if (isLocked) {
@@ -19,6 +20,40 @@ export const TopicCard = ({ topic, status, onClick, isLocked = false }: TopicCar
         label: 'Próximamente',
         textColor: 'text-muted-foreground/70',
       };
+    }
+
+    // Si el profesor asignó un color, usarlo en lugar del status automático
+    if (color) {
+      switch (color) {
+        case 'green':
+          return {
+            bg: 'bg-green-100 dark:bg-green-900/30 border-green-500',
+            icon: <CheckCircle2 className="h-5 w-5 text-green-600" />,
+            label: 'Dominado',
+            textColor: 'text-green-800 dark:text-green-300',
+          };
+        case 'yellow':
+          return {
+            bg: 'bg-yellow-100 dark:bg-yellow-900/30 border-yellow-500',
+            icon: <AlertCircle className="h-5 w-5 text-yellow-600" />,
+            label: 'Necesita práctica',
+            textColor: 'text-yellow-800 dark:text-yellow-300',
+          };
+        case 'red':
+          return {
+            bg: 'bg-red-100 dark:bg-red-900/30 border-red-500',
+            icon: <AlertCircle className="h-5 w-5 text-red-600" />,
+            label: 'Dificultad',
+            textColor: 'text-red-800 dark:text-red-300',
+          };
+        case 'blue':
+          return {
+            bg: 'bg-blue-100 dark:bg-blue-900/30 border-blue-500',
+            icon: <Circle className="h-5 w-5 text-blue-600 fill-blue-200" />,
+            label: 'En progreso',
+            textColor: 'text-blue-800 dark:text-blue-300',
+          };
+      }
     }
 
     switch (status) {

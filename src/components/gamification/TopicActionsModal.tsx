@@ -30,7 +30,8 @@ import {
   Calendar,
   ExternalLink,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Palette
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -61,6 +62,7 @@ export const TopicActionsModal = ({
   
   const currentProgress = allProgress.find(p => p.topic_id === topic.id);
   const currentStatus = currentProgress?.status || 'not_started';
+  const currentColor = currentProgress?.color as 'green' | 'yellow' | 'red' | 'blue' | null | undefined;
 
   // Fetch student's assigned teacher
   const { data: studentProfile } = useQuery({
@@ -140,6 +142,21 @@ export const TopicActionsModal = ({
     }
   };
 
+  const handleColorChange = async (newColor: 'green' | 'yellow' | 'red' | 'blue') => {
+    if (!user) return;
+    try {
+      await updateProgress.mutateAsync({
+        studentId,
+        topicId: topic.id,
+        color: newColor,
+        updatedBy: user.id,
+      });
+      toast.success(t('progress.colorUpdated', 'Color de evaluación actualizado'));
+    } catch (error) {
+      toast.error(t('errors.generic', 'Error al actualizar'));
+    }
+  };
+
   const handleOpenMaterial = (url: string | null) => {
     if (url) {
       window.open(url, '_blank');
@@ -203,10 +220,71 @@ export const TopicActionsModal = ({
             </Badge>
           </div>
 
-          {/* Status change buttons (for staff) */}
+          {/* Color assignment and status change (for staff) */}
           {isEditable && (
             <>
               <Separator />
+              
+              {/* Color selector */}
+              <div className="space-y-2">
+                <p className="text-xs sm:text-sm font-medium flex items-center gap-1">
+                  <Palette className="h-3 w-3 sm:h-4 sm:w-4" />
+                  Asignar color de evaluación:
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className={cn(
+                      "h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full",
+                      currentColor === 'green' ? 'ring-2 ring-green-600 ring-offset-2' : ''
+                    )}
+                    style={{ backgroundColor: '#22c55e' }}
+                    onClick={() => handleColorChange('green')}
+                    title="Dominado"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className={cn(
+                      "h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full",
+                      currentColor === 'yellow' ? 'ring-2 ring-yellow-600 ring-offset-2' : ''
+                    )}
+                    style={{ backgroundColor: '#eab308' }}
+                    onClick={() => handleColorChange('yellow')}
+                    title="Necesita práctica"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className={cn(
+                      "h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full",
+                      currentColor === 'red' ? 'ring-2 ring-red-600 ring-offset-2' : ''
+                    )}
+                    style={{ backgroundColor: '#ef4444' }}
+                    onClick={() => handleColorChange('red')}
+                    title="Dificultad"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className={cn(
+                      "h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full",
+                      currentColor === 'blue' ? 'ring-2 ring-blue-600 ring-offset-2' : ''
+                    )}
+                    style={{ backgroundColor: '#3b82f6' }}
+                    onClick={() => handleColorChange('blue')}
+                    title="En progreso"
+                  />
+                </div>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
+                  🟢 Dominado • 🟡 Práctica • 🔴 Dificultad • 🔵 En progreso
+                </p>
+              </div>
+
+              <Separator />
+              
+              {/* Status change */}
               <div className="space-y-2">
                 <p className="text-xs sm:text-sm font-medium">Cambiar estado:</p>
                 <div className="grid grid-cols-2 gap-2">
@@ -287,7 +365,7 @@ export const TopicActionsModal = ({
                 onClick={handleTakePracticeTest}
               >
                 <ClipboardList className="h-3 w-3 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
-                <span className="truncate">{t('progress.takePracticeTest', 'Hacer examen de práctica')}</span>
+                <span className="truncate">{t('progress.takeRevaluationTest', 'Hacer examen de reevaluación')}</span>
               </Button>
               <Button
                 variant="outline"

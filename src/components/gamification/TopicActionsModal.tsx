@@ -156,7 +156,7 @@ export const TopicActionsModal = ({
 
   const handleTakePracticeTest = () => {
     if (availableTests.length === 0) {
-      toast.info(t('progress.noTestsAvailable', 'No hay exámenes de práctica disponibles'));
+      toast.info(t('progress.noTestsAvailable', 'No tienes exámenes asignados. Tu profesor debe asignarte un examen primero.'));
       return;
     }
     

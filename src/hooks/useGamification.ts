@@ -180,15 +180,22 @@ export const useAllWeekTopics = () => {
   });
 };
 
-export const useTopicMaterials = (topicId: string | undefined) => {
+export const useTopicMaterials = (topicId: string | undefined, excludeTeacherGuides: boolean = true) => {
   return useQuery({
-    queryKey: ['topic-materials', topicId],
+    queryKey: ['topic-materials', topicId, excludeTeacherGuides],
     queryFn: async () => {
       if (!topicId) return [];
-      const { data, error } = await supabase
+      let query = supabase
         .from('topic_materials')
         .select('*')
         .eq('topic_id', topicId);
+      
+      // Excluir guías del profesor para estudiantes
+      if (excludeTeacherGuides) {
+        query = query.eq('is_teacher_guide', false);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       return data as TopicMaterial[];
     },

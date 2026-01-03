@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -40,7 +41,9 @@ import {
   Link as LinkIcon,
   ClipboardList,
   Upload,
-  Loader2
+  Loader2,
+  GraduationCap,
+  BookMarked
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -67,7 +70,9 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
   const [materialType, setMaterialType] = useState<string>("document");
   const [materialUrl, setMaterialUrl] = useState("");
   const [materialTopicId, setMaterialTopicId] = useState<string | null>(null);
+  const [isTeacherGuide, setIsTeacherGuide] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [materialTab, setMaterialTab] = useState<'student' | 'teacher'>('student');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getTopicsForWeek = (weekId: string) => {
@@ -137,15 +142,19 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
           title: materialTitle.trim(),
           material_type: materialType,
           content_url: materialUrl.trim() || null,
+          is_teacher_guide: isTeacherGuide,
         });
       
       if (error) throw error;
       
-      toast.success(t('curriculum.materialAdded', 'Material agregado'));
+      toast.success(isTeacherGuide 
+        ? t('curriculum.guideAdded', 'Guía del profesor agregada')
+        : t('curriculum.materialAdded', 'Material del estudiante agregado'));
       setMaterialTitle("");
       setMaterialUrl("");
       setAddingMaterial(false);
       setMaterialTopicId(null);
+      setIsTeacherGuide(false);
       queryClient.invalidateQueries({ queryKey: ['topic-materials'] });
     } catch (error) {
       toast.error(t('errors.generic', 'Error al agregar material'));
@@ -274,12 +283,27 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
                                 size="icon"
                                 variant="ghost"
                                 className="h-8 w-8"
+                                title="Agregar material del estudiante"
                                 onClick={() => {
                                   setMaterialTopicId(topic.id);
+                                  setIsTeacherGuide(false);
                                   setAddingMaterial(true);
                                 }}
                               >
-                                <Plus className="h-4 w-4" />
+                                <GraduationCap className="h-4 w-4 text-blue-500" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8"
+                                title="Agregar guía del profesor"
+                                onClick={() => {
+                                  setMaterialTopicId(topic.id);
+                                  setIsTeacherGuide(true);
+                                  setAddingMaterial(true);
+                                }}
+                              >
+                                <BookMarked className="h-4 w-4 text-purple-500" />
                               </Button>
                               <Button
                                 size="icon"
@@ -338,12 +362,46 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
           <TabsContent value="materials" className="mt-4 flex-1 overflow-y-auto">
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Para agregar material, selecciona una semana en la pestaña anterior y usa el botón + en cada tema.
+                Para agregar material, selecciona una semana en la pestaña anterior y usa los botones en cada tema:
+                <span className="flex items-center gap-4 mt-2">
+                  <span className="flex items-center gap-1 text-blue-600">
+                    <GraduationCap className="h-4 w-4" /> Material del estudiante
+                  </span>
+                  <span className="flex items-center gap-1 text-purple-600">
+                    <BookMarked className="h-4 w-4" /> Guía del profesor
+                  </span>
+                </span>
               </p>
 
               {addingMaterial && materialTopicId && (
                 <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
-                  <h4 className="font-medium">Agregar Material Extra</h4>
+                  <h4 className="font-medium flex items-center gap-2">
+                    {isTeacherGuide ? (
+                      <>
+                        <BookMarked className="h-4 w-4 text-purple-500" />
+                        Agregar Guía del Profesor
+                      </>
+                    ) : (
+                      <>
+                        <GraduationCap className="h-4 w-4 text-blue-500" />
+                        Agregar Material del Estudiante
+                      </>
+                    )}
+                  </h4>
+                  
+                  <div className="flex items-center space-x-3 p-2 rounded-lg bg-muted">
+                    <Switch 
+                      id="teacher-guide"
+                      checked={isTeacherGuide} 
+                      onCheckedChange={setIsTeacherGuide} 
+                    />
+                    <Label htmlFor="teacher-guide" className="text-sm cursor-pointer">
+                      {isTeacherGuide 
+                        ? "🔒 Guía del profesor (no visible para estudiantes)" 
+                        : "📚 Material del estudiante (visible para todos)"}
+                    </Label>
+                  </div>
+                  
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
                       <Label>Título</Label>
@@ -405,6 +463,7 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
                     <Button variant="outline" onClick={() => {
                       setAddingMaterial(false);
                       setMaterialTopicId(null);
+                      setIsTeacherGuide(false);
                     }}>
                       Cancelar
                     </Button>

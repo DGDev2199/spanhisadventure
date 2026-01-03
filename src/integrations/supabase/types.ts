@@ -1826,6 +1826,7 @@ export type Database = {
       }
       student_topic_progress: {
         Row: {
+          color: string | null
           id: string
           status: string
           student_id: string
@@ -1834,6 +1835,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          color?: string | null
           id?: string
           status?: string
           student_id: string
@@ -1842,6 +1844,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          color?: string | null
           id?: string
           status?: string
           student_id?: string

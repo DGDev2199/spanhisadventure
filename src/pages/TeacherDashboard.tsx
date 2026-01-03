@@ -876,13 +876,9 @@ const TeacherDashboard = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>Tests Personalizados</CardTitle>
-                <CardDescription>Tests creados y asignados a tus estudiantes</CardDescription>
+                <CardTitle>Exámenes de Reevaluación</CardTitle>
+                <CardDescription>Tests asignados a tus estudiantes (creados por admin/coordinador)</CardDescription>
               </div>
-              <Button size="sm" onClick={() => setIsCreateTestDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Crear Test
-              </Button>
             </div>
           </CardHeader>
           <CardContent>

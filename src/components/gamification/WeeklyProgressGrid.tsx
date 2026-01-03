@@ -177,13 +177,14 @@ export const WeeklyProgressGrid = ({
             <CardContent className="px-3 sm:px-6">
               {/* Topics grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-                {getTopicsForWeek(selectedWeek.id).map((topic) => {
+              {getTopicsForWeek(selectedWeek.id).map((topic) => {
                   const topicProgress = getTopicProgress(topic.id);
                   return (
                     <TopicCard
                       key={topic.id}
                       topic={topic}
                       status={topicProgress?.status || 'not_started'}
+                      color={topicProgress?.color as 'green' | 'yellow' | 'red' | 'blue' | null | undefined}
                       onClick={() => handleTopicClick(topic, isPreviewMode)}
                       isLocked={isPreviewMode}
                     />

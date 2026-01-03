@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { CheckCircle, Lock, BookOpen, Trash2, Pencil, Calendar, Download, GraduationCap, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { DayProgressModal } from './DayProgressModal';
+import { useProgramWeeks, useAllWeekTopics } from '@/hooks/useGamification';
 import jsPDF from 'jspdf';
 
 interface StudentProgressViewProps {
@@ -47,8 +48,11 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
   const [newWeekTheme, setNewWeekTheme] = useState('');
   
   // Modal state
-  const [selectedDay, setSelectedDay] = useState<{ weekId: string; dayType: string; dayLabel: string } | null>(null);
+  const [selectedDay, setSelectedDay] = useState<{ weekId: string; weekNumber: number; dayType: string; dayLabel: string } | null>(null);
 
+  // Fetch program weeks and topics for suggestions
+  const { data: programWeeks = [] } = useProgramWeeks();
+  const { data: allCurriculumTopics = [] } = useAllWeekTopics();
   // Fetch current user to determine role
   const { data: currentUser } = useQuery({
     queryKey: ['current-user'],
@@ -704,7 +708,7 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                           return (
                             <div
                               key={day}
-                              onClick={() => canInteract && setSelectedDay({ weekId: week.id, dayType: day, dayLabel: DAY_LABELS[day] })}
+                              onClick={() => canInteract && setSelectedDay({ weekId: week.id, weekNumber: week.week_number, dayType: day, dayLabel: DAY_LABELS[day] })}
                               className={`p-4 rounded-lg border transition-all ${
                                 canInteract 
                                   ? 'cursor-pointer hover:border-primary hover:shadow-md' 
@@ -790,19 +794,30 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
       </Accordion>
 
       {/* Day Progress Modal */}
-      {selectedDay && (
-        <DayProgressModal
-          open={!!selectedDay}
-          onClose={() => setSelectedDay(null)}
-          weekId={selectedDay.weekId}
-          studentId={studentId}
-          dayType={selectedDay.dayType}
-          dayLabel={selectedDay.dayLabel}
-          isEditable={isEditable}
-          existingNote={getNoteForDay(selectedDay.weekId, selectedDay.dayType)}
-          userRole={getUserRole()}
-        />
-      )}
+      {selectedDay && (() => {
+        // Find the matching program week based on week_number to get its topics
+        const matchingProgramWeek = programWeeks.find(pw => pw.week_number === selectedDay.weekNumber);
+        const weekTopicsForModal = matchingProgramWeek 
+          ? allCurriculumTopics
+              .filter(t => t.week_id === matchingProgramWeek.id)
+              .map(t => ({ id: t.id, name: t.name }))
+          : [];
+        
+        return (
+          <DayProgressModal
+            open={!!selectedDay}
+            onClose={() => setSelectedDay(null)}
+            weekId={selectedDay.weekId}
+            studentId={studentId}
+            dayType={selectedDay.dayType}
+            dayLabel={selectedDay.dayLabel}
+            isEditable={isEditable}
+            existingNote={getNoteForDay(selectedDay.weekId, selectedDay.dayType)}
+            userRole={getUserRole()}
+            weekTopics={weekTopicsForModal}
+          />
+        );
+      })()}
     </div>
   );
 };

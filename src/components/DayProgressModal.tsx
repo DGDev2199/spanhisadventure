@@ -14,6 +14,11 @@ import { Label } from '@/components/ui/label';
 import { BookOpen, MessageSquare, BookMarked, Trophy, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 
+interface WeekTopic {
+  id: string;
+  name: string;
+}
+
 interface DayProgressModalProps {
   open: boolean;
   onClose: () => void;
@@ -36,6 +41,7 @@ interface DayProgressModalProps {
     challenges_by?: string | null;
   };
   userRole: 'teacher' | 'tutor' | 'student' | 'admin';
+  weekTopics?: WeekTopic[];
 }
 
 export const DayProgressModal = ({
@@ -48,6 +54,7 @@ export const DayProgressModal = ({
   isEditable,
   existingNote,
   userRole,
+  weekTopics = [],
 }: DayProgressModalProps) => {
   const queryClient = useQueryClient();
   
@@ -162,13 +169,36 @@ export const DayProgressModal = ({
               <span className="text-xs text-muted-foreground font-normal">(Profesor/Tutor)</span>
             </Label>
             {isEditable && canEditClassTopics ? (
-              <Textarea
-                value={classTopics}
-                onChange={(e) => setClassTopics(e.target.value)}
-                placeholder="Describe los temas que se enseñaron en clase..."
-                rows={3}
-                className="resize-none"
-              />
+              <>
+                {/* Topic suggestions */}
+                {weekTopics.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    <span className="text-xs text-muted-foreground mr-1">Sugerencias:</span>
+                    {weekTopics.map(topic => (
+                      <Button
+                        key={topic.id}
+                        variant="outline"
+                        size="sm"
+                        className="text-xs h-6 px-2"
+                        onClick={() => {
+                          setClassTopics(prev => 
+                            prev ? `${prev}, ${topic.name}` : topic.name
+                          );
+                        }}
+                      >
+                        + {topic.name}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+                <Textarea
+                  value={classTopics}
+                  onChange={(e) => setClassTopics(e.target.value)}
+                  placeholder="Describe los temas que se enseñaron en clase..."
+                  rows={3}
+                  className="resize-none"
+                />
+              </>
             ) : (
               <div className={`min-h-[60px] p-3 rounded-md text-sm border-l-4 ${
                 classTopics 

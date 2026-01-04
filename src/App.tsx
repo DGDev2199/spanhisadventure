@@ -13,6 +13,7 @@ import Auth from "./pages/Auth";
 import DashboardRouter from "./components/DashboardRouter";
 import PlacementTest from "./pages/PlacementTest";
 import TakeCustomTest from "./pages/TakeCustomTest";
+import TakeReevaluationTest from "./pages/TakeReevaluationTest";
 import ProfileVerification from "./pages/ProfileVerification";
 import PendingApproval from "./pages/PendingApproval";
 import BrowseTeachers from "./pages/BrowseTeachers";
@@ -88,6 +89,14 @@ const App = () => (
                     <FeatureGate feature="custom_tests" fallback={<NotFound />}>
                       <TakeCustomTest />
                     </FeatureGate>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/take-reevaluation-test/:testId"
+                element={
+                  <ProtectedRoute requiredRole={['student']}>
+                    <TakeReevaluationTest />
                   </ProtectedRoute>
                 }
               />

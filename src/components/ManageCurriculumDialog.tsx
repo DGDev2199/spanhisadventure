@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +30,7 @@ import {
   type WeekTopic 
 } from "@/hooks/useGamification";
 import { supabase } from "@/integrations/supabase/client";
+import { CreateTopicReevaluationTestDialog } from "@/components/CreateTopicReevaluationTestDialog";
 import { 
   Plus, 
   Edit2, 
@@ -43,7 +44,8 @@ import {
   Upload,
   Loader2,
   GraduationCap,
-  BookMarked
+  BookMarked,
+  CheckCircle2
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -64,6 +66,10 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
   const [newTopicName, setNewTopicName] = useState("");
   const [newTopicDesc, setNewTopicDesc] = useState("");
   
+  // Re-evaluation test dialog
+  const [showCreateTestDialog, setShowCreateTestDialog] = useState(false);
+  const [selectedTopicForTest, setSelectedTopicForTest] = useState<WeekTopic | null>(null);
+  
   // Material form
   const [addingMaterial, setAddingMaterial] = useState(false);
   const [materialTitle, setMaterialTitle] = useState("");
@@ -74,6 +80,22 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
   const [isUploading, setIsUploading] = useState(false);
   const [materialTab, setMaterialTab] = useState<'student' | 'teacher'>('student');
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Query to check which topics have re-evaluation tests
+  const { data: topicTests = [] } = useQuery({
+    queryKey: ['topic-reevaluation-tests'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('topic_reevaluation_tests')
+        .select('topic_id');
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  const hasReevaluationTest = (topicId: string) => {
+    return topicTests.some(t => t.topic_id === topicId);
+  };
 
   const getTopicsForWeek = (weekId: string) => {
     return allTopics.filter(t => t.week_id === weekId);
@@ -308,6 +330,30 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
                               <Button
                                 size="icon"
                                 variant="ghost"
+                                className={cn(
+                                  "h-8 w-8",
+                                  hasReevaluationTest(topic.id) 
+                                    ? "text-green-500" 
+                                    : "text-amber-500"
+                                )}
+                                title={hasReevaluationTest(topic.id) 
+                                  ? "Examen de reevaluación creado" 
+                                  : "Crear examen de reevaluación"
+                                }
+                                onClick={() => {
+                                  setSelectedTopicForTest(topic);
+                                  setShowCreateTestDialog(true);
+                                }}
+                              >
+                                {hasReevaluationTest(topic.id) ? (
+                                  <CheckCircle2 className="h-4 w-4" />
+                                ) : (
+                                  <ClipboardList className="h-4 w-4" />
+                                )}
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
                                 className="h-8 w-8 text-destructive"
                                 onClick={() => handleDeleteTopic(topic.id)}
                               >
@@ -474,6 +520,19 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      {/* Create Re-evaluation Test Dialog */}
+      {selectedTopicForTest && (
+        <CreateTopicReevaluationTestDialog
+          open={showCreateTestDialog}
+          onOpenChange={(open) => {
+            setShowCreateTestDialog(open);
+            if (!open) setSelectedTopicForTest(null);
+          }}
+          topicId={selectedTopicForTest.id}
+          topicName={selectedTopicForTest.name}
+        />
+      )}
     </Dialog>
   );
 };

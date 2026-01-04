@@ -2469,6 +2469,188 @@ export type Database = {
           },
         ]
       }
+      topic_reevaluation_attempts: {
+        Row: {
+          answers: Json | null
+          completed_at: string | null
+          id: string
+          result_color: string | null
+          score: number | null
+          started_at: string | null
+          student_id: string
+          test_id: string
+        }
+        Insert: {
+          answers?: Json | null
+          completed_at?: string | null
+          id?: string
+          result_color?: string | null
+          score?: number | null
+          started_at?: string | null
+          student_id: string
+          test_id: string
+        }
+        Update: {
+          answers?: Json | null
+          completed_at?: string | null
+          id?: string
+          result_color?: string | null
+          score?: number | null
+          started_at?: string | null
+          student_id?: string
+          test_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_reevaluation_attempts_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_reevaluation_attempts_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "public_staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_reevaluation_attempts_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "safe_profiles_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_reevaluation_attempts_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "user_rankings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_reevaluation_attempts_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "topic_reevaluation_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      topic_reevaluation_questions: {
+        Row: {
+          correct_answer: string | null
+          created_at: string | null
+          id: string
+          options: Json | null
+          order_number: number | null
+          points: number | null
+          question_text: string
+          question_type: string
+          test_id: string
+        }
+        Insert: {
+          correct_answer?: string | null
+          created_at?: string | null
+          id?: string
+          options?: Json | null
+          order_number?: number | null
+          points?: number | null
+          question_text: string
+          question_type: string
+          test_id: string
+        }
+        Update: {
+          correct_answer?: string | null
+          created_at?: string | null
+          id?: string
+          options?: Json | null
+          order_number?: number | null
+          points?: number | null
+          question_text?: string
+          question_type?: string
+          test_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_reevaluation_questions_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "topic_reevaluation_tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      topic_reevaluation_tests: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          passing_score: number | null
+          time_limit_minutes: number | null
+          title: string
+          topic_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          passing_score?: number | null
+          time_limit_minutes?: number | null
+          title: string
+          topic_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          passing_score?: number | null
+          time_limit_minutes?: number | null
+          title?: string
+          topic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "topic_reevaluation_tests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_reevaluation_tests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_reevaluation_tests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "safe_profiles_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_reevaluation_tests_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_rankings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topic_reevaluation_tests_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "week_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tutor_sessions: {
         Row: {
           created_at: string

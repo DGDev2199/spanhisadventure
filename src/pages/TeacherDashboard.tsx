@@ -27,6 +27,8 @@ import { TeacherTaskReviewPanel } from '@/components/TeacherTaskReviewPanel';
 import { TeacherScheduledClassesCard } from '@/components/TeacherScheduledClassesCard';
 import { TeacherMaterialsPanel } from '@/components/TeacherMaterialsPanel';
 import { StudentProgressView } from '@/components/StudentProgressView';
+import { WeeklyProgressGrid } from '@/components/gamification/WeeklyProgressGrid';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MyScheduleDialog } from '@/components/MyScheduleDialog';
 import { AssignMultipleStudentsDialog } from '@/components/AssignMultipleStudentsDialog';
 import { NotificationBell } from '@/components/NotificationBell';
@@ -75,7 +77,7 @@ const TeacherDashboard = () => {
   const [taskAttachment, setTaskAttachment] = useState<File | null>(null);
   const [isUploadingTask, setIsUploadingTask] = useState(false);
   const [progressDialogOpen, setProgressDialogOpen] = useState(false);
-  const [progressStudent, setProgressStudent] = useState<{ id: string; name: string } | null>(null);
+  const [progressStudent, setProgressStudent] = useState<{ id: string; name: string; level: string | null } | null>(null);
   const [myScheduleOpen, setMyScheduleOpen] = useState(false);
   const [assignMultipleOpen, setAssignMultipleOpen] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
@@ -560,7 +562,7 @@ const TeacherDashboard = () => {
                               size="sm"
                               variant="outline"
                               onClick={() => {
-                                setProgressStudent({ id: student.user_id, name: student.profiles?.full_name });
+                                setProgressStudent({ id: student.user_id, name: student.profiles?.full_name, level: student.level });
                                 setProgressDialogOpen(true);
                               }}
                               className="flex-1 min-w-[90px]"
@@ -687,7 +689,7 @@ const TeacherDashboard = () => {
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              setProgressStudent({ id: student.user_id, name: student.profiles?.full_name });
+                              setProgressStudent({ id: student.user_id, name: student.profiles?.full_name, level: student.level });
                               setProgressDialogOpen(true);
                             }}
                           >
@@ -1031,7 +1033,29 @@ const TeacherDashboard = () => {
                 Seguimiento semanal del aprendizaje y desarrollo
               </DialogDescription>
             </DialogHeader>
-            <StudentProgressView studentId={progressStudent.id} isEditable={true} />
+            
+            <Tabs defaultValue="curriculum" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="curriculum">
+                  📊 Progreso del Currículo
+                </TabsTrigger>
+                <TabsTrigger value="notes">
+                  📝 Notas Semanales
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="curriculum" className="mt-4">
+                <WeeklyProgressGrid 
+                  studentId={progressStudent.id} 
+                  studentLevel={progressStudent.level}
+                  isEditable={true}
+                />
+              </TabsContent>
+              
+              <TabsContent value="notes" className="mt-4">
+                <StudentProgressView studentId={progressStudent.id} isEditable={true} />
+              </TabsContent>
+            </Tabs>
           </DialogContent>
         </Dialog>
       )}

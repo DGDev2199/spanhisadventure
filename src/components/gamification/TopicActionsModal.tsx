@@ -97,22 +97,18 @@ export const TopicActionsModal = ({
     enabled: !!studentProfile?.teacher_id
   });
 
-  // Fetch available tests for the student
-  const { data: availableTests = [] } = useQuery({
-    queryKey: ['available-tests-for-student', studentId],
+  // Fetch re-evaluation test for this specific topic
+  const { data: reevaluationTest } = useQuery({
+    queryKey: ['topic-reevaluation-test', topic.id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('test_assignments')
-        .select(`
-          id,
-          status,
-          test:custom_tests(id, title, test_type)
-        `)
-        .eq('student_id', studentId)
-        .in('status', ['pending', 'in_progress']);
+        .from('topic_reevaluation_tests')
+        .select('id, title')
+        .eq('topic_id', topic.id)
+        .maybeSingle();
       
       if (error) throw error;
-      return data || [];
+      return data;
     },
     enabled: open
   });
@@ -171,18 +167,14 @@ export const TopicActionsModal = ({
     setShowBookingDialog(true);
   };
 
-  const handleTakePracticeTest = () => {
-    if (availableTests.length === 0) {
-      toast.info(t('progress.noTestsAvailable', 'No tienes exámenes asignados. Tu profesor debe asignarte un examen primero.'));
+  const handleTakeReevaluationTest = () => {
+    if (!reevaluationTest) {
+      toast.info(t('progress.noReevaluationTest', 'Este tema aún no tiene examen de reevaluación'));
       return;
     }
     
-    // Navigate to the first available test
-    const firstTest = availableTests[0];
-    if (firstTest?.test?.id) {
-      onOpenChange(false);
-      navigate(`/take-custom-test/${firstTest.test.id}`);
-    }
+    onOpenChange(false);
+    navigate(`/take-reevaluation-test/${reevaluationTest.id}`);
   };
 
   return (
@@ -362,10 +354,16 @@ export const TopicActionsModal = ({
                 variant="outline"
                 size="sm"
                 className="justify-start h-8 sm:h-9 text-xs sm:text-sm"
-                onClick={handleTakePracticeTest}
+                onClick={handleTakeReevaluationTest}
+                disabled={!reevaluationTest}
               >
                 <ClipboardList className="h-3 w-3 sm:h-4 sm:w-4 mr-2 flex-shrink-0" />
-                <span className="truncate">{t('progress.takeRevaluationTest', 'Hacer examen de reevaluación')}</span>
+                <span className="truncate">
+                  {reevaluationTest 
+                    ? t('progress.takeRevaluationTest', 'Hacer examen de reevaluación')
+                    : t('progress.noReevaluationTest', 'Sin examen de reevaluación')
+                  }
+                </span>
               </Button>
               <Button
                 variant="outline"

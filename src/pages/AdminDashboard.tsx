@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { LogOut, Users, GraduationCap, UserCheck, BookOpen, Settings, Home, Calendar, Plus, FileCheck, Clock, TrendingUp, Trash2, RotateCcw, UsersRound, ClipboardList } from 'lucide-react';
+import { LogOut, Users, GraduationCap, UserCheck, BookOpen, Settings, Home, Calendar, Plus, FileCheck, Clock, TrendingUp, Trash2, RotateCcw, UsersRound, Trophy as TrophyIcon } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -30,7 +30,7 @@ import { VideoCallHistoryAdmin } from '@/components/VideoCallHistoryAdmin';
 import { EarningsPanel } from '@/components/EarningsPanel';
 import { ModalityRequestsPanel } from '@/components/ModalityRequestsPanel';
 import { ManageCurriculumDialog } from '@/components/ManageCurriculumDialog';
-import { CreateTestDialog } from '@/components/CreateTestDialog';
+import { ManageAchievementsDialog } from '@/components/ManageAchievementsDialog';
 import { useSwipeable } from 'react-swipeable';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
@@ -63,7 +63,7 @@ const AdminDashboard = () => {
   const [assignMultipleSchedulesOpen, setAssignMultipleSchedulesOpen] = useState(false);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [curriculumDialogOpen, setCurriculumDialogOpen] = useState(false);
-  const [createTestDialogOpen, setCreateTestDialogOpen] = useState(false);
+  const [achievementsDialogOpen, setAchievementsDialogOpen] = useState(false);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
@@ -400,13 +400,13 @@ const AdminDashboard = () => {
             </Button>
             
             <Button 
-              onClick={() => setCreateTestDialogOpen(true)} 
+              onClick={() => setAchievementsDialogOpen(true)} 
               variant="outline"
               className="flex flex-col items-center justify-center h-20 sm:h-24 gap-1.5 sm:gap-2 bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30 hover:border-purple-500/50 transition-all hover:shadow-lg hover:-translate-y-0.5 group"
             >
-              <ClipboardList className="h-6 w-6 sm:h-7 sm:w-7 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform" />
+              <TrophyIcon className="h-6 w-6 sm:h-7 sm:w-7 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform" />
               <span className="text-[10px] sm:text-xs font-medium text-center leading-tight text-purple-700 dark:text-purple-300">
-                Crear Examen
+                Gestionar Logros
               </span>
             </Button>
             
@@ -969,14 +969,10 @@ const AdminDashboard = () => {
         onOpenChange={setCurriculumDialogOpen}
       />
 
-      {/* Create Test Dialog for Re-evaluation exams */}
-      <CreateTestDialog
-        open={createTestDialogOpen}
-        onOpenChange={setCreateTestDialogOpen}
-        students={students?.map(s => ({
-          id: s.user_id,
-          profiles: { full_name: s.profiles?.full_name || 'Sin nombre' }
-        })) || []}
+      {/* Manage Achievements Dialog */}
+      <ManageAchievementsDialog
+        open={achievementsDialogOpen}
+        onOpenChange={setAchievementsDialogOpen}
       />
     </div>
   );

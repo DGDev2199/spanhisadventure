@@ -29,23 +29,25 @@ function TasksListComponent({ tasks, onSubmitTask, isSubmitting }: TasksListProp
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [taskNotes, setTaskNotes] = useState<Record<string, string>>({});
   const [submittingTaskId, setSubmittingTaskId] = useState<string | null>(null);
+  const [submittedTaskIds, setSubmittedTaskIds] = useState<Set<string>>(new Set());
   
   if (!tasks || tasks.length === 0) return null;
 
-  const getStatusBadge = (status: string, score?: number) => {
+  const getStatusBadge = (status: string, score?: number, isLocallySubmitted?: boolean) => {
+    if (isLocallySubmitted || status === 'submitted') {
+      return (
+        <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-700 gap-1">
+          <Clock className="h-3 w-3" />
+          En revisión
+        </Badge>
+      );
+    }
     switch (status) {
       case 'reviewed':
         return (
           <Badge className="bg-green-500 hover:bg-green-600 text-white gap-1">
             <CheckCircle2 className="h-3 w-3" />
             {score !== undefined ? `${score} pts` : 'Revisada'}
-          </Badge>
-        );
-      case 'submitted':
-        return (
-          <Badge variant="secondary" className="bg-yellow-500/20 text-yellow-700 gap-1">
-            <Clock className="h-3 w-3" />
-            En revisión
           </Badge>
         );
       default:
@@ -59,9 +61,14 @@ function TasksListComponent({ tasks, onSubmitTask, isSubmitting }: TasksListProp
 
   const handleSubmit = async (taskId: string) => {
     setSubmittingTaskId(taskId);
-    await onSubmitTask(taskId, taskNotes[taskId]);
-    setSubmittingTaskId(null);
-    setExpandedTask(null);
+    try {
+      await onSubmitTask(taskId, taskNotes[taskId]);
+      // Mark as locally submitted to prevent button from reappearing
+      setSubmittedTaskIds(prev => new Set(prev).add(taskId));
+    } finally {
+      setSubmittingTaskId(null);
+      setExpandedTask(null);
+    }
   };
 
   return (
@@ -82,8 +89,9 @@ function TasksListComponent({ tasks, onSubmitTask, isSubmitting }: TasksListProp
       <CardContent>
         <div className="space-y-3">
           {tasks.map((task) => {
-            const isPending = task.status === 'pending' || !task.status;
-            const isSubmitted = task.status === 'submitted';
+            const isLocallySubmitted = submittedTaskIds.has(task.id);
+            const isPending = (task.status === 'pending' || !task.status) && !isLocallySubmitted;
+            const isSubmitted = task.status === 'submitted' || isLocallySubmitted;
             const isReviewed = task.status === 'reviewed';
             const isCurrentlySubmitting = submittingTaskId === task.id;
             
@@ -101,7 +109,7 @@ function TasksListComponent({ tasks, onSubmitTask, isSubmitting }: TasksListProp
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <h4 className="font-medium">{task.title}</h4>
-                      {getStatusBadge(task.status || 'pending', task.score)}
+                      {getStatusBadge(task.status || 'pending', task.score, isLocallySubmitted)}
                     </div>
                     {task.description && (
                       <p className="text-sm text-muted-foreground mt-1">{task.description}</p>

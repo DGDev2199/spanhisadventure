@@ -5,9 +5,10 @@ import { Progress } from "@/components/ui/progress";
 import { 
   useAllBadges, 
   useUserBadges, 
-  useUserTotalPoints 
+  useUserTotalPoints,
+  useStudentAchievements
 } from "@/hooks/useGamification";
-import { Trophy, Star, Award } from "lucide-react";
+import { Trophy, Star, Award, Medal } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface GamificationPanelProps {
@@ -19,6 +20,7 @@ export const GamificationPanel = ({ userId }: GamificationPanelProps) => {
   const { data: allBadges = [] } = useAllBadges();
   const { data: userBadges = [] } = useUserBadges(userId);
   const { data: totalPoints = 0 } = useUserTotalPoints(userId);
+  const { data: studentAchievements = [] } = useStudentAchievements(userId);
 
   const earnedBadgeIds = new Set(userBadges.map(ub => ub.badge_id));
   const earnedBadges = userBadges.map(ub => ub.badge);
@@ -55,7 +57,7 @@ export const GamificationPanel = ({ userId }: GamificationPanelProps) => {
           </span>
         </div>
 
-        {/* Earned Badges */}
+        {/* Earned Badges (Automatic) */}
         <div>
           <h4 className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 flex items-center gap-1.5 sm:gap-2">
             <Award className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -81,6 +83,44 @@ export const GamificationPanel = ({ userId }: GamificationPanelProps) => {
             </p>
           )}
         </div>
+
+        {/* Custom Achievements (Awarded by staff) */}
+        {studentAchievements.length > 0 && (
+          <div>
+            <h4 className="text-xs sm:text-sm font-medium mb-1.5 sm:mb-2 flex items-center gap-1.5 sm:gap-2">
+              <Medal className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500" />
+              Logros ({studentAchievements.length})
+            </h4>
+            <div className="space-y-2">
+              {studentAchievements.map((sa) => sa.achievement && (
+                <div 
+                  key={sa.id}
+                  className="flex items-start gap-2 p-2 rounded-lg bg-gradient-to-r from-yellow-500/5 to-orange-500/5 border border-yellow-500/10"
+                >
+                  <span className="text-xl">{sa.achievement.icon}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-sm">{sa.achievement.name}</span>
+                      {sa.achievement.points_reward > 0 && (
+                        <Badge variant="outline" className="text-[10px]">
+                          +{sa.achievement.points_reward} pts
+                        </Badge>
+                      )}
+                    </div>
+                    {sa.notes && (
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                        "{sa.notes}"
+                      </p>
+                    )}
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      Por: {(sa.awarder as any)?.full_name || 'Staff'}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Next Badge */}
         {nextBadge && (

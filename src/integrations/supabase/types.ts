@@ -396,6 +396,71 @@ export type Database = {
           },
         ]
       }
+      custom_achievements: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          creator_role: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_global: boolean | null
+          name: string
+          points_reward: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          creator_role?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_global?: boolean | null
+          name: string
+          points_reward?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          creator_role?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_global?: boolean | null
+          name?: string
+          points_reward?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_achievements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_achievements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_achievements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "safe_profiles_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "custom_achievements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_rankings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_tests: {
         Row: {
           created_at: string
@@ -1388,6 +1453,97 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      student_achievements: {
+        Row: {
+          achievement_id: string
+          awarded_at: string | null
+          awarded_by: string | null
+          id: string
+          notes: string | null
+          student_id: string
+        }
+        Insert: {
+          achievement_id: string
+          awarded_at?: string | null
+          awarded_by?: string | null
+          id?: string
+          notes?: string | null
+          student_id: string
+        }
+        Update: {
+          achievement_id?: string
+          awarded_at?: string | null
+          awarded_by?: string | null
+          id?: string
+          notes?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "custom_achievements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_achievements_awarded_by_fkey"
+            columns: ["awarded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_achievements_awarded_by_fkey"
+            columns: ["awarded_by"]
+            isOneToOne: false
+            referencedRelation: "public_staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_achievements_awarded_by_fkey"
+            columns: ["awarded_by"]
+            isOneToOne: false
+            referencedRelation: "safe_profiles_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_achievements_awarded_by_fkey"
+            columns: ["awarded_by"]
+            isOneToOne: false
+            referencedRelation: "user_rankings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_achievements_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_achievements_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "public_staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_achievements_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "safe_profiles_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_achievements_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "user_rankings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_class_schedules: {
         Row: {

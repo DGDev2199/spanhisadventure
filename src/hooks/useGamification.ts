@@ -72,6 +72,29 @@ export interface StudentTopicProgress {
   updated_at: string;
 }
 
+export interface CustomAchievement {
+  id: string;
+  name: string;
+  description: string | null;
+  icon: string;
+  points_reward: number;
+  created_by: string | null;
+  creator_role: string | null;
+  is_global: boolean;
+  created_at: string;
+}
+
+export interface StudentAchievement {
+  id: string;
+  achievement_id: string;
+  student_id: string;
+  awarded_by: string | null;
+  awarded_at: string;
+  notes: string | null;
+  achievement?: CustomAchievement;
+  awarder?: { full_name: string };
+}
+
 export const useAllBadges = () => {
   return useQuery({
     queryKey: ['badges'],
@@ -215,6 +238,47 @@ export const useStudentTopicProgress = (studentId: string | undefined) => {
         .eq('student_id', studentId);
       if (error) throw error;
       return data as StudentTopicProgress[];
+    },
+    enabled: !!studentId,
+  });
+};
+
+export const useCustomAchievements = (creatorId?: string) => {
+  return useQuery({
+    queryKey: ['custom-achievements', creatorId],
+    queryFn: async () => {
+      let query = supabase
+        .from('custom_achievements')
+        .select('*')
+        .order('name');
+      
+      if (creatorId) {
+        query = query.or(`is_global.eq.true,created_by.eq.${creatorId}`);
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+      return data as CustomAchievement[];
+    },
+  });
+};
+
+export const useStudentAchievements = (studentId: string | undefined) => {
+  return useQuery({
+    queryKey: ['student-achievements', studentId],
+    queryFn: async () => {
+      if (!studentId) return [];
+      const { data, error } = await supabase
+        .from('student_achievements')
+        .select(`
+          *,
+          achievement:custom_achievements(*),
+          awarder:profiles!student_achievements_awarded_by_fkey(full_name)
+        `)
+        .eq('student_id', studentId)
+        .order('awarded_at', { ascending: false });
+      if (error) throw error;
+      return data as StudentAchievement[];
     },
     enabled: !!studentId,
   });

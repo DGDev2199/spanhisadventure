@@ -40,10 +40,87 @@ import { VideoCallDialog } from '@/components/VideoCallDialog';
 import { VideoCallHistoryPanel } from '@/components/VideoCallHistoryPanel';
 import { StaffEarningsPanel } from '@/components/StaffEarningsPanel';
 import { StaffMessagesPanel } from '@/components/StaffMessagesPanel';
-import { Settings } from 'lucide-react';
+import { Settings, Trophy, Plus as PlusIcon } from 'lucide-react';
 import { useSwipeable } from 'react-swipeable';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
+import { useStudentAchievements } from '@/hooks/useGamification';
+import { CreateAchievementDialog } from '@/components/CreateAchievementDialog';
+import { AwardAchievementDialog } from '@/components/AwardAchievementDialog';
+import { Badge } from '@/components/ui/badge';
+
+// Student Achievements Tab Component
+const StudentAchievementsTab = ({ 
+  studentId, 
+  studentName,
+  onCreateAchievement,
+  onAwardAchievement 
+}: { 
+  studentId: string; 
+  studentName: string;
+  onCreateAchievement: () => void;
+  onAwardAchievement: () => void;
+}) => {
+  const { data: achievements = [], isLoading } = useStudentAchievements(studentId);
+  
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-medium flex items-center gap-2">
+          <Trophy className="h-4 w-4 text-yellow-500" />
+          Logros de {studentName}
+        </h3>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={onCreateAchievement}>
+            <PlusIcon className="h-4 w-4 mr-1" />
+            Crear
+          </Button>
+          <Button size="sm" onClick={onAwardAchievement}>
+            <Trophy className="h-4 w-4 mr-1" />
+            Otorgar
+          </Button>
+        </div>
+      </div>
+      
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground text-center py-4">Cargando...</p>
+      ) : achievements.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          <Trophy className="h-12 w-12 mx-auto mb-2 opacity-20" />
+          <p>Este estudiante aún no tiene logros</p>
+          <p className="text-sm mt-1">Otorga un logro para motivarlo</p>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {achievements.map((sa) => sa.achievement && (
+            <div 
+              key={sa.id}
+              className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20"
+            >
+              <span className="text-2xl">{sa.achievement.icon}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium">{sa.achievement.name}</span>
+                  {sa.achievement.points_reward > 0 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{sa.achievement.points_reward} pts
+                    </Badge>
+                  )}
+                </div>
+                {sa.notes && (
+                  <p className="text-sm text-muted-foreground mt-1">"{sa.notes}"</p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  Por: {(sa.awarder as any)?.full_name || 'Staff'} • {new Date(sa.awarded_at).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const TeacherDashboard = () => {
   const { t } = useTranslation();
@@ -83,6 +160,8 @@ const TeacherDashboard = () => {
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [videoCallOpen, setVideoCallOpen] = useState(false);
   const [videoCallStudent, setVideoCallStudent] = useState<{ id: string; name: string } | null>(null);
+  const [createAchievementOpen, setCreateAchievementOpen] = useState(false);
+  const [awardAchievementOpen, setAwardAchievementOpen] = useState(false);
 
   const { data: myStudents, isLoading: studentsLoading } = useQuery({
     queryKey: ['teacher-students', user?.id],
@@ -1035,12 +1114,15 @@ const TeacherDashboard = () => {
             </DialogHeader>
             
             <Tabs defaultValue="curriculum" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="curriculum">
-                  📊 Progreso del Currículo
+                  📊 Currículo
+                </TabsTrigger>
+                <TabsTrigger value="achievements">
+                  🏆 Logros
                 </TabsTrigger>
                 <TabsTrigger value="notes">
-                  📝 Notas Semanales
+                  📝 Notas
                 </TabsTrigger>
               </TabsList>
               
@@ -1049,6 +1131,15 @@ const TeacherDashboard = () => {
                   studentId={progressStudent.id} 
                   studentLevel={progressStudent.level}
                   isEditable={true}
+                />
+              </TabsContent>
+              
+              <TabsContent value="achievements" className="mt-4">
+                <StudentAchievementsTab 
+                  studentId={progressStudent.id} 
+                  studentName={progressStudent.name}
+                  onCreateAchievement={() => setCreateAchievementOpen(true)}
+                  onAwardAchievement={() => setAwardAchievementOpen(true)}
                 />
               </TabsContent>
               
@@ -1095,6 +1186,22 @@ const TeacherDashboard = () => {
           participantRole="student"
           roomId={`teacher-${user?.id}-student-${videoCallStudent.id}`}
           studentId={videoCallStudent.id}
+        />
+      )}
+
+      {/* Create Achievement Dialog */}
+      <CreateAchievementDialog
+        open={createAchievementOpen}
+        onOpenChange={setCreateAchievementOpen}
+      />
+
+      {/* Award Achievement Dialog */}
+      {progressStudent && (
+        <AwardAchievementDialog
+          open={awardAchievementOpen}
+          onOpenChange={setAwardAchievementOpen}
+          studentId={progressStudent.id}
+          studentName={progressStudent.name}
         />
       )}
     </div>

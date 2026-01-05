@@ -196,10 +196,34 @@ export const StaffProfileDialog = ({
               {/* Availability */}
               {profile.availability && (
                 <div className="mb-4">
-                  <h4 className="text-sm font-medium mb-1 flex items-center gap-1">
-                    <Globe className="h-4 w-4" /> Disponibilidad
+                  <h4 className="text-sm font-medium mb-2 flex items-center gap-1">
+                    <Calendar className="h-4 w-4" /> Disponibilidad
                   </h4>
-                  <p className="text-sm text-muted-foreground">{profile.availability}</p>
+                  {(() => {
+                    // Try to parse as JSON array
+                    try {
+                      const parsed = JSON.parse(profile.availability);
+                      if (Array.isArray(parsed)) {
+                        const dayNames: Record<number, string> = {
+                          0: 'Domingo', 1: 'Lunes', 2: 'Martes', 3: 'Miércoles',
+                          4: 'Jueves', 5: 'Viernes', 6: 'Sábado'
+                        };
+                        const sorted = [...parsed].sort((a, b) => a.day - b.day);
+                        return (
+                          <div className="flex flex-wrap gap-2">
+                            {sorted.map((slot: { day: number; startTime: string; endTime: string }, idx: number) => (
+                              <Badge key={idx} variant="outline" className="text-xs">
+                                {dayNames[slot.day] || `Día ${slot.day}`}: {slot.startTime} - {slot.endTime}
+                              </Badge>
+                            ))}
+                          </div>
+                        );
+                      }
+                    } catch {
+                      // Not valid JSON, show as plain text
+                    }
+                    return <p className="text-sm text-muted-foreground">{profile.availability}</p>;
+                  })()}
                 </div>
               )}
 

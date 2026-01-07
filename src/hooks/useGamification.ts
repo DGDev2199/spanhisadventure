@@ -363,6 +363,8 @@ export const useUpdateTopicProgress = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['student-topic-progress', variables.studentId] });
+      queryClient.invalidateQueries({ queryKey: ['user-total-points', variables.studentId] });
+      queryClient.invalidateQueries({ queryKey: ['user-rankings'] });
     },
   });
 };

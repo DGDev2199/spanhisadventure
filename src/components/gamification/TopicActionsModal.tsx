@@ -147,7 +147,19 @@ export const TopicActionsModal = ({
         color: newColor,
         updatedBy: user.id,
       });
-      toast.success(t('progress.colorUpdated', 'Color de evaluación actualizado'));
+      
+      // Award points when topic is marked as green (mastered)
+      if (newColor === 'green' && currentColor !== 'green') {
+        await supabase.from('user_points').insert({
+          user_id: studentId,
+          points: 10,
+          reason: 'topic_mastered',
+          related_id: topic.id,
+        });
+        toast.success(t('progress.colorUpdated', 'Color de evaluación actualizado') + ' (+10 pts)');
+      } else {
+        toast.success(t('progress.colorUpdated', 'Color de evaluación actualizado'));
+      }
     } catch (error) {
       toast.error(t('errors.generic', 'Error al actualizar'));
     }

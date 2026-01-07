@@ -142,7 +142,16 @@ const TakeReevaluationTest = () => {
 
       if (progressError) throw progressError;
 
-      return { score: scorePercentage, color: newColor };
+      // Award points based on score
+      const pointsEarned = scorePercentage >= 90 ? 25 : scorePercentage >= 70 ? 15 : 5;
+      await supabase.from('user_points').insert({
+        user_id: user.id,
+        points: pointsEarned,
+        reason: 'reevaluation_completed',
+        related_id: testId,
+      });
+
+      return { score: scorePercentage, color: newColor, pointsEarned };
     },
     onSuccess: (data) => {
       if (data) {
@@ -151,6 +160,9 @@ const TakeReevaluationTest = () => {
         setShowResults(true);
         queryClient.invalidateQueries({ queryKey: ['student-topic-progress'] });
         queryClient.invalidateQueries({ queryKey: ['reevaluation-attempts'] });
+        queryClient.invalidateQueries({ queryKey: ['user-total-points'] });
+        queryClient.invalidateQueries({ queryKey: ['user-rankings'] });
+        toast.success(`¡Examen completado! +${data.pointsEarned} puntos`);
       }
     },
     onError: () => {

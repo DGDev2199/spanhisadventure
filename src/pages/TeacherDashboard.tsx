@@ -768,6 +768,10 @@ const TeacherDashboard = () => {
                             size="sm"
                             variant="outline"
                             onClick={() => {
+                              // Invalidate cache before opening to ensure fresh data
+                              queryClient.invalidateQueries({ queryKey: ['student-topic-progress', student.user_id] });
+                              queryClient.invalidateQueries({ queryKey: ['program-weeks'] });
+                              queryClient.invalidateQueries({ queryKey: ['all-week-topics'] });
                               setProgressStudent({ id: student.user_id, name: student.profiles?.full_name, level: student.level });
                               setProgressDialogOpen(true);
                             }}

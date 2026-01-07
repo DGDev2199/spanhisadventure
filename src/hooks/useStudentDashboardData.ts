@@ -318,6 +318,7 @@ export const useReviewTask = () => {
       queryClient.invalidateQueries({ queryKey: ['student-tasks'] });
       queryClient.invalidateQueries({ queryKey: ['user-total-points'] });
       queryClient.invalidateQueries({ queryKey: ['user-badges'] });
+      queryClient.invalidateQueries({ queryKey: ['user-rankings'] });
       toast.success(`✅ Tarea calificada: ${result.score} puntos`);
     },
     onError: (error: Error) => {

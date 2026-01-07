@@ -77,7 +77,7 @@ export const CreateAchievementDialog = ({ open, onOpenChange }: CreateAchievemen
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+<DialogContent className="w-[95vw] max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Trophy className="h-5 w-5 text-yellow-500" />
@@ -108,13 +108,13 @@ export const CreateAchievementDialog = ({ open, onOpenChange }: CreateAchievemen
 
           <div className="space-y-2">
             <Label>Icono</Label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 max-h-20 overflow-y-auto p-1 border rounded-lg">
               {EMOJI_OPTIONS.map((emoji) => (
                 <button
                   key={emoji}
                   type="button"
                   onClick={() => setIcon(emoji)}
-                  className={`text-2xl p-2 rounded-lg border-2 transition-all ${
+                  className={`text-xl p-1.5 rounded-lg border-2 transition-all ${
                     icon === emoji 
                       ? 'border-primary bg-primary/10' 
                       : 'border-transparent hover:border-muted-foreground/30'
@@ -154,7 +154,7 @@ export const CreateAchievementDialog = ({ open, onOpenChange }: CreateAchievemen
             </div>
           )}
 
-          <DialogFooter>
+          <DialogFooter className="pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>

@@ -11,6 +11,67 @@ import { toast } from 'sonner';
 import { Loader2, Award, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
+// Helper function to check and award badges for a student
+async function checkAndAwardBadgesForStudent(studentId: string) {
+  // Get student's submitted tasks count
+  const { count: taskCount } = await supabase
+    .from('tasks')
+    .select('*', { count: 'exact', head: true })
+    .eq('student_id', studentId)
+    .eq('status', 'submitted');
+
+  // Get student's current badges
+  const { data: userBadges } = await supabase
+    .from('user_badges')
+    .select('badge_id')
+    .eq('user_id', studentId);
+
+  const earnedBadgeIds = new Set(userBadges?.map(b => b.badge_id) || []);
+
+  // Get all badges
+  const { data: allBadges } = await supabase
+    .from('badges')
+    .select('*');
+
+  if (!allBadges) return;
+
+  // Check each badge criteria
+  for (const badge of allBadges) {
+    if (earnedBadgeIds.has(badge.id)) continue;
+
+    let shouldAward = false;
+
+    switch (badge.criteria_type) {
+      case 'tasks_completed':
+        shouldAward = (taskCount || 0) >= badge.criteria_value;
+        break;
+      case 'first_task':
+        shouldAward = (taskCount || 0) >= 1;
+        break;
+    }
+
+    if (shouldAward) {
+      // Award the badge
+      const { error: badgeError } = await supabase
+        .from('user_badges')
+        .insert({
+          user_id: studentId,
+          badge_id: badge.id,
+        });
+
+      if (!badgeError && badge.points_reward) {
+        // Award points for the badge
+        await supabase.from('user_points').insert({
+          user_id: studentId,
+          points: badge.points_reward,
+          reason: 'badge_earned',
+          related_id: badge.id,
+        });
+      }
+    }
+  }
+}
+
 interface AwardAchievementDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -82,8 +143,9 @@ export const AwardAchievementDialog = ({
       if (awardError) throw awardError;
 
       // Award points if applicable
+      let pointsAwarded = 0;
       if (achievement.points_reward && achievement.points_reward > 0) {
-        await supabase
+        const { error: pointsError } = await supabase
           .from('user_points')
           .insert({
             user_id: studentId,
@@ -91,13 +153,29 @@ export const AwardAchievementDialog = ({
             reason: 'achievement_awarded',
             related_id: selectedAchievement,
           });
+        
+        if (pointsError) {
+          console.error('Error awarding points:', pointsError);
+        } else {
+          pointsAwarded = achievement.points_reward;
+        }
       }
+
+      // Check and award automatic badges for the student
+      await checkAndAwardBadgesForStudent(studentId);
+
+      return { pointsAwarded, achievementName: achievement.name };
     },
-    onSuccess: () => {
-      toast.success('Logro otorgado exitosamente');
+    onSuccess: (data) => {
+      if (data.pointsAwarded > 0) {
+        toast.success(`¡Logro "${data.achievementName}" otorgado! (+${data.pointsAwarded} pts)`);
+      } else {
+        toast.success(`¡Logro "${data.achievementName}" otorgado!`);
+      }
       queryClient.invalidateQueries({ queryKey: ['student-achievements', studentId] });
       queryClient.invalidateQueries({ queryKey: ['user-total-points', studentId] });
       queryClient.invalidateQueries({ queryKey: ['user-rankings'] });
+      queryClient.invalidateQueries({ queryKey: ['user-badges', studentId] });
       onOpenChange(false);
       setSelectedAchievement('');
       setNotes('');

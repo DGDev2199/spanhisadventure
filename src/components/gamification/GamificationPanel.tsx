@@ -101,8 +101,8 @@ export const GamificationPanel = ({ userId }: GamificationPanelProps) => {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium text-sm">{sa.achievement.name}</span>
-                      {sa.achievement.points_reward > 0 && (
-                        <Badge variant="outline" className="text-[10px]">
+                      {sa.achievement.points_reward && sa.achievement.points_reward > 0 && (
+                        <Badge variant="secondary" className="text-[10px] bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
                           +{sa.achievement.points_reward} pts
                         </Badge>
                       )}

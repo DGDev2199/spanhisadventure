@@ -8,10 +8,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle, Lock, BookOpen, Trash2, Pencil, Calendar, Download, GraduationCap, Users } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { CheckCircle, Lock, BookOpen, Trash2, Pencil, Calendar, Download, GraduationCap, Users, AlertCircle, Circle } from 'lucide-react';
 import { toast } from 'sonner';
 import { DayProgressModal } from './DayProgressModal';
-import { useProgramWeeks, useAllWeekTopics } from '@/hooks/useGamification';
+import { useProgramWeeks, useAllWeekTopics, useStudentTopicProgress } from '@/hooks/useGamification';
 import jsPDF from 'jspdf';
 
 interface StudentProgressViewProps {
@@ -49,10 +50,16 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
   
   // Modal state
   const [selectedDay, setSelectedDay] = useState<{ weekId: string; weekNumber: number; dayType: string; dayLabel: string } | null>(null);
+  
+  // Validation modal state for completing week
+  const [weekToComplete, setWeekToComplete] = useState<{ id: string; weekNumber: number } | null>(null);
 
   // Fetch program weeks and topics for suggestions
   const { data: programWeeks = [] } = useProgramWeeks();
   const { data: allCurriculumTopics = [] } = useAllWeekTopics();
+  
+  // Fetch student topic progress for validation
+  const { data: studentTopicProgress = [] } = useStudentTopicProgress(studentId);
   // Fetch current user to determine role
   const { data: currentUser } = useQuery({
     queryKey: ['current-user'],
@@ -193,6 +200,8 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student-progress-weeks', studentId] });
+      queryClient.invalidateQueries({ queryKey: ['student-progress-weeks-for-grid', studentId] });
+      queryClient.invalidateQueries({ queryKey: ['special-weeks', studentId] });
       toast.success('Semana especial creada');
     },
     onError: () => {
@@ -202,6 +211,16 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
 
   const deleteWeekMutation = useMutation({
     mutationFn: async (weekId: string) => {
+      // Obtener datos de la semana antes de eliminar
+      const { data: weekToDelete, error: fetchError } = await supabase
+        .from('student_progress_weeks')
+        .select('*')
+        .eq('id', weekId)
+        .single();
+      
+      if (fetchError) throw fetchError;
+      
+      // Eliminar notas
       const { error: notesError } = await supabase
         .from('student_progress_notes')
         .delete()
@@ -209,15 +228,44 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
       
       if (notesError) throw notesError;
       
+      // Eliminar la semana
       const { error } = await supabase
         .from('student_progress_weeks')
         .delete()
         .eq('id', weekId);
       
       if (error) throw error;
+      
+      // Si era semana especial, verificar si la base necesita reabrirse
+      if (weekToDelete && weekToDelete.week_number >= 100) {
+        const baseWeekNumber = Math.floor(weekToDelete.week_number / 100);
+        
+        // Verificar si hay otras semanas especiales de la misma base
+        const { data: otherSpecials } = await supabase
+          .from('student_progress_weeks')
+          .select('id')
+          .eq('student_id', studentId)
+          .gte('week_number', baseWeekNumber * 100)
+          .lt('week_number', (baseWeekNumber + 1) * 100);
+        
+        // Si no hay más especiales, reabrir la semana base
+        if (!otherSpecials || otherSpecials.length === 0) {
+          await supabase
+            .from('student_progress_weeks')
+            .update({ 
+              is_completed: false, 
+              completed_at: null, 
+              completed_by: null 
+            })
+            .eq('student_id', studentId)
+            .eq('week_number', baseWeekNumber);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student-progress-weeks', studentId] });
+      queryClient.invalidateQueries({ queryKey: ['student-progress-weeks-for-grid', studentId] });
+      queryClient.invalidateQueries({ queryKey: ['special-weeks', studentId] });
       toast.success('Semana eliminada');
     },
     onError: () => {
@@ -307,6 +355,8 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student-progress-weeks', studentId] });
+      queryClient.invalidateQueries({ queryKey: ['student-progress-weeks-for-grid', studentId] });
+      queryClient.invalidateQueries({ queryKey: ['special-weeks', studentId] });
       toast.success('Semana marcada como completada');
     },
     onError: () => {
@@ -345,7 +395,31 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
     return { hasTeacher, hasTutor };
   };
 
-  // Export week to PDF
+  // Get uncalibrated topics for a given week number
+  const getUncalibratedTopicsForWeek = (weekNumber: number) => {
+    // Find the program week that matches this week number
+    const matchingProgramWeek = programWeeks.find(pw => pw.week_number === weekNumber);
+    if (!matchingProgramWeek) return [];
+    
+    // Get topics for this program week
+    const weekTopics = allCurriculumTopics.filter(t => t.week_id === matchingProgramWeek.id);
+    
+    // Create a map of topic progress with colors
+    const progressMap = new Map(
+      studentTopicProgress
+        .filter(p => p.color)
+        .map(p => [p.topic_id, p.color])
+    );
+    
+    // Return topics that don't have a color assigned
+    return weekTopics.filter(t => !progressMap.get(t.id));
+  };
+
+  // Memoized uncalibrated topics for the week being completed
+  const uncalibratedTopics = useMemo(() => {
+    if (!weekToComplete) return [];
+    return getUncalibratedTopicsForWeek(weekToComplete.weekNumber);
+  }, [weekToComplete, programWeeks, allCurriculumTopics, studentTopicProgress]);
   const exportWeekToPDF = async (week: typeof weeks[0]) => {
     const weekNotes = notes?.filter(n => n.week_id === week.id) || [];
     
@@ -764,7 +838,7 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                   {isEditable && isCurrent && !week.is_completed && (
                     <div className="flex gap-2 mt-4">
                       <Button
-                        onClick={() => completeWeekMutation.mutate(week.id)}
+                        onClick={() => setWeekToComplete({ id: week.id, weekNumber: week.week_number })}
                         disabled={completeWeekMutation.isPending}
                         className="flex-1"
                       >
@@ -818,6 +892,71 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
           />
         );
       })()}
+
+      {/* Week Completion Validation Modal */}
+      <Dialog open={!!weekToComplete} onOpenChange={(open) => !open && setWeekToComplete(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Completar Semana {weekToComplete?.weekNumber}
+            </DialogTitle>
+            <DialogDescription>
+              {uncalibratedTopics.length > 0 
+                ? 'Los siguientes temas no han sido calificados aún'
+                : '¿Estás seguro de marcar esta semana como completada?'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          
+          {uncalibratedTopics.length > 0 ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700">
+                <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                <p className="text-sm text-amber-800 dark:text-amber-300">
+                  Debes calificar todos los temas antes de completar la semana
+                </p>
+              </div>
+              
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {uncalibratedTopics.map(topic => (
+                  <div key={topic.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
+                    <Circle className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">{topic.name}</span>
+                  </div>
+                ))}
+              </div>
+              
+              <p className="text-xs text-muted-foreground">
+                Califica los temas desde el <strong>Progreso Semanal</strong> (tab Currículo) antes de completar esta semana.
+              </p>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-700">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <p className="text-sm text-green-800 dark:text-green-300">
+                Todos los temas han sido calificados
+              </p>
+            </div>
+          )}
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setWeekToComplete(null)}>
+              Cancelar
+            </Button>
+            {uncalibratedTopics.length === 0 && weekToComplete && (
+              <Button 
+                onClick={() => {
+                  completeWeekMutation.mutate(weekToComplete.id);
+                  setWeekToComplete(null);
+                }}
+                disabled={completeWeekMutation.isPending}
+              >
+                {completeWeekMutation.isPending ? 'Completando...' : 'Confirmar'}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

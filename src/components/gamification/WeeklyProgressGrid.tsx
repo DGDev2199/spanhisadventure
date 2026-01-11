@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -14,7 +16,7 @@ import {
 } from "@/hooks/useGamification";
 import { TopicCard } from "./TopicCard";
 import { TopicActionsModal } from "./TopicActionsModal";
-import { Lock, CheckCircle2, Circle } from "lucide-react";
+import { Lock, CheckCircle2, Circle, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface WeeklyProgressGridProps {
@@ -27,7 +29,7 @@ interface WeeklyProgressGridProps {
 export const WeeklyProgressGrid = ({ 
   studentId, 
   studentLevel, 
-  completedWeeks = [],
+  completedWeeks: propCompletedWeeks,
   isEditable = false
 }: WeeklyProgressGridProps) => {
   const { t } = useTranslation();
@@ -39,7 +41,53 @@ export const WeeklyProgressGrid = ({
   const { data: allTopics = [] } = useAllWeekTopics();
   const { data: progress = [] } = useStudentTopicProgress(studentId);
 
+  // Fetch student progress weeks to get actual completed weeks
+  const { data: studentProgressWeeks = [] } = useQuery({
+    queryKey: ['student-progress-weeks-for-grid', studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('student_progress_weeks')
+        .select('week_number, is_completed')
+        .eq('student_id', studentId);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!studentId
+  });
+
+  // Fetch special weeks for this student (week_number >= 100)
+  const { data: specialWeeks = [] } = useQuery({
+    queryKey: ['special-weeks', studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('student_progress_weeks')
+        .select('*')
+        .eq('student_id', studentId)
+        .gte('week_number', 100)
+        .order('week_number');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!studentId
+  });
+
+  // Merge prop completedWeeks with fetched data (prefer fetched if available)
+  const completedWeeks = propCompletedWeeks ?? 
+    studentProgressWeeks
+      .filter(w => w.is_completed && w.week_number < 100)
+      .map(w => w.week_number);
+
   const currentWeek = getCurrentWeekForLevel(studentLevel);
+
+  // Helper to format special week names
+  const formatSpecialWeekName = (weekNumber: number): string => {
+    if (weekNumber >= 100) {
+      const baseWeek = Math.floor(weekNumber / 100);
+      const specialNumber = weekNumber % 100;
+      return `Semana ${baseWeek}-${specialNumber}+`;
+    }
+    return `Semana ${weekNumber}`;
+  };
 
   const getTopicsForWeek = (weekId: string): WeekTopic[] => {
     return allTopics.filter(t => t.week_id === weekId);
@@ -195,6 +243,36 @@ export const WeeklyProgressGrid = ({
                     {t('progress.noTopics', 'No hay temas asignados a esta semana')}
                   </p>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Sección de Semanas Especiales (Refuerzo) */}
+        {specialWeeks && specialWeeks.length > 0 && (
+          <Card className="mt-4 border-dashed border-2 border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <RotateCcw className="h-4 w-4 text-amber-600" />
+                <span className="text-amber-700 dark:text-amber-400">Semanas de Refuerzo</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="flex gap-2 flex-wrap">
+                {specialWeeks.map((sw) => (
+                  <Badge 
+                    key={sw.id} 
+                    className={cn(
+                      "text-xs",
+                      sw.is_completed 
+                        ? 'bg-green-500 hover:bg-green-600' 
+                        : 'bg-amber-500 hover:bg-amber-600'
+                    )}
+                  >
+                    {sw.is_completed && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                    {formatSpecialWeekName(sw.week_number)}
+                  </Badge>
+                ))}
               </div>
             </CardContent>
           </Card>

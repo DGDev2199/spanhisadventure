@@ -191,15 +191,15 @@ export const BookingDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Reservar Clase</DialogTitle>
           <DialogDescription>
             Selecciona fecha y horario para tu clase con {staffName}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-y-auto flex-1 pr-2">
           {/* Staff Info */}
           <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
             <Avatar>
@@ -309,7 +309,7 @@ export const BookingDialog = ({
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="flex-shrink-0 pt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>

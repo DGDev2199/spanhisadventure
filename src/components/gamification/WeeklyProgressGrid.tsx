@@ -37,12 +37,12 @@ export const WeeklyProgressGrid = ({
   const [selectedTopic, setSelectedTopic] = useState<WeekTopic | null>(null);
   const [showTopicModal, setShowTopicModal] = useState(false);
 
-  const { data: weeks = [] } = useProgramWeeks();
-  const { data: allTopics = [] } = useAllWeekTopics();
-  const { data: progress = [] } = useStudentTopicProgress(studentId);
+  const { data: weeks = [], isLoading: weeksLoading } = useProgramWeeks();
+  const { data: allTopics = [], isLoading: topicsLoading } = useAllWeekTopics();
+  const { data: progress = [], isLoading: progressLoading } = useStudentTopicProgress(studentId);
 
   // Fetch student progress weeks to get actual completed weeks
-  const { data: studentProgressWeeks = [] } = useQuery({
+  const { data: studentProgressWeeks = [], isLoading: studentProgressLoading } = useQuery({
     queryKey: ['student-progress-weeks-for-grid', studentId],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -52,8 +52,13 @@ export const WeeklyProgressGrid = ({
       if (error) throw error;
       return data || [];
     },
-    enabled: !!studentId
+    enabled: !!studentId,
+    staleTime: 0, // Always refetch on mount
+    refetchOnMount: 'always'
   });
+
+  // Show loading state while data is being fetched
+  const isLoading = weeksLoading || topicsLoading || progressLoading || studentProgressLoading;
 
   // Fetch special weeks for this student (week_number >= 100)
   const { data: specialWeeks = [] } = useQuery({
@@ -68,7 +73,9 @@ export const WeeklyProgressGrid = ({
       if (error) throw error;
       return data || [];
     },
-    enabled: !!studentId
+    enabled: !!studentId,
+    staleTime: 0,
+    refetchOnMount: 'always'
   });
 
   // Merge prop completedWeeks with fetched data (prefer fetched if available)
@@ -123,6 +130,29 @@ export const WeeklyProgressGrid = ({
     };
     return colors[level] || 'bg-gray-500';
   };
+
+  if (isLoading) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <span>📅</span>
+            {t('progress.weeklyProgress', 'Progreso Semanal')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div 
+                key={i}
+                className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-muted/50 border-2 border-dashed border-muted-foreground/20 animate-pulse h-16 sm:h-20"
+              />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="w-full">

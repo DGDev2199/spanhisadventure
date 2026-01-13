@@ -14,10 +14,25 @@ import {
   ThumbsDown,
   Loader2,
   FileText,
-  MessageSquare
+  MessageSquare,
+  Trash2
 } from 'lucide-react';
 import { useTeacherSubmittedTasks, useReviewTask } from '@/hooks/useStudentDashboardData';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface TeacherTaskReviewPanelProps {
   teacherId: string;
@@ -25,12 +40,34 @@ interface TeacherTaskReviewPanelProps {
 
 export const TeacherTaskReviewPanel = ({ teacherId }: TeacherTaskReviewPanelProps) => {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const { data: submittedTasks = [], isLoading } = useTeacherSubmittedTasks(teacherId);
   const reviewTask = useReviewTask();
   
   const [expandedTask, setExpandedTask] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Record<string, string>>({});
   const [gradingTaskId, setGradingTaskId] = useState<string | null>(null);
+
+  // Delete task mutation - only for the teacher who created it
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (taskId: string) => {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', taskId)
+        .eq('teacher_id', teacherId); // RLS + explicit check
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['teacher-submitted-tasks'] });
+      queryClient.invalidateQueries({ queryKey: ['teacher-tasks'] });
+      toast.success('Tarea eliminada correctamente');
+    },
+    onError: () => {
+      toast.error('Error al eliminar la tarea');
+    }
+  });
 
   const handleGrade = async (taskId: string, score: number) => {
     setGradingTaskId(taskId);
@@ -210,14 +247,44 @@ export const TeacherTaskReviewPanel = ({ teacherId }: TeacherTaskReviewPanelProp
                       </div>
                       
                       {!isExpanded && (
-                        <Button
-                          onClick={() => setExpandedTask(task.id)}
-                          size="sm"
-                          className="flex-shrink-0"
-                        >
-                          <FileText className="h-4 w-4 mr-2" />
-                          Revisar
-                        </Button>
+                        <div className="flex flex-col gap-1 flex-shrink-0">
+                          <Button
+                            onClick={() => setExpandedTask(task.id)}
+                            size="sm"
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            Revisar
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4 mr-1" />
+                                Eliminar
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>¿Eliminar esta tarea?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta acción eliminará permanentemente la tarea "{task.title}" asignada a {task.student?.full_name}. Esta acción no se puede deshacer.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteTaskMutation.mutate(task.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Eliminar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       )}
                     </div>
                   </div>

@@ -85,7 +85,7 @@ export const BookingDialog = ({
   const platformFee = price * PLATFORM_FEE_PERCENTAGE;
   const staffEarnings = price - platformFee;
 
-  // Parse availability JSON
+  // Parse availability JSON - supports new array format [{day, startTime, endTime}, ...]
   const getAvailableSlots = (date: Date): TimeSlot[] => {
     if (!staffProfile?.availability) return [];
     
@@ -94,17 +94,36 @@ export const BookingDialog = ({
       const dayOfWeek = date.getDay();
       const slots: TimeSlot[] = [];
       
-      // Check each hour if it's marked as available
-      Object.keys(availability).forEach(key => {
-        const [day, hour] = key.split('-').map(Number);
-        if (day === dayOfWeek && availability[key]) {
-          slots.push({
-            start: `${hour.toString().padStart(2, '0')}:00`,
-            end: `${(hour + 1).toString().padStart(2, '0')}:00`,
-            dayOfWeek: day
-          });
-        }
-      });
+      // New format: array of objects [{day, startTime, endTime}, ...]
+      if (Array.isArray(availability)) {
+        availability.forEach((slot: { day: number; startTime: string; endTime: string }) => {
+          if (slot.day === dayOfWeek) {
+            // Generate hourly slots from the time range
+            const startHour = parseInt(slot.startTime.split(':')[0]);
+            const endHour = parseInt(slot.endTime.split(':')[0]);
+            
+            for (let hour = startHour; hour < endHour; hour++) {
+              slots.push({
+                start: `${hour.toString().padStart(2, '0')}:00`,
+                end: `${(hour + 1).toString().padStart(2, '0')}:00`,
+                dayOfWeek: slot.day
+              });
+            }
+          }
+        });
+      } else {
+        // Legacy format: {"1-10": true, "1-11": true, ...}
+        Object.keys(availability).forEach(key => {
+          const [day, hour] = key.split('-').map(Number);
+          if (day === dayOfWeek && availability[key]) {
+            slots.push({
+              start: `${hour.toString().padStart(2, '0')}:00`,
+              end: `${(hour + 1).toString().padStart(2, '0')}:00`,
+              dayOfWeek: day
+            });
+          }
+        });
+      }
 
       // Filter out already booked slots
       const dateStr = format(date, 'yyyy-MM-dd');

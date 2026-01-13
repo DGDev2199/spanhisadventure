@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface FeatureFlag {
@@ -23,7 +23,7 @@ export const FeatureFlagsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [flags, setFlags] = useState<FeatureFlag[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchFlags = async () => {
+  const fetchFlags = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('feature_flags')
@@ -38,11 +38,26 @@ export const FeatureFlagsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
+    // Initial fetch (may fail if user isn't authenticated yet)
     fetchFlags();
-  }, []);
+
+    // Refetch immediately after login so feature-gated UI appears without reload
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setLoading(true);
+        fetchFlags();
+      } else {
+        setFlags([]);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [fetchFlags]);
 
   const isEnabled = (featureKey: string): boolean => {
     const flag = flags.find(f => f.feature_key === featureKey);

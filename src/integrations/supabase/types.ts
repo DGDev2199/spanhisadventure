@@ -3169,6 +3169,60 @@ export type Database = {
         }
         Relationships: []
       }
+      safe_student_profiles: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          level: Database["public"]["Enums"]["cefr_level"] | null
+          placement_test_oral_completed: boolean | null
+          placement_test_status:
+            | Database["public"]["Enums"]["test_status"]
+            | null
+          placement_test_written_score: number | null
+          room: string | null
+          status: Database["public"]["Enums"]["student_status"] | null
+          student_type: Database["public"]["Enums"]["student_modality"] | null
+          teacher_id: string | null
+          tutor_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          level?: Database["public"]["Enums"]["cefr_level"] | null
+          placement_test_oral_completed?: never
+          placement_test_status?:
+            | Database["public"]["Enums"]["test_status"]
+            | null
+          placement_test_written_score?: never
+          room?: string | null
+          status?: Database["public"]["Enums"]["student_status"] | null
+          student_type?: Database["public"]["Enums"]["student_modality"] | null
+          teacher_id?: string | null
+          tutor_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          level?: Database["public"]["Enums"]["cefr_level"] | null
+          placement_test_oral_completed?: never
+          placement_test_status?:
+            | Database["public"]["Enums"]["test_status"]
+            | null
+          placement_test_written_score?: never
+          room?: string | null
+          status?: Database["public"]["Enums"]["student_status"] | null
+          student_type?: Database["public"]["Enums"]["student_modality"] | null
+          teacher_id?: string | null
+          tutor_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       staff_bookings_view: {
         Row: {
           booking_date: string | null

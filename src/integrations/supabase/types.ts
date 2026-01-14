@@ -3240,6 +3240,7 @@ export type Database = {
           status: string | null
           student_id: string | null
           teacher_id: string | null
+          topic_id: string | null
           tutor_id: string | null
           updated_at: string | null
         }
@@ -3259,6 +3260,7 @@ export type Database = {
           status?: string | null
           student_id?: string | null
           teacher_id?: string | null
+          topic_id?: string | null
           tutor_id?: string | null
           updated_at?: string | null
         }
@@ -3278,6 +3280,7 @@ export type Database = {
           status?: string | null
           student_id?: string | null
           teacher_id?: string | null
+          topic_id?: string | null
           tutor_id?: string | null
           updated_at?: string | null
         }
@@ -3336,6 +3339,13 @@ export type Database = {
             columns: ["teacher_id"]
             isOneToOne: false
             referencedRelation: "user_rankings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_bookings_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "week_topics"
             referencedColumns: ["id"]
           },
           {

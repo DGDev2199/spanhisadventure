@@ -1048,6 +1048,209 @@ export type Database = {
         }
         Relationships: []
       }
+      practice_assignments: {
+        Row: {
+          assigned_by: string
+          completed_at: string | null
+          created_at: string
+          exercise_id: string
+          id: string
+          score: number | null
+          started_at: string | null
+          status: string
+          student_id: string
+        }
+        Insert: {
+          assigned_by: string
+          completed_at?: string | null
+          created_at?: string
+          exercise_id: string
+          id?: string
+          score?: number | null
+          started_at?: string | null
+          status?: string
+          student_id: string
+        }
+        Update: {
+          assigned_by?: string
+          completed_at?: string | null
+          created_at?: string
+          exercise_id?: string
+          id?: string
+          score?: number | null
+          started_at?: string | null
+          status?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "public_staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "safe_profiles_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_assignments_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "user_rankings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_assignments_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "practice_exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_assignments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_assignments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "public_staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_assignments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "safe_profiles_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_assignments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "user_rankings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_attempts: {
+        Row: {
+          answers: Json
+          assignment_id: string
+          completed_at: string
+          id: string
+          score: number | null
+          time_spent_seconds: number | null
+        }
+        Insert: {
+          answers?: Json
+          assignment_id: string
+          completed_at?: string
+          id?: string
+          score?: number | null
+          time_spent_seconds?: number | null
+        }
+        Update: {
+          answers?: Json
+          assignment_id?: string
+          completed_at?: string
+          id?: string
+          score?: number | null
+          time_spent_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_attempts_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "practice_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      practice_exercises: {
+        Row: {
+          content: Json
+          created_at: string
+          created_by: string
+          exercise_type: string
+          id: string
+          level: string | null
+          title: string
+          topic_context: string | null
+          updated_at: string
+          vocabulary_context: string | null
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          created_by: string
+          exercise_type: string
+          id?: string
+          level?: string | null
+          title: string
+          topic_context?: string | null
+          updated_at?: string
+          vocabulary_context?: string | null
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          created_by?: string
+          exercise_type?: string
+          id?: string
+          level?: string | null
+          title?: string
+          topic_context?: string | null
+          updated_at?: string
+          vocabulary_context?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_exercises_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_exercises_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_exercises_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "safe_profiles_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_exercises_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "user_rankings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           age: number | null

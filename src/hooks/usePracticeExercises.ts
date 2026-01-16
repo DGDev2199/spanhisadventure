@@ -147,15 +147,15 @@ export const useSaveExercise = () => {
     }) => {
       const { data, error } = await supabase
         .from('practice_exercises')
-        .insert({
+        .insert([{
           title: params.title,
           exercise_type: params.exercise_type,
           topic_context: params.topic_context,
           vocabulary_context: params.vocabulary_context,
           level: params.level,
-          content: params.content as unknown as Record<string, unknown>,
+          content: JSON.parse(JSON.stringify(params.content)),
           created_by: params.created_by,
-        })
+        }])
         .select()
         .single();
 
@@ -255,12 +255,12 @@ export const useSaveAttempt = () => {
     }) => {
       const { data, error } = await supabase
         .from('practice_attempts')
-        .insert({
+        .insert([{
           assignment_id: params.assignment_id,
-          answers: params.answers as unknown as Record<string, unknown>,
+          answers: JSON.parse(JSON.stringify(params.answers)),
           score: params.score,
           time_spent_seconds: params.time_spent_seconds,
-        })
+        }])
         .select()
         .single();
 

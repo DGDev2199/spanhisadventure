@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { PracticeSessionPanel } from '@/components/practice';
 import { useAuth } from '@/contexts/AuthContext';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { useFeatureFlag } from '@/contexts/FeatureFlagsContext';
@@ -150,6 +151,7 @@ const TeacherDashboard = () => {
   const isEarningsEnabled = useFeatureFlag('earnings_panel');
   const isCustomTestsEnabled = useFeatureFlag('custom_tests');
   const isBasicChatEnabled = useFeatureFlag('basic_chat');
+  const isPracticeEnabled = useFeatureFlag('practice_exercises');
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
   const [isRoomDialogOpen, setIsRoomDialogOpen] = useState(false);
@@ -500,6 +502,13 @@ const TeacherDashboard = () => {
                 setVideoCallOpen(true);
               } : undefined}
             />
+          </div>
+        )}
+
+        {/* Practice Exercises Panel */}
+        {isPracticeEnabled && user?.id && (
+          <div className="mb-8">
+            <PracticeSessionPanel />
           </div>
         )}
 

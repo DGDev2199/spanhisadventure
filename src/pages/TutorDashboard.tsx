@@ -1,6 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeatureFlag } from '@/contexts/FeatureFlagsContext';
+import { PracticeSessionPanel } from '@/components/practice';
+import { TeacherMaterialsPanel } from '@/components/TeacherMaterialsPanel';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -41,6 +43,7 @@ const TutorDashboard = () => {
   const isVideoCallsEnabled = useFeatureFlag('video_calls');
   const isEarningsEnabled = useFeatureFlag('earnings_panel');
   const isBasicChatEnabled = useFeatureFlag('basic_chat');
+  const isPracticeEnabled = useFeatureFlag('practice_exercises');
   const [progressDialogOpen, setProgressDialogOpen] = useState(false);
   const [progressStudent, setProgressStudent] = useState<{ id: string; name: string } | null>(null);
   const [myScheduleOpen, setMyScheduleOpen] = useState(false);
@@ -199,6 +202,20 @@ const TutorDashboard = () => {
         {user?.id && (
           <div className="mb-8">
             <StaffHoursCard userId={user.id} />
+          </div>
+        )}
+
+        {/* Practice Exercises Panel */}
+        {isPracticeEnabled && user?.id && (
+          <div className="mb-8">
+            <PracticeSessionPanel />
+          </div>
+        )}
+
+        {/* Curriculum Materials and Teacher Guides */}
+        {user?.id && (
+          <div className="mb-8">
+            <TeacherMaterialsPanel />
           </div>
         )}
 

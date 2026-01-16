@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -9,10 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Sparkles, BookOpen, Languages, MessageSquare, Save, UserPlus } from 'lucide-react';
+import { Loader2, Sparkles, BookOpen, Languages, MessageSquare, Save, UserPlus, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useGenerateExercises, useSaveExercise, ExerciseContent, FlashcardContent, ConjugationContent, VocabularyContent } from '@/hooks/usePracticeExercises';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import AssignExerciseDialog from './AssignExerciseDialog';
 
 interface GenerateExercisesDialogProps {
@@ -21,6 +23,15 @@ interface GenerateExercisesDialogProps {
   initialTopic?: string;
   initialVocabulary?: string;
   studentId?: string;
+}
+
+interface StudentWithProgress {
+  id: string;
+  name: string;
+  email: string;
+  level: string | null;
+  latestClassTopics: string | null;
+  latestVocabulary: string | null;
 }
 
 const exerciseTypes = [
@@ -48,10 +59,143 @@ export default function GenerateExercisesDialog({
   const [level, setLevel] = useState('A1');
   const [count, setCount] = useState(10);
   const [title, setTitle] = useState('');
+  const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   
   const [generatedContent, setGeneratedContent] = useState<ExerciseContent | null>(null);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [savedExerciseId, setSavedExerciseId] = useState<string | null>(null);
+
+  // Fetch students with their progress data
+  const { data: studentsWithProgress, isLoading: loadingStudents } = useQuery({
+    queryKey: ['students-with-progress', user?.id],
+    queryFn: async (): Promise<StudentWithProgress[]> => {
+      if (!user) return [];
+
+      // Get user's roles
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id);
+
+      const userRoles = roles?.map(r => r.role) || [];
+      let studentProfiles: any[] = [];
+
+      // Fetch students based on role
+      if (userRoles.includes('admin') || userRoles.includes('coordinator')) {
+        const { data } = await supabase
+          .from('student_profiles')
+          .select('user_id, level, profiles!inner(id, full_name, email)')
+          .eq('status', 'active');
+        studentProfiles = data || [];
+      } else if (userRoles.includes('teacher')) {
+        const { data } = await supabase
+          .from('student_profiles')
+          .select('user_id, level, profiles!inner(id, full_name, email)')
+          .eq('teacher_id', user.id)
+          .eq('status', 'active');
+        studentProfiles = data || [];
+      } else if (userRoles.includes('tutor')) {
+        const { data } = await supabase
+          .from('student_profiles')
+          .select('user_id, level, profiles!inner(id, full_name, email)')
+          .eq('tutor_id', user.id)
+          .eq('status', 'active');
+        studentProfiles = data || [];
+      }
+
+      // For each student, fetch their latest progress notes
+      const studentsWithData: StudentWithProgress[] = await Promise.all(
+        studentProfiles.map(async (sp) => {
+          const profile = sp.profiles as any;
+          
+          // Get latest progress notes for this student
+          const { data: progressWeeks } = await supabase
+            .from('student_progress_weeks')
+            .select('id')
+            .eq('student_id', sp.user_id)
+            .order('week_number', { ascending: false })
+            .limit(3);
+
+          let latestClassTopics: string | null = null;
+          let latestVocabulary: string | null = null;
+
+          if (progressWeeks && progressWeeks.length > 0) {
+            const weekIds = progressWeeks.map(w => w.id);
+            const { data: notes } = await supabase
+              .from('student_progress_notes')
+              .select('class_topics, vocabulary')
+              .in('week_id', weekIds)
+              .not('class_topics', 'is', null)
+              .order('created_at', { ascending: false })
+              .limit(5);
+
+            if (notes && notes.length > 0) {
+              // Combine all recent class topics
+              const allTopics = notes
+                .filter(n => n.class_topics)
+                .map(n => n.class_topics)
+                .join(', ');
+              latestClassTopics = allTopics || null;
+
+              // Combine all recent vocabulary
+              const allVocab = notes
+                .filter(n => n.vocabulary)
+                .map(n => n.vocabulary)
+                .join(', ');
+              latestVocabulary = allVocab || null;
+            }
+          }
+
+          return {
+            id: profile.id,
+            name: profile.full_name,
+            email: profile.email,
+            level: sp.level,
+            latestClassTopics,
+            latestVocabulary,
+          };
+        })
+      );
+
+      return studentsWithData;
+    },
+    enabled: open && !!user,
+  });
+
+  // Handle student selection - auto-fill topic, vocabulary, and level
+  const handleStudentSelect = (studentId: string) => {
+    setSelectedStudentId(studentId);
+    
+    if (studentId && studentsWithProgress) {
+      const student = studentsWithProgress.find(s => s.id === studentId);
+      if (student) {
+        // Auto-fill topic from class_topics
+        if (student.latestClassTopics) {
+          setTopic(student.latestClassTopics);
+        }
+        // Auto-fill vocabulary
+        if (student.latestVocabulary) {
+          setVocabulary(student.latestVocabulary);
+        }
+        // Auto-fill level
+        if (student.level) {
+          setLevel(student.level);
+        }
+        
+        toast({
+          title: 'Datos cargados',
+          description: `Se han cargado los temas y nivel de ${student.name}`,
+        });
+      }
+    }
+  };
+
+  // Reset selected student when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setSelectedStudentId('');
+    }
+  }, [open]);
 
   const generateMutation = useGenerateExercises();
   const saveMutation = useSaveExercise();
@@ -224,6 +368,46 @@ export default function GenerateExercisesDialog({
           </DialogHeader>
 
           <div className="space-y-6">
+            {/* Student Selection - Auto-fill from progress */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Seleccionar Estudiante (opcional)
+              </Label>
+              <Select value={selectedStudentId} onValueChange={handleStudentSelect}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Cargar datos del estudiante..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {loadingStudents ? (
+                    <div className="flex items-center justify-center py-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </div>
+                  ) : studentsWithProgress && studentsWithProgress.length > 0 ? (
+                    studentsWithProgress.map(student => (
+                      <SelectItem key={student.id} value={student.id}>
+                        <div className="flex items-center gap-2">
+                          <span>{student.name}</span>
+                          {student.level && (
+                            <Badge variant="secondary" className="text-xs">
+                              {student.level}
+                            </Badge>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="px-2 py-1 text-sm text-muted-foreground">
+                      No hay estudiantes asignados
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Al seleccionar un estudiante, se cargarán automáticamente los temas practicados en clase, vocabulario y nivel.
+              </p>
+            </div>
+
             {/* Exercise Type Selection */}
             <div className="space-y-2">
               <Label>Tipo de Ejercicio</Label>
@@ -377,7 +561,7 @@ export default function GenerateExercisesDialog({
           open={showAssignDialog}
           onClose={() => setShowAssignDialog(false)}
           exerciseId={savedExerciseId}
-          defaultStudentId={studentId}
+          defaultStudentId={selectedStudentId || studentId}
         />
       )}
     </>

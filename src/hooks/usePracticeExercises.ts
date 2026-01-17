@@ -30,12 +30,59 @@ export interface VocabularyContent {
   }>;
 }
 
-export type ExerciseContent = FlashcardContent | ConjugationContent | VocabularyContent;
+export interface SentenceOrderContent {
+  exercises: Array<{
+    scrambled_words: string[];
+    correct_sentence: string;
+    hint?: string;
+  }>;
+}
+
+export interface MultipleChoiceContent {
+  exercises: Array<{
+    question: string;
+    options: string[];
+    correct_answer: string;
+    explanation?: string;
+  }>;
+}
+
+export interface FillGapsContent {
+  exercises: Array<{
+    sentence_with_gap: string;
+    options: string[];
+    correct_answer: string;
+    context?: string;
+  }>;
+}
+
+export interface ReadingContent {
+  exercises: Array<{
+    title: string;
+    text: string;
+    questions: Array<{
+      question: string;
+      options: string[];
+      correct_answer: string;
+    }>;
+  }>;
+}
+
+export type ExerciseType = 'flashcard' | 'conjugation' | 'vocabulary' | 'sentence_order' | 'multiple_choice' | 'fill_gaps' | 'reading';
+
+export type ExerciseContent = 
+  | FlashcardContent 
+  | ConjugationContent 
+  | VocabularyContent 
+  | SentenceOrderContent 
+  | MultipleChoiceContent 
+  | FillGapsContent 
+  | ReadingContent;
 
 export interface PracticeExercise {
   id: string;
   title: string;
-  exercise_type: 'flashcard' | 'conjugation' | 'vocabulary';
+  exercise_type: ExerciseType;
   topic_context: string | null;
   vocabulary_context: string | null;
   level: string | null;
@@ -56,6 +103,16 @@ export interface PracticeAssignment {
   score: number | null;
   created_at: string;
   exercise?: PracticeExercise;
+}
+
+export interface RecommendedPackResult {
+  pack_name: string;
+  exercises: Array<{
+    type: ExerciseType;
+    content: ExerciseContent;
+  }>;
+  total_exercises: number;
+  estimated_time_minutes: number;
 }
 
 export const usePracticeExercises = (creatorId?: string) => {
@@ -106,7 +163,7 @@ export const useGenerateExercises = () => {
   
   return useMutation({
     mutationFn: async (params: {
-      exercise_type: 'flashcard' | 'conjugation' | 'vocabulary';
+      exercise_type: ExerciseType;
       topic: string;
       vocabulary?: string[];
       count: number;
@@ -131,6 +188,39 @@ export const useGenerateExercises = () => {
   });
 };
 
+export const useGenerateRecommendedPack = () => {
+  const { toast } = useToast();
+  
+  return useMutation({
+    mutationFn: async (params: {
+      student_id: string;
+      week_number: number;
+      class_topics: string;
+      vocabulary: string;
+      level: string;
+    }): Promise<RecommendedPackResult> => {
+      const { data, error } = await supabase.functions.invoke('generate-exercises', {
+        body: {
+          ...params,
+          generate_pack: true,
+        },
+      });
+
+      if (error) throw error;
+      if (!data.success) throw new Error(data.error || 'Failed to generate recommended pack');
+      
+      return data.pack;
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error al generar pack recomendado',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
 export const useSaveExercise = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -138,7 +228,7 @@ export const useSaveExercise = () => {
   return useMutation({
     mutationFn: async (params: {
       title: string;
-      exercise_type: 'flashcard' | 'conjugation' | 'vocabulary';
+      exercise_type: ExerciseType;
       topic_context: string;
       vocabulary_context?: string;
       level: string;

@@ -6,12 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Sparkles, BookOpen, Languages, MessageSquare, Save, UserPlus, User } from 'lucide-react';
+import { Loader2, Sparkles, BookOpen, Languages, MessageSquare, Save, UserPlus, User, Package, Shuffle, ListOrdered, CheckSquare, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useGenerateExercises, useSaveExercise, ExerciseContent, FlashcardContent, ConjugationContent, VocabularyContent } from '@/hooks/usePracticeExercises';
+import { useGenerateExercises, useSaveExercise, useGenerateRecommendedPack, ExerciseContent, FlashcardContent, ConjugationContent, VocabularyContent, SentenceOrderContent, MultipleChoiceContent, FillGapsContent, ReadingContent } from '@/hooks/usePracticeExercises';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,15 +31,22 @@ interface StudentWithProgress {
   level: string | null;
   latestClassTopics: string | null;
   latestVocabulary: string | null;
+  currentWeek: number | null;
 }
 
-const exerciseTypes = [
+type ExerciseType = 'flashcard' | 'conjugation' | 'vocabulary' | 'sentence_order' | 'multiple_choice' | 'fill_gaps' | 'reading';
+
+const exerciseTypes: { value: ExerciseType; label: string; icon: React.ComponentType<any>; description: string }[] = [
   { value: 'flashcard', label: 'Flashcards', icon: BookOpen, description: 'Tarjetas con imagen/texto y traducción' },
   { value: 'conjugation', label: 'Conjugación', icon: Languages, description: 'Ejercicios de conjugación verbal' },
   { value: 'vocabulary', label: 'Vocabulario', icon: MessageSquare, description: 'Completar oraciones y definiciones' },
-] as const;
+  { value: 'sentence_order', label: 'Ordenar Frases', icon: ListOrdered, description: 'Ordenar palabras para formar oraciones' },
+  { value: 'multiple_choice', label: 'Opción Múltiple', icon: CheckSquare, description: 'Preguntas de selección múltiple' },
+  { value: 'fill_gaps', label: 'Completar Huecos', icon: Shuffle, description: 'Rellenar espacios en blanco' },
+  { value: 'reading', label: 'Comprensión Lectora', icon: FileText, description: 'Lectura con preguntas de comprensión' },
+];
 
-const levels = ['A1', 'A2', 'B1', 'B2'];
+const levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
 export default function GenerateExercisesDialog({
   open,
@@ -53,7 +59,7 @@ export default function GenerateExercisesDialog({
   const { user } = useAuth();
   const { toast } = useToast();
   
-  const [exerciseType, setExerciseType] = useState<'flashcard' | 'conjugation' | 'vocabulary'>('flashcard');
+  const [exerciseType, setExerciseType] = useState<ExerciseType>('flashcard');
   const [topic, setTopic] = useState(initialTopic);
   const [vocabulary, setVocabulary] = useState(initialVocabulary);
   const [level, setLevel] = useState('A1');
@@ -64,10 +70,11 @@ export default function GenerateExercisesDialog({
   const [generatedContent, setGeneratedContent] = useState<ExerciseContent | null>(null);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [savedExerciseId, setSavedExerciseId] = useState<string | null>(null);
+  const [generatingPack, setGeneratingPack] = useState(false);
 
-  // Fetch students with their progress data
+  // Fetch students with their progress data - FIXED QUERY
   const { data: studentsWithProgress, isLoading: loadingStudents } = useQuery({
-    queryKey: ['students-with-progress', user?.id],
+    queryKey: ['students-with-progress-fixed', user?.id],
     queryFn: async (): Promise<StudentWithProgress[]> => {
       if (!user) return [];
 
@@ -78,48 +85,72 @@ export default function GenerateExercisesDialog({
         .eq('user_id', user.id);
 
       const userRoles = roles?.map(r => r.role) || [];
-      let studentProfiles: any[] = [];
+      
+      // Step 1: Get student_profiles based on role
+      let studentProfilesQuery = supabase
+        .from('student_profiles')
+        .select('user_id, level, teacher_id, tutor_id')
+        .eq('status', 'active');
 
-      // Fetch students based on role
       if (userRoles.includes('admin') || userRoles.includes('coordinator')) {
-        const { data } = await supabase
-          .from('student_profiles')
-          .select('user_id, level, profiles!inner(id, full_name, email)')
-          .eq('status', 'active');
-        studentProfiles = data || [];
+        // Admin/coordinator sees all active students
       } else if (userRoles.includes('teacher')) {
-        const { data } = await supabase
-          .from('student_profiles')
-          .select('user_id, level, profiles!inner(id, full_name, email)')
-          .eq('teacher_id', user.id)
-          .eq('status', 'active');
-        studentProfiles = data || [];
+        studentProfilesQuery = studentProfilesQuery.eq('teacher_id', user.id);
       } else if (userRoles.includes('tutor')) {
-        const { data } = await supabase
-          .from('student_profiles')
-          .select('user_id, level, profiles!inner(id, full_name, email)')
-          .eq('tutor_id', user.id)
-          .eq('status', 'active');
-        studentProfiles = data || [];
+        studentProfilesQuery = studentProfilesQuery.eq('tutor_id', user.id);
+      } else {
+        return []; // No valid role
       }
 
-      // For each student, fetch their latest progress notes
+      const { data: studentProfiles, error: spError } = await studentProfilesQuery;
+      
+      if (spError) {
+        console.error('Error fetching student profiles:', spError);
+        return [];
+      }
+
+      if (!studentProfiles || studentProfiles.length === 0) {
+        return [];
+      }
+
+      // Step 2: Get profiles for these students
+      const userIds = studentProfiles.map(sp => sp.user_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        return [];
+      }
+
+      // Step 3: Create a map for quick profile lookup
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+      // Step 4: For each student, fetch their latest progress notes
       const studentsWithData: StudentWithProgress[] = await Promise.all(
         studentProfiles.map(async (sp) => {
-          const profile = sp.profiles as any;
+          const profile = profileMap.get(sp.user_id);
           
-          // Get latest progress notes for this student
+          if (!profile) {
+            return null;
+          }
+
+          // Get latest progress weeks for this student
           const { data: progressWeeks } = await supabase
             .from('student_progress_weeks')
-            .select('id')
+            .select('id, week_number')
             .eq('student_id', sp.user_id)
             .order('week_number', { ascending: false })
             .limit(3);
 
           let latestClassTopics: string | null = null;
           let latestVocabulary: string | null = null;
+          let currentWeek: number | null = null;
 
           if (progressWeeks && progressWeeks.length > 0) {
+            currentWeek = progressWeeks[0].week_number;
             const weekIds = progressWeeks.map(w => w.id);
             const { data: notes } = await supabase
               .from('student_progress_notes')
@@ -153,11 +184,13 @@ export default function GenerateExercisesDialog({
             level: sp.level,
             latestClassTopics,
             latestVocabulary,
+            currentWeek,
           };
         })
       );
 
-      return studentsWithData;
+      // Filter out nulls
+      return studentsWithData.filter((s): s is StudentWithProgress => s !== null);
     },
     enabled: open && !!user,
   });
@@ -194,11 +227,14 @@ export default function GenerateExercisesDialog({
   useEffect(() => {
     if (!open) {
       setSelectedStudentId('');
+      setGeneratedContent(null);
+      setSavedExerciseId(null);
     }
   }, [open]);
 
   const generateMutation = useGenerateExercises();
   const saveMutation = useSaveExercise();
+  const generatePackMutation = useGenerateRecommendedPack();
 
   const handleGenerate = async () => {
     if (!topic.trim()) {
@@ -226,7 +262,8 @@ export default function GenerateExercisesDialog({
 
       setGeneratedContent(result.content);
       if (!title) {
-        setTitle(`${exerciseType === 'flashcard' ? 'Flashcards' : exerciseType === 'conjugation' ? 'Conjugación' : 'Vocabulario'}: ${topic}`);
+        const typeLabel = exerciseTypes.find(t => t.value === exerciseType)?.label || exerciseType;
+        setTitle(`${typeLabel}: ${topic.substring(0, 30)}${topic.length > 30 ? '...' : ''}`);
       }
 
       toast({
@@ -235,6 +272,47 @@ export default function GenerateExercisesDialog({
       });
     } catch (error) {
       console.error('Error generating exercises:', error);
+    }
+  };
+
+  const handleGenerateRecommendedPack = async () => {
+    if (!selectedStudentId) {
+      toast({
+        title: 'Selecciona un estudiante',
+        description: 'Debes seleccionar un estudiante para generar un pack recomendado.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const student = studentsWithProgress?.find(s => s.id === selectedStudentId);
+    if (!student) return;
+
+    setGeneratingPack(true);
+
+    try {
+      const result = await generatePackMutation.mutateAsync({
+        student_id: selectedStudentId,
+        week_number: student.currentWeek || 1,
+        class_topics: student.latestClassTopics || topic || 'Vocabulario general',
+        vocabulary: student.latestVocabulary || vocabulary || '',
+        level: student.level || level,
+      });
+
+      // The pack generates multiple exercises, we'll show the first one
+      if (result.exercises && result.exercises.length > 0) {
+        setGeneratedContent(result.exercises[0].content);
+        setTitle(result.pack_name || `Pack Semana ${student.currentWeek} - ${student.level}`);
+      }
+
+      toast({
+        title: 'Pack recomendado generado',
+        description: `Se han generado ${result.total_exercises} ejercicios variados para ${student.name}.`,
+      });
+    } catch (error) {
+      console.error('Error generating recommended pack:', error);
+    } finally {
+      setGeneratingPack(false);
     }
   };
 
@@ -276,6 +354,7 @@ export default function GenerateExercisesDialog({
   const renderPreview = () => {
     if (!generatedContent) return null;
 
+    // Flashcard preview
     if (exerciseType === 'flashcard' && 'cards' in generatedContent) {
       const content = generatedContent as FlashcardContent;
       return (
@@ -298,6 +377,7 @@ export default function GenerateExercisesDialog({
       );
     }
 
+    // Conjugation preview
     if (exerciseType === 'conjugation' && 'exercises' in generatedContent) {
       const content = generatedContent as ConjugationContent;
       return (
@@ -320,6 +400,7 @@ export default function GenerateExercisesDialog({
       );
     }
 
+    // Vocabulary preview
     if (exerciseType === 'vocabulary' && 'exercises' in generatedContent) {
       const content = generatedContent as VocabularyContent;
       return (
@@ -343,6 +424,98 @@ export default function GenerateExercisesDialog({
       );
     }
 
+    // Sentence Order preview
+    if (exerciseType === 'sentence_order' && 'exercises' in generatedContent) {
+      const content = generatedContent as SentenceOrderContent;
+      return (
+        <div className="space-y-3 max-h-[300px] overflow-y-auto">
+          {content.exercises.map((ex, idx) => (
+            <Card key={idx} className="bg-muted/50">
+              <CardContent className="p-3">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Palabras: {ex.scrambled_words.join(' / ')}</p>
+                    <p className="text-sm text-green-600 dark:text-green-400">✓ {ex.correct_sentence}</p>
+                    {ex.hint && <p className="text-xs text-muted-foreground italic">Pista: {ex.hint}</p>}
+                  </div>
+                  <Badge variant="outline">{idx + 1}</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      );
+    }
+
+    // Multiple Choice preview
+    if (exerciseType === 'multiple_choice' && 'exercises' in generatedContent) {
+      const content = generatedContent as MultipleChoiceContent;
+      return (
+        <div className="space-y-3 max-h-[300px] overflow-y-auto">
+          {content.exercises.map((ex, idx) => (
+            <Card key={idx} className="bg-muted/50">
+              <CardContent className="p-3">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{ex.question}</p>
+                    <p className="text-xs text-muted-foreground">Opciones: {ex.options.join(' | ')}</p>
+                    <p className="text-sm text-green-600 dark:text-green-400">✓ {ex.correct_answer}</p>
+                  </div>
+                  <Badge variant="outline">{idx + 1}</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      );
+    }
+
+    // Fill Gaps preview
+    if (exerciseType === 'fill_gaps' && 'exercises' in generatedContent) {
+      const content = generatedContent as FillGapsContent;
+      return (
+        <div className="space-y-3 max-h-[300px] overflow-y-auto">
+          {content.exercises.map((ex, idx) => (
+            <Card key={idx} className="bg-muted/50">
+              <CardContent className="p-3">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{ex.sentence_with_gap}</p>
+                    <p className="text-xs text-muted-foreground">Opciones: {ex.options.join(' | ')}</p>
+                    <p className="text-sm text-green-600 dark:text-green-400">✓ {ex.correct_answer}</p>
+                  </div>
+                  <Badge variant="outline">{idx + 1}</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      );
+    }
+
+    // Reading Comprehension preview
+    if (exerciseType === 'reading' && 'exercises' in generatedContent) {
+      const content = generatedContent as ReadingContent;
+      return (
+        <div className="space-y-3 max-h-[300px] overflow-y-auto">
+          {content.exercises.map((ex, idx) => (
+            <Card key={idx} className="bg-muted/50">
+              <CardContent className="p-3">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{ex.title}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{ex.text.substring(0, 150)}...</p>
+                    <p className="text-xs mt-1">{ex.questions.length} preguntas</p>
+                  </div>
+                  <Badge variant="outline">{idx + 1}</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      );
+    }
+
     return null;
   };
 
@@ -350,6 +523,9 @@ export default function GenerateExercisesDialog({
     setGeneratedContent(null);
     setSavedExerciseId(null);
     setTitle('');
+    setTopic(initialTopic);
+    setVocabulary(initialVocabulary);
+    setSelectedStudentId('');
     onClose();
   };
 
@@ -393,6 +569,11 @@ export default function GenerateExercisesDialog({
                               {student.level}
                             </Badge>
                           )}
+                          {student.currentWeek && (
+                            <Badge variant="outline" className="text-xs">
+                              Sem. {student.currentWeek}
+                            </Badge>
+                          )}
                         </div>
                       </SelectItem>
                     ))
@@ -408,10 +589,32 @@ export default function GenerateExercisesDialog({
               </p>
             </div>
 
+            {/* Generate Recommended Pack Button */}
+            {selectedStudentId && (
+              <Button
+                variant="secondary"
+                className="w-full"
+                onClick={handleGenerateRecommendedPack}
+                disabled={generatingPack || generatePackMutation.isPending}
+              >
+                {generatingPack || generatePackMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generando pack...
+                  </>
+                ) : (
+                  <>
+                    <Package className="h-4 w-4 mr-2" />
+                    Generar Pack Recomendado por IA
+                  </>
+                )}
+              </Button>
+            )}
+
             {/* Exercise Type Selection */}
             <div className="space-y-2">
               <Label>Tipo de Ejercicio</Label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {exerciseTypes.map((type) => {
                   const Icon = type.icon;
                   return (
@@ -422,7 +625,7 @@ export default function GenerateExercisesDialog({
                       onClick={() => setExerciseType(type.value)}
                     >
                       <Icon className="h-5 w-5 mb-1" />
-                      <span className="text-xs">{type.label}</span>
+                      <span className="text-xs text-center">{type.label}</span>
                     </Button>
                   );
                 })}
@@ -472,14 +675,16 @@ export default function GenerateExercisesDialog({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="count">Cantidad de ejercicios</Label>
-                <Input
-                  id="count"
-                  type="number"
-                  min={5}
-                  max={20}
-                  value={count}
-                  onChange={(e) => setCount(parseInt(e.target.value) || 10)}
-                />
+                <Select value={count.toString()} onValueChange={(v) => setCount(parseInt(v))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[5, 10, 15, 20].map(n => (
+                      <SelectItem key={n} value={n.toString()}>{n} ejercicios</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="title">Título (opcional)</Label>
@@ -487,21 +692,21 @@ export default function GenerateExercisesDialog({
                   id="title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Se genera automáticamente"
+                  placeholder="Se generará automáticamente"
                 />
               </div>
             </div>
 
             {/* Generate Button */}
             <Button
+              className="w-full"
               onClick={handleGenerate}
               disabled={generateMutation.isPending || !topic.trim()}
-              className="w-full"
             >
               {generateMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Generando...
+                  Generando con IA...
                 </>
               ) : (
                 <>
@@ -515,24 +720,18 @@ export default function GenerateExercisesDialog({
             {generatedContent && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h4 className="font-medium">Vista Previa</h4>
-                  <Badge variant="secondary">
-                    {exerciseType === 'flashcard' && 'cards' in generatedContent 
-                      ? `${(generatedContent as FlashcardContent).cards.length} tarjetas`
-                      : 'exercises' in generatedContent
-                      ? `${((generatedContent as ConjugationContent | VocabularyContent).exercises).length} ejercicios`
-                      : ''}
-                  </Badge>
+                  <Label>Vista Previa</Label>
+                  <Badge>{exerciseTypes.find(t => t.value === exerciseType)?.label}</Badge>
                 </div>
-                
                 {renderPreview()}
 
+                {/* Action Buttons */}
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
+                    className="flex-1"
                     onClick={handleSave}
                     disabled={saveMutation.isPending || !!savedExerciseId}
-                    className="flex-1"
                   >
                     {saveMutation.isPending ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -542,9 +741,9 @@ export default function GenerateExercisesDialog({
                     {savedExerciseId ? 'Guardado' : 'Guardar'}
                   </Button>
                   <Button
+                    className="flex-1"
                     onClick={handleAssignClick}
                     disabled={saveMutation.isPending}
-                    className="flex-1"
                   >
                     <UserPlus className="h-4 w-4 mr-2" />
                     Asignar a Estudiante
@@ -556,12 +755,13 @@ export default function GenerateExercisesDialog({
         </DialogContent>
       </Dialog>
 
+      {/* Assign Exercise Dialog */}
       {savedExerciseId && (
         <AssignExerciseDialog
           open={showAssignDialog}
           onClose={() => setShowAssignDialog(false)}
           exerciseId={savedExerciseId}
-          defaultStudentId={selectedStudentId || studentId}
+          defaultStudentId={selectedStudentId || undefined}
         />
       )}
     </>

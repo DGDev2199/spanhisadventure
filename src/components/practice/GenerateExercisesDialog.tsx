@@ -10,11 +10,27 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Sparkles, BookOpen, Languages, MessageSquare, Save, UserPlus, User, Package, Shuffle, ListOrdered, CheckSquare, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useGenerateExercises, useSaveExercise, useGenerateRecommendedPack, ExerciseContent, FlashcardContent, ConjugationContent, VocabularyContent, SentenceOrderContent, MultipleChoiceContent, FillGapsContent, ReadingContent } from '@/hooks/usePracticeExercises';
+import { 
+  useGenerateExercises, 
+  useSaveExercise, 
+  useGenerateRecommendedPack, 
+  useSaveExercisePack,
+  ExerciseContent, 
+  ExerciseType,
+  FlashcardContent, 
+  ConjugationContent, 
+  VocabularyContent, 
+  SentenceOrderContent, 
+  MultipleChoiceContent, 
+  FillGapsContent, 
+  ReadingContent,
+  RecommendedPackResult,
+} from '@/hooks/usePracticeExercises';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import AssignExerciseDialog from './AssignExerciseDialog';
+import PackPreview from './PackPreview';
 
 interface GenerateExercisesDialogProps {
   open: boolean;
@@ -33,8 +49,6 @@ interface StudentWithProgress {
   latestVocabulary: string | null;
   currentWeek: number | null;
 }
-
-type ExerciseType = 'flashcard' | 'conjugation' | 'vocabulary' | 'sentence_order' | 'multiple_choice' | 'fill_gaps' | 'reading';
 
 const exerciseTypes: { value: ExerciseType; label: string; icon: React.ComponentType<any>; description: string }[] = [
   { value: 'flashcard', label: 'Flashcards', icon: BookOpen, description: 'Tarjetas con imagen/texto y traducción' },
@@ -67,9 +81,16 @@ export default function GenerateExercisesDialog({
   const [title, setTitle] = useState('');
   const [selectedStudentId, setSelectedStudentId] = useState<string>('');
   
+  // Single exercise state
   const [generatedContent, setGeneratedContent] = useState<ExerciseContent | null>(null);
-  const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [savedExerciseId, setSavedExerciseId] = useState<string | null>(null);
+  
+  // Pack state
+  const [generatedPack, setGeneratedPack] = useState<RecommendedPackResult | null>(null);
+  const [removedPackIndices, setRemovedPackIndices] = useState<Set<string>>(new Set());
+  const [savedPackIds, setSavedPackIds] = useState<string[]>([]);
+  
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [generatingPack, setGeneratingPack] = useState(false);
 
   // Fetch students with their progress data - FIXED QUERY
@@ -229,12 +250,16 @@ export default function GenerateExercisesDialog({
       setSelectedStudentId('');
       setGeneratedContent(null);
       setSavedExerciseId(null);
+      setGeneratedPack(null);
+      setRemovedPackIndices(new Set());
+      setSavedPackIds([]);
     }
   }, [open]);
 
   const generateMutation = useGenerateExercises();
   const saveMutation = useSaveExercise();
   const generatePackMutation = useGenerateRecommendedPack();
+  const savePackMutation = useSaveExercisePack();
 
   const handleGenerate = async () => {
     if (!topic.trim()) {
@@ -245,6 +270,11 @@ export default function GenerateExercisesDialog({
       });
       return;
     }
+
+    // Clear any previous pack
+    setGeneratedPack(null);
+    setRemovedPackIndices(new Set());
+    setSavedPackIds([]);
 
     const vocabularyArray = vocabulary
       .split(',')
@@ -288,6 +318,12 @@ export default function GenerateExercisesDialog({
     const student = studentsWithProgress?.find(s => s.id === selectedStudentId);
     if (!student) return;
 
+    // Clear single exercise content
+    setGeneratedContent(null);
+    setSavedExerciseId(null);
+    setRemovedPackIndices(new Set());
+    setSavedPackIds([]);
+
     setGeneratingPack(true);
 
     try {
@@ -299,11 +335,9 @@ export default function GenerateExercisesDialog({
         level: student.level || level,
       });
 
-      // The pack generates multiple exercises, we'll show the first one
-      if (result.exercises && result.exercises.length > 0) {
-        setGeneratedContent(result.exercises[0].content);
-        setTitle(result.pack_name || `Pack Semana ${student.currentWeek} - ${student.level}`);
-      }
+      // Store the full pack
+      setGeneratedPack(result);
+      setTitle(result.pack_name || `Pack Semana ${student.currentWeek} - ${student.level}`);
 
       toast({
         title: 'Pack recomendado generado',
@@ -314,6 +348,29 @@ export default function GenerateExercisesDialog({
     } finally {
       setGeneratingPack(false);
     }
+  };
+
+  const handleRemovePackExercise = (typeIndex: number, exerciseIndex: number) => {
+    const key = `${typeIndex}-${exerciseIndex}`;
+    setRemovedPackIndices(prev => new Set(prev).add(key));
+  };
+
+  // Get filtered pack exercises (excluding removed ones)
+  const getFilteredPackExercises = () => {
+    if (!generatedPack) return [];
+    
+    return generatedPack.exercises.filter((exercise, typeIdx) => {
+      // Check if all items in this exercise type are removed
+      const itemCount = getExerciseItemCount(exercise);
+      const allRemoved = Array.from({ length: itemCount }, (_, exIdx) => 
+        removedPackIndices.has(`${typeIdx}-${exIdx}`)
+      ).every(Boolean);
+      
+      return !allRemoved;
+    }).map((exercise, originalTypeIdx) => {
+      // Filter out removed items within each exercise
+      return filterExerciseContent(exercise, originalTypeIdx, removedPackIndices);
+    }).filter(ex => ex !== null) as Array<{ type: ExerciseType; content: ExerciseContent }>;
   };
 
   const handleSave = async () => {
@@ -340,14 +397,54 @@ export default function GenerateExercisesDialog({
     }
   };
 
-  const handleAssignClick = () => {
-    if (!savedExerciseId && generatedContent) {
-      // Save first, then open assign dialog
-      handleSave().then(() => {
-        setShowAssignDialog(true);
+  const handleSavePack = async () => {
+    if (!generatedPack || !user) return;
+
+    const filteredExercises = getFilteredPackExercises();
+    if (filteredExercises.length === 0) {
+      toast({
+        title: 'No hay ejercicios',
+        description: 'Todos los ejercicios han sido eliminados del pack.',
+        variant: 'destructive',
       });
-    } else if (savedExerciseId) {
-      setShowAssignDialog(true);
+      return;
+    }
+
+    try {
+      const savedIds = await savePackMutation.mutateAsync({
+        pack_name: title || generatedPack.pack_name,
+        exercises: filteredExercises,
+        topic_context: topic,
+        vocabulary_context: vocabulary || undefined,
+        level,
+        created_by: user.id,
+      });
+
+      setSavedPackIds(savedIds);
+    } catch (error) {
+      console.error('Error saving pack:', error);
+    }
+  };
+
+  const handleAssignClick = () => {
+    if (generatedPack) {
+      // For pack: save first if not saved, then open assign dialog
+      if (savedPackIds.length === 0) {
+        handleSavePack().then(() => {
+          setShowAssignDialog(true);
+        });
+      } else {
+        setShowAssignDialog(true);
+      }
+    } else if (generatedContent) {
+      // For single exercise: save first if not saved
+      if (!savedExerciseId) {
+        handleSave().then(() => {
+          setShowAssignDialog(true);
+        });
+      } else {
+        setShowAssignDialog(true);
+      }
     }
   };
 
@@ -522,12 +619,18 @@ export default function GenerateExercisesDialog({
   const resetAndClose = () => {
     setGeneratedContent(null);
     setSavedExerciseId(null);
+    setGeneratedPack(null);
+    setRemovedPackIndices(new Set());
+    setSavedPackIds([]);
     setTitle('');
     setTopic(initialTopic);
     setVocabulary(initialVocabulary);
     setSelectedStudentId('');
     onClose();
   };
+
+  const hasPackContent = generatedPack && generatedPack.exercises.length > 0;
+  const hasSingleContent = generatedContent !== null;
 
   return (
     <>
@@ -611,139 +714,36 @@ export default function GenerateExercisesDialog({
               </Button>
             )}
 
-            {/* Exercise Type Selection */}
-            <div className="space-y-2">
-              <Label>Tipo de Ejercicio</Label>
-              <div className="grid grid-cols-4 gap-2">
-                {exerciseTypes.map((type) => {
-                  const Icon = type.icon;
-                  return (
-                    <Button
-                      key={type.value}
-                      variant={exerciseType === type.value ? 'default' : 'outline'}
-                      className="h-auto flex-col py-3 px-2"
-                      onClick={() => setExerciseType(type.value)}
-                    >
-                      <Icon className="h-5 w-5 mb-1" />
-                      <span className="text-xs text-center">{type.label}</span>
-                    </Button>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {exerciseTypes.find(t => t.value === exerciseType)?.description}
-              </p>
-            </div>
-
-            {/* Configuration */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="topic">Tema *</Label>
-                <Input
-                  id="topic"
-                  value={topic}
-                  onChange={(e) => setTopic(e.target.value)}
-                  placeholder="Ej: Pretérito indefinido, La familia..."
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="level">Nivel</Label>
-                <Select value={level} onValueChange={setLevel}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {levels.map(l => (
-                      <SelectItem key={l} value={l}>{l}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="vocabulary">Vocabulario (opcional, separado por comas)</Label>
-              <Textarea
-                id="vocabulary"
-                value={vocabulary}
-                onChange={(e) => setVocabulary(e.target.value)}
-                placeholder="hablar, comer, vivir, estudiar..."
-                rows={2}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="count">Cantidad de ejercicios</Label>
-                <Select value={count.toString()} onValueChange={(v) => setCount(parseInt(v))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[5, 10, 15, 20].map(n => (
-                      <SelectItem key={n} value={n.toString()}>{n} ejercicios</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="title">Título (opcional)</Label>
-                <Input
-                  id="title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Se generará automáticamente"
-                />
-              </div>
-            </div>
-
-            {/* Generate Button */}
-            <Button
-              className="w-full"
-              onClick={handleGenerate}
-              disabled={generateMutation.isPending || !topic.trim()}
-            >
-              {generateMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Generando con IA...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Generar Ejercicios
-                </>
-              )}
-            </Button>
-
-            {/* Preview */}
-            {generatedContent && (
+            {/* Pack Preview */}
+            {hasPackContent && (
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label>Vista Previa</Label>
-                  <Badge>{exerciseTypes.find(t => t.value === exerciseType)?.label}</Badge>
-                </div>
-                {renderPreview()}
+                <PackPreview
+                  packName={title || generatedPack.pack_name}
+                  exercises={generatedPack.exercises}
+                  estimatedTime={generatedPack.estimated_time_minutes}
+                  removedIndices={removedPackIndices}
+                  onRemoveExercise={handleRemovePackExercise}
+                />
 
-                {/* Action Buttons */}
+                {/* Pack Action Buttons */}
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
                     className="flex-1"
-                    onClick={handleSave}
-                    disabled={saveMutation.isPending || !!savedExerciseId}
+                    onClick={handleSavePack}
+                    disabled={savePackMutation.isPending || savedPackIds.length > 0}
                   >
-                    {saveMutation.isPending ? (
+                    {savePackMutation.isPending ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     ) : (
                       <Save className="h-4 w-4 mr-2" />
                     )}
-                    {savedExerciseId ? 'Guardado' : 'Guardar'}
+                    {savedPackIds.length > 0 ? `Guardados (${savedPackIds.length})` : 'Guardar Pack'}
                   </Button>
                   <Button
                     className="flex-1"
                     onClick={handleAssignClick}
-                    disabled={saveMutation.isPending}
+                    disabled={savePackMutation.isPending}
                   >
                     <UserPlus className="h-4 w-4 mr-2" />
                     Asignar a Estudiante
@@ -751,19 +751,205 @@ export default function GenerateExercisesDialog({
                 </div>
               </div>
             )}
+
+            {/* Single Exercise Generation (shown when no pack) */}
+            {!hasPackContent && (
+              <>
+                {/* Exercise Type Selection */}
+                <div className="space-y-2">
+                  <Label>Tipo de Ejercicio</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {exerciseTypes.map((type) => {
+                      const Icon = type.icon;
+                      return (
+                        <Button
+                          key={type.value}
+                          variant={exerciseType === type.value ? 'default' : 'outline'}
+                          className="h-auto flex-col py-3 px-2"
+                          onClick={() => setExerciseType(type.value)}
+                        >
+                          <Icon className="h-5 w-5 mb-1" />
+                          <span className="text-xs text-center">{type.label}</span>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {exerciseTypes.find(t => t.value === exerciseType)?.description}
+                  </p>
+                </div>
+
+                {/* Configuration */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="topic">Tema *</Label>
+                    <Input
+                      id="topic"
+                      value={topic}
+                      onChange={(e) => setTopic(e.target.value)}
+                      placeholder="Ej: Pretérito indefinido, La familia..."
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="level">Nivel</Label>
+                    <Select value={level} onValueChange={setLevel}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {levels.map(l => (
+                          <SelectItem key={l} value={l}>{l}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="vocabulary">Vocabulario (opcional, separado por comas)</Label>
+                  <Textarea
+                    id="vocabulary"
+                    value={vocabulary}
+                    onChange={(e) => setVocabulary(e.target.value)}
+                    placeholder="hablar, comer, vivir, estudiar..."
+                    rows={2}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="count">Cantidad de ejercicios</Label>
+                    <Select value={count.toString()} onValueChange={(v) => setCount(parseInt(v))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[5, 10, 15, 20].map(n => (
+                          <SelectItem key={n} value={n.toString()}>{n} ejercicios</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="title">Título (opcional)</Label>
+                    <Input
+                      id="title"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="Se generará automáticamente"
+                    />
+                  </div>
+                </div>
+
+                {/* Generate Button */}
+                <Button
+                  className="w-full"
+                  onClick={handleGenerate}
+                  disabled={generateMutation.isPending || !topic.trim()}
+                >
+                  {generateMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generando con IA...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Generar Ejercicios
+                    </>
+                  )}
+                </Button>
+
+                {/* Preview */}
+                {hasSingleContent && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <Label>Vista Previa</Label>
+                      <Badge>{exerciseTypes.find(t => t.value === exerciseType)?.label}</Badge>
+                    </div>
+                    {renderPreview()}
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={handleSave}
+                        disabled={saveMutation.isPending || !!savedExerciseId}
+                      >
+                        {saveMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4 mr-2" />
+                        )}
+                        {savedExerciseId ? 'Guardado' : 'Guardar'}
+                      </Button>
+                      <Button
+                        className="flex-1"
+                        onClick={handleAssignClick}
+                        disabled={saveMutation.isPending}
+                      >
+                        <UserPlus className="h-4 w-4 mr-2" />
+                        Asignar a Estudiante
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Assign Exercise Dialog */}
-      {savedExerciseId && (
-        <AssignExerciseDialog
-          open={showAssignDialog}
-          onClose={() => setShowAssignDialog(false)}
-          exerciseId={savedExerciseId}
-          defaultStudentId={selectedStudentId || undefined}
-        />
-      )}
+      <AssignExerciseDialog
+        open={showAssignDialog}
+        onClose={() => setShowAssignDialog(false)}
+        exerciseId={savedExerciseId || ''}
+        exerciseIds={savedPackIds.length > 0 ? savedPackIds : undefined}
+        defaultStudentId={selectedStudentId || undefined}
+      />
     </>
   );
+}
+
+// Helper functions for pack exercise filtering
+function getExerciseItemCount(exercise: { type: ExerciseType; content: ExerciseContent }): number {
+  const { type, content } = exercise;
+  
+  if (type === 'flashcard' && 'cards' in content) {
+    return (content as FlashcardContent).cards.length;
+  }
+  if ('exercises' in content) {
+    return (content as any).exercises.length;
+  }
+  return 0;
+}
+
+function filterExerciseContent(
+  exercise: { type: ExerciseType; content: ExerciseContent },
+  typeIdx: number,
+  removedIndices: Set<string>
+): { type: ExerciseType; content: ExerciseContent } | null {
+  const { type, content } = exercise;
+
+  if (type === 'flashcard' && 'cards' in content) {
+    const flashcardContent = content as FlashcardContent;
+    const filteredCards = flashcardContent.cards.filter((_, idx) => 
+      !removedIndices.has(`${typeIdx}-${idx}`)
+    );
+    if (filteredCards.length === 0) return null;
+    return { type, content: { cards: filteredCards } };
+  }
+
+  if ('exercises' in content) {
+    const exerciseContent = content as any;
+    const filteredExercises = exerciseContent.exercises.filter((_: any, idx: number) => 
+      !removedIndices.has(`${typeIdx}-${idx}`)
+    );
+    if (filteredExercises.length === 0) return null;
+    return { type, content: { exercises: filteredExercises } };
+  }
+
+  return exercise;
 }

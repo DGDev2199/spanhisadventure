@@ -389,7 +389,7 @@ export default function GenerateExercisesDialog({
                   <div className="flex-1">
                     <p className="text-sm font-medium">{ex.verb} ({ex.tense}) - {ex.subject}</p>
                     <p className="text-sm text-green-600 dark:text-green-400">✓ {ex.correct_answer}</p>
-                    <p className="text-xs text-muted-foreground">Opciones: {ex.options.join(', ')}</p>
+                    <p className="text-xs text-muted-foreground">Opciones: {(ex.options || []).join(', ')}</p>
                   </div>
                   <Badge variant="outline">{idx + 1}</Badge>
                 </div>
@@ -434,7 +434,7 @@ export default function GenerateExercisesDialog({
               <CardContent className="p-3">
                 <div className="flex justify-between items-start gap-4">
                   <div className="flex-1">
-                    <p className="text-sm font-medium">Palabras: {ex.scrambled_words.join(' / ')}</p>
+                    <p className="text-sm font-medium">Palabras: {(ex.scrambled_words || []).join(' / ')}</p>
                     <p className="text-sm text-green-600 dark:text-green-400">✓ {ex.correct_sentence}</p>
                     {ex.hint && <p className="text-xs text-muted-foreground italic">Pista: {ex.hint}</p>}
                   </div>
@@ -458,7 +458,7 @@ export default function GenerateExercisesDialog({
                 <div className="flex justify-between items-start gap-4">
                   <div className="flex-1">
                     <p className="text-sm font-medium">{ex.question}</p>
-                    <p className="text-xs text-muted-foreground">Opciones: {ex.options.join(' | ')}</p>
+                    <p className="text-xs text-muted-foreground">Opciones: {(ex.options || []).join(' | ')}</p>
                     <p className="text-sm text-green-600 dark:text-green-400">✓ {ex.correct_answer}</p>
                   </div>
                   <Badge variant="outline">{idx + 1}</Badge>
@@ -481,7 +481,7 @@ export default function GenerateExercisesDialog({
                 <div className="flex justify-between items-start gap-4">
                   <div className="flex-1">
                     <p className="text-sm font-medium">{ex.sentence_with_gap}</p>
-                    <p className="text-xs text-muted-foreground">Opciones: {ex.options.join(' | ')}</p>
+                    <p className="text-xs text-muted-foreground">Opciones: {(ex.options || []).join(' | ')}</p>
                     <p className="text-sm text-green-600 dark:text-green-400">✓ {ex.correct_answer}</p>
                   </div>
                   <Badge variant="outline">{idx + 1}</Badge>

@@ -362,3 +362,68 @@ export const useSaveAttempt = () => {
     },
   });
 };
+
+export interface PackExercise {
+  type: ExerciseType;
+  content: ExerciseContent;
+}
+
+export const useSaveExercisePack = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (params: {
+      pack_name: string;
+      exercises: PackExercise[];
+      topic_context: string;
+      vocabulary_context?: string;
+      level: string;
+      created_by: string;
+    }): Promise<string[]> => {
+      const savedIds: string[] = [];
+
+      for (let i = 0; i < params.exercises.length; i++) {
+        const ex = params.exercises[i];
+        const { data, error } = await supabase
+          .from('practice_exercises')
+          .insert({
+            title: `${params.pack_name} - ${ex.type} (${i + 1})`,
+            exercise_type: ex.type,
+            content: JSON.parse(JSON.stringify(ex.content)),
+            topic_context: params.topic_context,
+            vocabulary_context: params.vocabulary_context,
+            level: params.level,
+            created_by: params.created_by,
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error(`Error saving exercise ${i}:`, error);
+          throw error;
+        }
+        
+        if (data) {
+          savedIds.push(data.id);
+        }
+      }
+
+      return savedIds;
+    },
+    onSuccess: (savedIds) => {
+      queryClient.invalidateQueries({ queryKey: ['practice-exercises'] });
+      toast({
+        title: 'Pack guardado',
+        description: `Se han guardado ${savedIds.length} ejercicios correctamente.`,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error al guardar pack',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+};

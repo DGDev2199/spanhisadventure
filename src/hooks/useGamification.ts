@@ -409,6 +409,20 @@ export const useCheckAndAwardBadges = () => {
         .eq('student_id', userId)
         .eq('completed', true);
 
+      // Get user's completed weeks count
+      const { count: weeksCount } = await supabase
+        .from('student_progress_weeks')
+        .select('*', { count: 'exact', head: true })
+        .eq('student_id', userId)
+        .eq('is_completed', true);
+
+      // Get user's completed exercises count
+      const { count: exercisesCount } = await supabase
+        .from('practice_assignments')
+        .select('*', { count: 'exact', head: true })
+        .eq('student_id', userId)
+        .eq('status', 'completed');
+
       // Get user's current badges
       const { data: userBadges } = await supabase
         .from('user_badges')
@@ -437,7 +451,12 @@ export const useCheckAndAwardBadges = () => {
           case 'first_task':
             shouldAward = (taskCount || 0) >= 1;
             break;
-          // Add more criteria types as needed
+          case 'weeks_completed':
+            shouldAward = (weeksCount || 0) >= badge.criteria_value;
+            break;
+          case 'exercises_completed':
+            shouldAward = (exercisesCount || 0) >= badge.criteria_value;
+            break;
         }
 
         if (shouldAward) {
@@ -476,5 +495,54 @@ export const useCheckAndAwardBadges = () => {
         queryClient.invalidateQueries({ queryKey: ['user-rankings'] });
       }
     },
+  });
+};
+
+// Hooks to get counts for badge progress calculation
+export const useCompletedWeeksCount = (userId: string | undefined) => {
+  return useQuery({
+    queryKey: ['completed-weeks-count', userId],
+    queryFn: async () => {
+      if (!userId) return 0;
+      const { count } = await supabase
+        .from('student_progress_weeks')
+        .select('*', { count: 'exact', head: true })
+        .eq('student_id', userId)
+        .eq('is_completed', true);
+      return count || 0;
+    },
+    enabled: !!userId,
+  });
+};
+
+export const useCompletedTasksCount = (userId: string | undefined) => {
+  return useQuery({
+    queryKey: ['completed-tasks-count', userId],
+    queryFn: async () => {
+      if (!userId) return 0;
+      const { count } = await supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true })
+        .eq('student_id', userId)
+        .eq('completed', true);
+      return count || 0;
+    },
+    enabled: !!userId,
+  });
+};
+
+export const useCompletedExercisesCount = (userId: string | undefined) => {
+  return useQuery({
+    queryKey: ['completed-exercises-count', userId],
+    queryFn: async () => {
+      if (!userId) return 0;
+      const { count } = await supabase
+        .from('practice_assignments')
+        .select('*', { count: 'exact', head: true })
+        .eq('student_id', userId)
+        .eq('status', 'completed');
+      return count || 0;
+    },
+    enabled: !!userId,
   });
 };

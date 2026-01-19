@@ -6,7 +6,10 @@ import {
   useAllBadges, 
   useUserBadges, 
   useUserTotalPoints,
-  useStudentAchievements
+  useStudentAchievements,
+  useCompletedWeeksCount,
+  useCompletedTasksCount,
+  useCompletedExercisesCount
 } from "@/hooks/useGamification";
 import { Trophy, Star, Award, Medal } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,6 +24,11 @@ export const GamificationPanel = ({ userId }: GamificationPanelProps) => {
   const { data: userBadges = [] } = useUserBadges(userId);
   const { data: totalPoints = 0 } = useUserTotalPoints(userId);
   const { data: studentAchievements = [] } = useStudentAchievements(userId);
+  
+  // Get real counts for progress calculation
+  const { data: completedWeeksCount = 0 } = useCompletedWeeksCount(userId);
+  const { data: completedTasksCount = 0 } = useCompletedTasksCount(userId);
+  const { data: completedExercisesCount = 0 } = useCompletedExercisesCount(userId);
 
   const earnedBadgeIds = new Set(userBadges.map(ub => ub.badge_id));
   const earnedBadges = userBadges.map(ub => ub.badge);
@@ -29,12 +37,51 @@ export const GamificationPanel = ({ userId }: GamificationPanelProps) => {
   const unearnedBadges = allBadges.filter(b => !earnedBadgeIds.has(b.id));
   const nextBadge = unearnedBadges[0];
 
-  // Calculate progress to next badge (simplified)
+  // Calculate real progress to next badge based on actual counts
   const getProgressToNextBadge = () => {
     if (!nextBadge) return 100;
-    // This is simplified - in production you'd check actual progress
-    const tasksCompleted = earnedBadges.filter(b => b?.criteria_type === 'tasks_completed').length;
-    return Math.min((tasksCompleted / nextBadge.criteria_value) * 100, 99);
+    
+    let currentValue = 0;
+    switch (nextBadge.criteria_type) {
+      case 'tasks_completed':
+        currentValue = completedTasksCount;
+        break;
+      case 'first_task':
+        currentValue = completedTasksCount >= 1 ? 1 : 0;
+        break;
+      case 'weeks_completed':
+        currentValue = completedWeeksCount;
+        break;
+      case 'exercises_completed':
+        currentValue = completedExercisesCount;
+        break;
+      default:
+        currentValue = 0;
+    }
+    
+    return Math.min((currentValue / nextBadge.criteria_value) * 100, 99);
+  };
+
+  // Get description for next badge based on current progress
+  const getProgressDescription = () => {
+    if (!nextBadge) return '';
+    
+    let currentValue = 0;
+    switch (nextBadge.criteria_type) {
+      case 'tasks_completed':
+        currentValue = completedTasksCount;
+        return `${currentValue}/${nextBadge.criteria_value} tareas`;
+      case 'first_task':
+        return completedTasksCount >= 1 ? 'Completado' : 'Completa tu primera tarea';
+      case 'weeks_completed':
+        currentValue = completedWeeksCount;
+        return `${currentValue}/${nextBadge.criteria_value} semanas`;
+      case 'exercises_completed':
+        currentValue = completedExercisesCount;
+        return `${currentValue}/${nextBadge.criteria_value} ejercicios`;
+      default:
+        return nextBadge.description || '';
+    }
   };
 
   return (
@@ -141,7 +188,7 @@ export const GamificationPanel = ({ userId }: GamificationPanelProps) => {
             </div>
             <Progress value={getProgressToNextBadge()} className="h-1.5 sm:h-2" />
             <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 line-clamp-2">
-              {nextBadge.description}
+              {getProgressDescription()}
             </p>
           </div>
         )}

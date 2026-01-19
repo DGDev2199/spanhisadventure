@@ -24,6 +24,8 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useSubmitTask } from "@/hooks/useSubmitTask";
 // Gamification components
 import { WeeklyProgressGrid, GamificationPanel, LeaderboardCard } from "@/components/gamification";
+// Practice components
+import { StudentPracticePanel } from "@/components/practice";
 
 // Optimized hooks and components
 import {
@@ -413,6 +415,9 @@ const Dashboard = () => {
             <LeaderboardCard currentUserId={user.id} limit={5} />
           </div>
         )}
+
+        {/* Practice Exercises Section - for students to see and complete their assignments */}
+        {user?.id && isGamificationEnabled && <StudentPracticePanel />}
 
         {/* Tasks Section */}
         <TasksList

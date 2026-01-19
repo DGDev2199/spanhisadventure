@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { CheckCircle, Lock, BookOpen, Trash2, Pencil, Calendar, Download, GraduationCap, Users, AlertCircle, Circle } from 'lucide-react';
 import { toast } from 'sonner';
 import { DayProgressModal } from './DayProgressModal';
-import { useProgramWeeks, useAllWeekTopics, useStudentTopicProgress } from '@/hooks/useGamification';
+import { useProgramWeeks, useAllWeekTopics, useStudentTopicProgress, useCheckAndAwardBadges } from '@/hooks/useGamification';
 import jsPDF from 'jspdf';
 
 interface StudentProgressViewProps {
@@ -293,6 +293,9 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
     }
   });
 
+  // Hook to check and award badges
+  const checkAndAwardBadges = useCheckAndAwardBadges();
+
   const completeWeekMutation = useMutation({
     mutationFn: async (weekId: string) => {
       const { data: currentWeekData, error: fetchError } = await supabase
@@ -352,12 +355,20 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
             });
         }
       }
+      
+      return currentWeekData.student_id;
     },
-    onSuccess: () => {
+    onSuccess: (completedStudentId) => {
       queryClient.invalidateQueries({ queryKey: ['student-progress-weeks', studentId] });
       queryClient.invalidateQueries({ queryKey: ['student-progress-weeks-for-grid', studentId] });
       queryClient.invalidateQueries({ queryKey: ['special-weeks', studentId] });
+      queryClient.invalidateQueries({ queryKey: ['completed-weeks-count', studentId] });
       toast.success('Semana marcada como completada');
+      
+      // Check and award badges for the student after completing a week
+      if (completedStudentId) {
+        checkAndAwardBadges.mutate(completedStudentId);
+      }
     },
     onError: () => {
       toast.error('Error al completar la semana');

@@ -427,3 +427,40 @@ export const useSaveExercisePack = () => {
     },
   });
 };
+
+export const useDeleteExercise = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (exerciseId: string) => {
+      // First delete any assignments for this exercise
+      await supabase
+        .from('practice_assignments')
+        .delete()
+        .eq('exercise_id', exerciseId);
+
+      // Then delete the exercise itself
+      const { error } = await supabase
+        .from('practice_exercises')
+        .delete()
+        .eq('id', exerciseId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['practice-exercises'] });
+      toast({
+        title: 'Ejercicio eliminado',
+        description: 'El ejercicio se ha eliminado correctamente.',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error al eliminar',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+};

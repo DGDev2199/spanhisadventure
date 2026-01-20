@@ -186,17 +186,27 @@ CREATE POLICY "Admins can manage all student profiles"
   ON public.student_profiles FOR ALL
   USING (public.has_role(auth.uid(), 'admin'));
 
-CREATE POLICY "Teachers can update their students"
-  ON public.student_profiles
-  FOR UPDATE
-  USING (
-    public.has_role(auth.uid(), 'teacher')
-    AND teacher_id = auth.uid()
-  )
-  WITH CHECK (
-    public.has_role(auth.uid(), 'teacher')
-    AND teacher_id = auth.uid()
-  );
+CREATE OR REPLACE FUNCTION public.update_placement_test_status(
+  _student_user_id uuid,
+  _status test_status,
+  _written_score integer DEFAULT NULL,
+  _oral_completed boolean DEFAULT NULL
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE student_profiles
+  SET
+    placement_test_status = _status,
+    placement_test_written_score = COALESCE(_written_score, placement_test_written_score),
+    placement_test_oral_completed = COALESCE(_oral_completed, placement_test_oral_completed),
+    updated_at = now()
+  WHERE user_id = _student_user_id;
+END;
+$$;
 
 
 -- Tasks policies
@@ -281,7 +291,7 @@ CREATE POLICY "Students can view placement tests"
 
 CREATE POLICY "Admins can manage placement tests"
   ON public.placement_tests FOR ALL
-  USING (public.has_role(auth.uid(), 'admin','teacher'
+  USING (public.has_role(auth.uid(), 'admin'));
 
 -- ============================================================================
 -- TRIGGERS FOR UPDATED_AT

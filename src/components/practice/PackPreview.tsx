@@ -42,8 +42,16 @@ const exerciseTypeConfig: Record<ExerciseType, { label: string; icon: React.Comp
 function getExerciseItems(exercise: PackExercise): Array<{ key: string; preview: React.ReactNode }> {
   const { type, content } = exercise;
 
+  // Guard against undefined or null content
+  if (!content || typeof content !== 'object') {
+    console.warn('PackPreview: Invalid content for exercise type', type, content);
+    return [];
+  }
+
   if (type === 'flashcard' && 'cards' in content) {
-    return (content as FlashcardContent).cards.map((card, idx) => ({
+    const cards = (content as FlashcardContent).cards;
+    if (!Array.isArray(cards)) return [];
+    return cards.map((card, idx) => ({
       key: `card-${idx}`,
       preview: (
         <div className="flex-1">
@@ -56,7 +64,9 @@ function getExerciseItems(exercise: PackExercise): Array<{ key: string; preview:
   }
 
   if (type === 'conjugation' && 'exercises' in content) {
-    return (content as ConjugationContent).exercises.map((ex, idx) => ({
+    const exercises = (content as ConjugationContent).exercises;
+    if (!Array.isArray(exercises)) return [];
+    return exercises.map((ex, idx) => ({
       key: `conj-${idx}`,
       preview: (
         <div className="flex-1">
@@ -68,7 +78,9 @@ function getExerciseItems(exercise: PackExercise): Array<{ key: string; preview:
   }
 
   if (type === 'vocabulary' && 'exercises' in content) {
-    return (content as VocabularyContent).exercises.map((ex, idx) => ({
+    const exercises = (content as VocabularyContent).exercises;
+    if (!Array.isArray(exercises)) return [];
+    return exercises.map((ex, idx) => ({
       key: `vocab-${idx}`,
       preview: (
         <div className="flex-1">
@@ -81,11 +93,13 @@ function getExerciseItems(exercise: PackExercise): Array<{ key: string; preview:
   }
 
   if (type === 'sentence_order' && 'exercises' in content) {
-    return (content as SentenceOrderContent).exercises.map((ex, idx) => ({
+    const exercises = (content as SentenceOrderContent).exercises;
+    if (!Array.isArray(exercises)) return [];
+    return exercises.map((ex, idx) => ({
       key: `order-${idx}`,
       preview: (
         <div className="flex-1">
-          <p className="text-sm font-medium">Palabras: {(ex.scrambled_words || []).join(' / ')}</p>
+          <p className="text-sm font-medium">Palabras: {Array.isArray(ex.scrambled_words) ? ex.scrambled_words.join(' / ') : ''}</p>
           <p className="text-sm text-green-600 dark:text-green-400">✓ {ex.correct_sentence}</p>
         </div>
       ),
@@ -93,12 +107,14 @@ function getExerciseItems(exercise: PackExercise): Array<{ key: string; preview:
   }
 
   if (type === 'multiple_choice' && 'exercises' in content) {
-    return (content as MultipleChoiceContent).exercises.map((ex, idx) => ({
+    const exercises = (content as MultipleChoiceContent).exercises;
+    if (!Array.isArray(exercises)) return [];
+    return exercises.map((ex, idx) => ({
       key: `mc-${idx}`,
       preview: (
         <div className="flex-1">
           <p className="text-sm font-medium">{ex.question}</p>
-          <p className="text-xs text-muted-foreground">Opciones: {(ex.options || []).join(' | ')}</p>
+          <p className="text-xs text-muted-foreground">Opciones: {Array.isArray(ex.options) ? ex.options.join(' | ') : ''}</p>
           <p className="text-sm text-green-600 dark:text-green-400">✓ {ex.correct_answer}</p>
         </div>
       ),
@@ -106,7 +122,9 @@ function getExerciseItems(exercise: PackExercise): Array<{ key: string; preview:
   }
 
   if (type === 'fill_gaps' && 'exercises' in content) {
-    return (content as FillGapsContent).exercises.map((ex, idx) => ({
+    const exercises = (content as FillGapsContent).exercises;
+    if (!Array.isArray(exercises)) return [];
+    return exercises.map((ex, idx) => ({
       key: `fill-${idx}`,
       preview: (
         <div className="flex-1">
@@ -118,13 +136,15 @@ function getExerciseItems(exercise: PackExercise): Array<{ key: string; preview:
   }
 
   if (type === 'reading' && 'exercises' in content) {
-    return (content as ReadingContent).exercises.map((ex, idx) => ({
+    const exercises = (content as ReadingContent).exercises;
+    if (!Array.isArray(exercises)) return [];
+    return exercises.map((ex, idx) => ({
       key: `read-${idx}`,
       preview: (
         <div className="flex-1">
           <p className="text-sm font-medium">{ex.title}</p>
-          <p className="text-xs text-muted-foreground line-clamp-2">{ex.text.substring(0, 100)}...</p>
-          <p className="text-xs mt-1">{ex.questions.length} preguntas</p>
+          <p className="text-xs text-muted-foreground line-clamp-2">{ex.text?.substring(0, 100) || ''}...</p>
+          <p className="text-xs mt-1">{ex.questions?.length || 0} preguntas</p>
         </div>
       ),
     }));
@@ -140,7 +160,31 @@ export default function PackPreview({
   removedIndices,
   onRemoveExercise,
 }: PackPreviewProps) {
-  const [openSections, setOpenSections] = React.useState<Set<number>>(new Set(exercises.map((_, i) => i)));
+  // Filter out invalid exercises first - memoize to ensure consistent reference
+  const validExercises = React.useMemo(() => 
+    (exercises || []).filter(ex => ex && ex.type && ex.content),
+    [exercises]
+  );
+  
+  // useState must be called before any early returns
+  const [openSections, setOpenSections] = React.useState<Set<number>>(new Set());
+  
+  // Update open sections when validExercises changes
+  React.useEffect(() => {
+    setOpenSections(new Set(validExercises.map((_, i) => i)));
+  }, [validExercises.length]);
+
+  // If no valid exercises, show a message
+  if (validExercises.length === 0) {
+    return (
+      <Card className="bg-muted/50">
+        <CardContent className="p-6 text-center">
+          <Package className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+          <p className="text-muted-foreground">No hay ejercicios para mostrar</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const toggleSection = (index: number) => {
     setOpenSections(prev => {
@@ -155,7 +199,7 @@ export default function PackPreview({
   };
 
   // Count total active exercises
-  const totalActiveExercises = exercises.reduce((total, exercise, typeIdx) => {
+  const totalActiveExercises = validExercises.reduce((total, exercise, typeIdx) => {
     const items = getExerciseItems(exercise);
     const activeItems = items.filter((_, exIdx) => !removedIndices.has(`${typeIdx}-${exIdx}`));
     return total + activeItems.length;
@@ -188,7 +232,7 @@ export default function PackPreview({
 
       {/* Exercise Sections */}
       <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-        {exercises.map((exercise, typeIdx) => {
+        {validExercises.map((exercise, typeIdx) => {
           const config = exerciseTypeConfig[exercise.type];
           const Icon = config.icon;
           const items = getExerciseItems(exercise);

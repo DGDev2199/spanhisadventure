@@ -428,11 +428,22 @@ export const useSaveExercisePack = () => {
 
       return savedIds;
     },
-    onSuccess: (savedIds) => {
+    onSuccess: (savedIds, variables) => {
       queryClient.invalidateQueries({ queryKey: ['practice-exercises'] });
+      
+      // Count total individual exercises saved
+      let totalItems = 0;
+      for (const ex of variables.exercises) {
+        if (ex.content && 'cards' in ex.content && Array.isArray((ex.content as any).cards)) {
+          totalItems += (ex.content as any).cards.length;
+        } else if (ex.content && 'exercises' in ex.content && Array.isArray((ex.content as any).exercises)) {
+          totalItems += (ex.content as any).exercises.length;
+        }
+      }
+      
       toast({
         title: 'Pack guardado',
-        description: `Se han guardado ${savedIds.length} conjuntos de ejercicios.`,
+        description: `Se han guardado ${savedIds.length} tipos de ejercicios (${totalItems} ejercicios individuales en total).`,
       });
     },
     onError: (error: Error) => {

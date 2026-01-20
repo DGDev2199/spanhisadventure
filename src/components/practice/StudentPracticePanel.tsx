@@ -68,8 +68,10 @@ export default function StudentPracticePanel() {
     }
   };
 
-  const pendingAssignments = assignments?.filter(a => a.status !== 'completed') || [];
-  const completedAssignments = assignments?.filter(a => a.status === 'completed') || [];
+  // Filter out assignments where exercise is null (deleted exercises)
+  const validAssignments = assignments?.filter(a => a.exercise !== null) || [];
+  const pendingAssignments = validAssignments.filter(a => a.status !== 'completed');
+  const completedAssignments = validAssignments.filter(a => a.status === 'completed');
 
   return (
     <>
@@ -85,7 +87,7 @@ export default function StudentPracticePanel() {
             <div className="text-center py-8 text-muted-foreground">
               Cargando ejercicios...
             </div>
-          ) : !assignments?.length ? (
+          ) : !validAssignments.length ? (
             <div className="text-center py-8 text-muted-foreground">
               <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p>No tienes ejercicios asignados</p>

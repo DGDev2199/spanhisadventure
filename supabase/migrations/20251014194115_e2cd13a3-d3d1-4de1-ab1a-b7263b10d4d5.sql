@@ -187,8 +187,17 @@ CREATE POLICY "Admins can manage all student profiles"
   USING (public.has_role(auth.uid(), 'admin'));
 
 CREATE POLICY "Teachers can update their students"
-  ON public.student_profiles FOR UPDATE
-  USING (public.has_role(auth.uid(), 'teacher') AND teacher_id = auth.uid());
+  ON public.student_profiles
+  FOR UPDATE
+  USING (
+    public.has_role(auth.uid(), 'teacher')
+    AND teacher_id = auth.uid()
+  )
+  WITH CHECK (
+    public.has_role(auth.uid(), 'teacher')
+    AND teacher_id = auth.uid()
+  );
+
 
 -- Tasks policies
 CREATE POLICY "Students can view their own tasks"

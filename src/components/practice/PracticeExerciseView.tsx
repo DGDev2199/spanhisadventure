@@ -3,13 +3,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { BookOpen, Languages, MessageSquare, Trophy, RotateCcw, X } from 'lucide-react';
+import { BookOpen, Languages, MessageSquare, Trophy, RotateCcw, X, ListChecks, ArrowDownUp, FileText, BookOpenCheck } from 'lucide-react';
 import { PracticeExercise, FlashcardContent, ConjugationContent, VocabularyContent, useUpdateAssignmentStatus, useSaveAttempt } from '@/hooks/usePracticeExercises';
 import { useAddPoints } from '@/hooks/useGamification';
 import { useAuth } from '@/contexts/AuthContext';
 import FlashcardExercise from './FlashcardExercise';
 import ConjugationExercise from './ConjugationExercise';
 import VocabularyExercise from './VocabularyExercise';
+import MultipleChoiceExercise from './MultipleChoiceExercise';
+import SentenceOrderExercise from './SentenceOrderExercise';
+import FillGapsExercise from './FillGapsExercise';
+import ReadingExercise from './ReadingExercise';
 
 interface PracticeExerciseViewProps {
   open: boolean;
@@ -57,9 +61,21 @@ export default function PracticeExerciseView({
     setIsCompleted(true);
 
     const timeSpent = Math.round((Date.now() - startTime) / 1000);
-    const totalQuestions = exercise.exercise_type === 'flashcard'
-      ? (exercise.content as FlashcardContent).cards.length
-      : (exercise.content as ConjugationContent | VocabularyContent).exercises.length;
+    const content = exercise.content as any;
+    
+    // Calculate total questions based on exercise type
+    let totalQuestions = 0;
+    if (exercise.exercise_type === 'flashcard' && content.cards) {
+      totalQuestions = content.cards.length;
+    } else if (exercise.exercise_type === 'reading' && content.exercises) {
+      // For reading, count total questions across all exercises
+      totalQuestions = content.exercises.reduce((sum: number, ex: any) => sum + (ex.questions?.length || 0), 0);
+    } else if (content.exercises) {
+      totalQuestions = content.exercises.length;
+    }
+    
+    // Fallback to prevent division by zero
+    if (totalQuestions === 0) totalQuestions = 1;
 
     const correctCount = completionResult.correct ?? completionResult.known ?? 0;
     const score = Math.round((correctCount / totalQuestions) * 100);
@@ -103,6 +119,16 @@ export default function PracticeExerciseView({
         return <Languages className="h-5 w-5" />;
       case 'vocabulary':
         return <MessageSquare className="h-5 w-5" />;
+      case 'multiple_choice':
+        return <ListChecks className="h-5 w-5" />;
+      case 'sentence_order':
+        return <ArrowDownUp className="h-5 w-5" />;
+      case 'fill_gaps':
+        return <FileText className="h-5 w-5" />;
+      case 'reading':
+        return <BookOpenCheck className="h-5 w-5" />;
+      default:
+        return <BookOpen className="h-5 w-5" />;
     }
   };
 
@@ -114,31 +140,77 @@ export default function PracticeExerciseView({
         return 'Conjugación';
       case 'vocabulary':
         return 'Vocabulario';
+      case 'multiple_choice':
+        return 'Opción Múltiple';
+      case 'sentence_order':
+        return 'Ordenar Oraciones';
+      case 'fill_gaps':
+        return 'Completar Huecos';
+      case 'reading':
+        return 'Comprensión Lectora';
+      default:
+        return exercise.exercise_type;
     }
   };
 
   const renderExercise = () => {
+    const content = exercise.content as any;
+    
     switch (exercise.exercise_type) {
       case 'flashcard':
         return (
           <FlashcardExercise
-            content={exercise.content as FlashcardContent}
+            content={content as FlashcardContent}
             onComplete={handleComplete}
           />
         );
       case 'conjugation':
         return (
           <ConjugationExercise
-            content={exercise.content as ConjugationContent}
+            content={content as ConjugationContent}
             onComplete={handleComplete}
           />
         );
       case 'vocabulary':
         return (
           <VocabularyExercise
-            content={exercise.content as VocabularyContent}
+            content={content as VocabularyContent}
             onComplete={handleComplete}
           />
+        );
+      case 'multiple_choice':
+        return (
+          <MultipleChoiceExercise
+            content={content}
+            onComplete={handleComplete}
+          />
+        );
+      case 'sentence_order':
+        return (
+          <SentenceOrderExercise
+            content={content}
+            onComplete={handleComplete}
+          />
+        );
+      case 'fill_gaps':
+        return (
+          <FillGapsExercise
+            content={content}
+            onComplete={handleComplete}
+          />
+        );
+      case 'reading':
+        return (
+          <ReadingExercise
+            content={content}
+            onComplete={handleComplete}
+          />
+        );
+      default:
+        return (
+          <div className="text-center py-8 text-muted-foreground">
+            Tipo de ejercicio no soportado: {exercise.exercise_type}
+          </div>
         );
     }
   };

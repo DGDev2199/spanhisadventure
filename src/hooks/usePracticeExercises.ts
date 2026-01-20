@@ -383,8 +383,25 @@ export const useSaveExercisePack = () => {
     }): Promise<string[]> => {
       const savedIds: string[] = [];
 
+      // Count total individual exercises
+      let totalIndividualExercises = 0;
+      for (const ex of params.exercises) {
+        if (ex.content && 'cards' in ex.content && Array.isArray((ex.content as any).cards)) {
+          totalIndividualExercises += (ex.content as any).cards.length;
+        } else if (ex.content && 'exercises' in ex.content && Array.isArray((ex.content as any).exercises)) {
+          totalIndividualExercises += (ex.content as any).exercises.length;
+        }
+      }
+
       for (let i = 0; i < params.exercises.length; i++) {
         const ex = params.exercises[i];
+        
+        // Skip exercises with invalid content
+        if (!ex || !ex.type || !ex.content) {
+          console.warn(`Skipping invalid exercise at index ${i}:`, ex);
+          continue;
+        }
+
         const { data, error } = await supabase
           .from('practice_exercises')
           .insert({
@@ -415,7 +432,7 @@ export const useSaveExercisePack = () => {
       queryClient.invalidateQueries({ queryKey: ['practice-exercises'] });
       toast({
         title: 'Pack guardado',
-        description: `Se han guardado ${savedIds.length} ejercicios correctamente.`,
+        description: `Se han guardado ${savedIds.length} conjuntos de ejercicios.`,
       });
     },
     onError: (error: Error) => {

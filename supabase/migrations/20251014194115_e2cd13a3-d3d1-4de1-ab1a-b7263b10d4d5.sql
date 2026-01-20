@@ -281,7 +281,7 @@ CREATE POLICY "Students can view placement tests"
 
 CREATE POLICY "Admins can manage placement tests"
   ON public.placement_tests FOR ALL
-  USING (public.has_role(auth.uid(), 'admin'));
+  USING (public.has_role(auth.uid(), 'admin','teacher'
 
 -- ============================================================================
 -- TRIGGERS FOR UPDATED_AT

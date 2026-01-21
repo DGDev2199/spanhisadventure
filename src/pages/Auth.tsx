@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Compass, AlertCircle } from 'lucide-react';
+import { Compass, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { z } from 'zod';
 import logo from '@/assets/logo.png';
 import { TimeZoneSelector } from '@/components/TimeZoneSelector';
@@ -59,12 +59,14 @@ const Auth = () => {
   // Login state
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   // Register state
   const [registerRole, setRegisterRole] = useState<'student' | 'tutor' | 'teacher'>('student');
   const [registerFullName, setRegisterFullName] = useState('');
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
   const [registerAge, setRegisterAge] = useState('');
   const [registerNationality, setRegisterNationality] = useState('');
   const [registerTimezone, setRegisterTimezone] = useState('');
@@ -385,18 +387,28 @@ const Auth = () => {
                   </div>
                   <div className="space-y-1.5 sm:space-y-2">
                     <Label htmlFor="login-password" className="text-sm">{t('auth.password')}</Label>
-                    <Input
-                      id="login-password"
-                      type="password"
-                      value={loginPassword}
-                      onChange={(e) => {
-                        setLoginPassword(e.target.value);
-                        setErrors(prev => ({ ...prev, password: '' }));
-                      }}
-                      required
-                      minLength={6}
-                      className={`h-10 sm:h-11 ${errors.password ? 'border-destructive' : ''}`}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="login-password"
+                        type={showLoginPassword ? 'text' : 'password'}
+                        value={loginPassword}
+                        onChange={(e) => {
+                          setLoginPassword(e.target.value);
+                          setErrors(prev => ({ ...prev, password: '' }));
+                        }}
+                        required
+                        minLength={6}
+                        className={`h-10 sm:h-11 pr-10 ${errors.password ? 'border-destructive' : ''}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                     {errors.password && (
                       <p className="text-xs sm:text-sm text-destructive flex items-center gap-1">
                         <AlertCircle className="h-3 w-3" />
@@ -629,23 +641,33 @@ const Auth = () => {
                   </div>
                   <div className="space-y-1.5 sm:space-y-2">
                     <Label htmlFor="register-password" className="text-sm">Contraseña *</Label>
-                    <Input
-                      id="register-password"
-                      type="password"
-                      value={registerPassword}
-                      onChange={(e) => {
-                        setRegisterPassword(e.target.value);
-                        setErrors(prev => ({ ...prev, password: '' }));
-                      }}
-                      onBlur={(e) => {
-                        if (e.target.value.length < 6) {
-                          setErrors(prev => ({ ...prev, password: 'La contraseña debe tener al menos 6 caracteres' }));
-                        }
-                      }}
-                      required
-                      minLength={6}
-                      className={`h-10 sm:h-11 ${errors.password ? 'border-destructive' : ''}`}
-                    />
+                    <div className="relative">
+                      <Input
+                        id="register-password"
+                        type={showRegisterPassword ? 'text' : 'password'}
+                        value={registerPassword}
+                        onChange={(e) => {
+                          setRegisterPassword(e.target.value);
+                          setErrors(prev => ({ ...prev, password: '' }));
+                        }}
+                        onBlur={(e) => {
+                          if (e.target.value.length < 6) {
+                            setErrors(prev => ({ ...prev, password: 'La contraseña debe tener al menos 6 caracteres' }));
+                          }
+                        }}
+                        required
+                        minLength={6}
+                        className={`h-10 sm:h-11 pr-10 ${errors.password ? 'border-destructive' : ''}`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showRegisterPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                     {errors.password && (
                       <p className="text-xs sm:text-sm text-destructive flex items-center gap-1">
                         <AlertCircle className="h-3 w-3" />

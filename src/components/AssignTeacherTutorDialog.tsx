@@ -118,6 +118,8 @@ export const AssignTeacherTutorDialog = ({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
+      queryClient.invalidateQueries({ queryKey: ['teacher-students'] });
+      queryClient.invalidateQueries({ queryKey: ['tutor-students'] });
       toast.success('Información del estudiante actualizada exitosamente');
       onOpenChange(false);
     },

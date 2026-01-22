@@ -181,12 +181,16 @@ const TeacherDashboard = () => {
     queryFn: async () => {
       if (!user?.id) return [];
       
+      console.log('Loading students for user:', user.id);
+      
       // Get student profiles where user is teacher OR tutor
       const { data: studentData, error: studentError } = await supabase
         .from('student_profiles')
         .select('*')
         .or(`teacher_id.eq.${user.id},tutor_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
+      
+      console.log('Students query result:', studentData, 'Error:', studentError);
       
       if (studentError) {
         console.error('Error loading students:', studentError);

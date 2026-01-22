@@ -57,11 +57,11 @@ const TutorDashboard = () => {
     queryFn: async () => {
       if (!user?.id) return [];
       
-      // Get student profiles
+      // Get student profiles where user is tutor OR teacher
       const { data: studentData, error: studentError } = await supabase
         .from('student_profiles')
         .select('*')
-        .eq('tutor_id', user.id)
+        .or(`tutor_id.eq.${user.id},teacher_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
       
       if (studentError) {
@@ -275,6 +275,7 @@ const TutorDashboard = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nombre</TableHead>
+                    <TableHead>Mi Rol</TableHead>
                     <TableHead>Nivel</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Sala</TableHead>
@@ -286,6 +287,20 @@ const TutorDashboard = () => {
                   {myStudents.map((student: any) => (
                     <TableRow key={student.id}>
                       <TableCell className="font-medium">{student.profiles?.full_name || 'Sin nombre'}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {student.teacher_id === user?.id && (
+                            <span className="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-700">
+                              Profesor
+                            </span>
+                          )}
+                          {student.tutor_id === user?.id && (
+                            <span className="px-2 py-0.5 text-xs rounded bg-green-100 text-green-700">
+                              Tutor
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>{student.level || 'No asignado'}</TableCell>
                       <TableCell>
                         <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${

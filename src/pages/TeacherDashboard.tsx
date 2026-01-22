@@ -181,11 +181,11 @@ const TeacherDashboard = () => {
     queryFn: async () => {
       if (!user?.id) return [];
       
-      // Get student profiles for this teacher
+      // Get student profiles where user is teacher OR tutor
       const { data: studentData, error: studentError } = await supabase
         .from('student_profiles')
         .select('*')
-        .eq('teacher_id', user.id)
+        .or(`teacher_id.eq.${user.id},tutor_id.eq.${user.id}`)
         .order('created_at', { ascending: false });
       
       if (studentError) {
@@ -742,6 +742,7 @@ const TeacherDashboard = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Nombre</TableHead>
+                    <TableHead>Mi Rol</TableHead>
                     <TableHead>Nivel</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Habitación</TableHead>
@@ -758,6 +759,20 @@ const TeacherDashboard = () => {
                         {student.profiles?.full_name || (
                           <span className="text-muted-foreground">Sin nombre</span>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {student.teacher_id === user?.id && (
+                            <span className="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-700">
+                              Profesor
+                            </span>
+                          )}
+                          {student.tutor_id === user?.id && (
+                            <span className="px-2 py-0.5 text-xs rounded bg-green-100 text-green-700">
+                              Tutor
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {student.level || (

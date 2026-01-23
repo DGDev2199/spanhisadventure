@@ -73,10 +73,10 @@ export default function MultipleChoiceExercise({ content, onComplete }: Multiple
   const isCorrect = selectedAnswer === currentExercise.correct_answer;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Progress */}
-      <div className="flex items-center justify-between text-sm">
-        <Badge variant="outline">
+      <div className="flex items-center justify-between text-xs sm:text-sm">
+        <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2">
           Pregunta {currentIndex + 1} de {exercises.length}
         </Badge>
         <div className="flex gap-2">
@@ -87,13 +87,13 @@ export default function MultipleChoiceExercise({ content, onComplete }: Multiple
 
       {/* Question */}
       <Card>
-        <CardContent className="pt-6">
-          <p className="text-lg font-medium text-center">{currentExercise.question}</p>
+        <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
+          <p className="text-base sm:text-lg font-medium text-center">{currentExercise.question}</p>
         </CardContent>
       </Card>
 
       {/* Options */}
-      <div className="grid gap-3">
+      <div className="grid gap-2 sm:gap-3">
         {currentExercise.options.map((option, idx) => {
           const isSelected = selectedAnswer === option;
           const isCorrectAnswer = option === currentExercise.correct_answer;
@@ -103,7 +103,7 @@ export default function MultipleChoiceExercise({ content, onComplete }: Multiple
               key={idx}
               variant="outline"
               className={cn(
-                'h-auto py-4 px-6 text-left justify-start',
+                'h-auto py-3 sm:py-4 px-3 sm:px-6 text-left justify-start text-xs sm:text-base',
                 isSelected && !showResult && 'ring-2 ring-primary',
                 showResult && isCorrectAnswer && 'bg-green-100 dark:bg-green-900/30 border-green-500',
                 showResult && isSelected && !isCorrectAnswer && 'bg-red-100 dark:bg-red-900/30 border-red-500'
@@ -112,8 +112,8 @@ export default function MultipleChoiceExercise({ content, onComplete }: Multiple
               disabled={showResult}
             >
               <span className="flex-1">{option}</span>
-              {showResult && isCorrectAnswer && <CheckCircle className="h-5 w-5 text-green-600" />}
-              {showResult && isSelected && !isCorrectAnswer && <XCircle className="h-5 w-5 text-red-600" />}
+              {showResult && isCorrectAnswer && <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" />}
+              {showResult && isSelected && !isCorrectAnswer && <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 flex-shrink-0" />}
             </Button>
           );
         })}
@@ -122,8 +122,8 @@ export default function MultipleChoiceExercise({ content, onComplete }: Multiple
       {/* Explanation */}
       {showResult && currentExercise.explanation && (
         <Card className={cn(isCorrect ? 'border-green-500' : 'border-red-500')}>
-          <CardContent className="pt-4">
-            <p className="text-sm">
+          <CardContent className="pt-3 sm:pt-4 px-3 sm:px-6">
+            <p className="text-xs sm:text-sm">
               <span className="font-medium">Explicación: </span>
               {currentExercise.explanation}
             </p>
@@ -132,13 +132,13 @@ export default function MultipleChoiceExercise({ content, onComplete }: Multiple
       )}
 
       {/* Actions */}
-      <div className="flex justify-center">
+      <div className="flex justify-center px-2">
         {!showResult ? (
-          <Button onClick={handleConfirm} disabled={!selectedAnswer}>
+          <Button onClick={handleConfirm} disabled={!selectedAnswer} className="w-full sm:w-auto text-sm">
             Confirmar respuesta
           </Button>
         ) : (
-          <Button onClick={handleNext}>
+          <Button onClick={handleNext} className="w-full sm:w-auto text-sm">
             {currentIndex < exercises.length - 1 ? (
               <>
                 Siguiente <ArrowRight className="h-4 w-4 ml-2" />

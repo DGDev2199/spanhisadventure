@@ -76,43 +76,43 @@ export default function StudentPracticePanel() {
   return (
     <>
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <BookOpen className="h-5 w-5 text-primary" />
+        <CardHeader className="pb-2 sm:pb-4">
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+            <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             Mis Ejercicios
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-3 sm:px-6">
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="text-center py-6 sm:py-8 text-muted-foreground text-sm">
               Cargando ejercicios...
             </div>
           ) : !validAssignments.length ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p>No tienes ejercicios asignados</p>
+            <div className="text-center py-6 sm:py-8 text-muted-foreground">
+              <BookOpen className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No tienes ejercicios asignados</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Pending exercises */}
               {pendingAssignments.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-medium mb-2">Por completar</h4>
-                  <ScrollArea className="h-[200px]">
+                  <h4 className="text-xs sm:text-sm font-medium mb-2">Por completar</h4>
+                  <ScrollArea className="h-[180px] sm:h-[200px]">
                     <div className="space-y-2">
                       {pendingAssignments.map((assignment) => (
                         <Card key={assignment.id} className="hover:bg-muted/50 transition-colors">
-                          <CardContent className="p-3">
-                            <div className="flex items-center justify-between gap-3">
+                          <CardContent className="p-2 sm:p-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  {getExerciseIcon(assignment.exercise.exercise_type)}
-                                  <span className="font-medium truncate text-sm">
+                                <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
+                                  <span className="flex-shrink-0">{getExerciseIcon(assignment.exercise.exercise_type)}</span>
+                                  <span className="font-medium truncate text-xs sm:text-sm">
                                     {assignment.exercise.title}
                                   </span>
                                 </div>
-                                <div className="flex gap-2 items-center">
-                                  <Badge variant="outline" className="text-xs">
+                                <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center">
+                                  <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2">
                                     {getExerciseLabel(assignment.exercise.exercise_type)}
                                   </Badge>
                                   {getStatusBadge(assignment.status)}
@@ -120,9 +120,10 @@ export default function StudentPracticePanel() {
                               </div>
                               <Button
                                 size="sm"
+                                className="w-full sm:w-auto text-xs sm:text-sm h-8 sm:h-9"
                                 onClick={() => setSelectedAssignment(assignment)}
                               >
-                                <Play className="h-4 w-4 mr-1" />
+                                <Play className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                                 Iniciar
                               </Button>
                             </div>
@@ -137,23 +138,23 @@ export default function StudentPracticePanel() {
               {/* Completed exercises */}
               {completedAssignments.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-medium mb-2 text-muted-foreground">Completados</h4>
-                  <ScrollArea className="h-[150px]">
+                  <h4 className="text-xs sm:text-sm font-medium mb-2 text-muted-foreground">Completados</h4>
+                  <ScrollArea className="h-[130px] sm:h-[150px]">
                     <div className="space-y-2">
                       {completedAssignments.map((assignment) => (
                         <Card key={assignment.id} className="bg-muted/30">
-                          <CardContent className="p-3">
-                            <div className="flex items-center justify-between gap-3">
+                          <CardContent className="p-2 sm:p-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  {getExerciseIcon(assignment.exercise.exercise_type)}
-                                  <span className="font-medium truncate text-sm">
+                                <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
+                                  <span className="flex-shrink-0">{getExerciseIcon(assignment.exercise.exercise_type)}</span>
+                                  <span className="font-medium truncate text-xs sm:text-sm">
                                     {assignment.exercise.title}
                                   </span>
                                 </div>
-                                <div className="flex gap-2 items-center">
+                                <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center">
                                   {getStatusBadge(assignment.status, assignment.score)}
-                                  <span className="text-xs text-muted-foreground">
+                                  <span className="text-[10px] sm:text-xs text-muted-foreground">
                                     {assignment.completed_at && formatDistanceToNow(new Date(assignment.completed_at), {
                                       addSuffix: true,
                                       locale: es,
@@ -164,9 +165,11 @@ export default function StudentPracticePanel() {
                               <Button
                                 size="sm"
                                 variant="ghost"
+                                className="w-full sm:w-auto h-8 sm:h-9"
                                 onClick={() => setSelectedAssignment(assignment)}
                               >
-                                <Play className="h-4 w-4" />
+                                <Play className="h-3 w-3 sm:h-4 sm:w-4" />
+                                <span className="sm:hidden ml-1">Ver</span>
                               </Button>
                             </div>
                           </CardContent>

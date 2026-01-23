@@ -240,31 +240,31 @@ export default function PracticeExerciseView({
     }
 
     return (
-      <div className="text-center space-y-6 py-8">
-        <div className="text-6xl">{emoji}</div>
+      <div className="text-center space-y-4 sm:space-y-6 py-4 sm:py-8">
+        <div className="text-4xl sm:text-6xl">{emoji}</div>
         <div>
-          <h3 className="text-2xl font-bold">{message}</h3>
-          <p className="text-muted-foreground mt-2">Has completado el ejercicio</p>
+          <h3 className="text-xl sm:text-2xl font-bold">{message}</h3>
+          <p className="text-muted-foreground mt-1 sm:mt-2 text-sm sm:text-base">Has completado el ejercicio</p>
         </div>
 
-        <Card className="max-w-xs mx-auto">
-          <CardContent className="pt-6">
-            <div className="text-4xl font-bold text-primary">{percentage}%</div>
-            <p className="text-sm text-muted-foreground mt-1">
+        <Card className="max-w-[200px] sm:max-w-xs mx-auto">
+          <CardContent className="pt-4 sm:pt-6 pb-4">
+            <div className="text-3xl sm:text-4xl font-bold text-primary">{percentage}%</div>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               {correctCount} de {total} correctas
             </p>
           </CardContent>
         </Card>
 
-        <div className="flex gap-4 justify-center">
-          <Button variant="outline" onClick={() => {
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 justify-center px-4">
+          <Button variant="outline" className="w-full sm:w-auto" onClick={() => {
             setIsCompleted(false);
             setResult(null);
           }}>
             <RotateCcw className="h-4 w-4 mr-2" />
             Repetir
           </Button>
-          <Button onClick={onClose}>
+          <Button className="w-full sm:w-auto" onClick={onClose}>
             Terminar
           </Button>
         </div>
@@ -274,21 +274,21 @@ export default function PracticeExerciseView({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {getExerciseIcon()}
-            {exercise.title}
-            <Badge variant="secondary" className="ml-2">{getExerciseLabel()}</Badge>
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto p-3 sm:p-6">
+        <DialogHeader className="space-y-1 sm:space-y-2">
+          <DialogTitle className="flex flex-wrap items-center gap-1 sm:gap-2 text-base sm:text-lg">
+            <span className="flex-shrink-0">{getExerciseIcon()}</span>
+            <span className="truncate">{exercise.title}</span>
+            <Badge variant="secondary" className="ml-1 sm:ml-2 text-[10px] sm:text-xs">{getExerciseLabel()}</Badge>
           </DialogTitle>
           {exercise.topic_context && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Tema: {exercise.topic_context} • Nivel: {exercise.level}
             </p>
           )}
         </DialogHeader>
 
-        <div className="py-4">
+        <div className="py-2 sm:py-4">
           {isCompleted ? renderCompletionScreen() : renderExercise()}
         </div>
       </DialogContent>

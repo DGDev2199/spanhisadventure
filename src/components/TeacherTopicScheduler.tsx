@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Calendar, Lock, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import { useProgramWeeks, useAllWeekTopics } from '@/hooks/useGamification';
+import { useProgramWeeks, useAllWeekTopics, getCurrentWeekForLevel } from '@/hooks/useGamification';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ScheduleTopicClassDialog } from './ScheduleTopicClassDialog';
@@ -76,12 +76,8 @@ export const TeacherTopicScheduler = ({ teacherId }: TeacherTopicSchedulerProps)
   }, [studentProgress]);
 
   const currentWeek = useMemo(() => {
-    if (!selectedStudent?.level) return 1;
-    const levelMap: Record<string, number> = {
-      'A1': 1, 'A2': 3, 'B1': 5, 'B2': 7, 'C1': 9, 'C2': 11
-    };
-    return levelMap[selectedStudent.level] || 1;
-  }, [selectedStudent?.level]);
+    return getCurrentWeekForLevel(selectedStudent?.level || null, completedWeekNumbers);
+  }, [selectedStudent?.level, completedWeekNumbers]);
 
   const getWeekStatus = (weekNumber: number) => {
     if (completedWeekNumbers.includes(weekNumber)) return 'completed';

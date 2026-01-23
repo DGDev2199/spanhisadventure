@@ -369,8 +369,8 @@ export const useUpdateTopicProgress = () => {
   });
 };
 
-// Helper to determine student's current week based on level
-export const getCurrentWeekForLevel = (level: string | null): number => {
+// Helper to determine student's starting week based on level (baseline)
+export const getStartingWeekForLevel = (level: string | null): number => {
   if (!level) return 1;
   const levelMap: Record<string, number> = {
     'A1': 1,
@@ -381,6 +381,23 @@ export const getCurrentWeekForLevel = (level: string | null): number => {
     'C2': 11,
   };
   return levelMap[level] || 1;
+};
+
+// Helper to determine student's current week based on completed weeks
+// The current week is the first uncompleted week (max completed + 1)
+export const getCurrentWeekForLevel = (level: string | null, completedWeeks: number[] = []): number => {
+  const startingWeek = getStartingWeekForLevel(level);
+  
+  // Filter completed weeks to only include regular weeks (< 100)
+  const regularCompletedWeeks = completedWeeks.filter(w => w < 100);
+  
+  if (regularCompletedWeeks.length === 0) {
+    return startingWeek;
+  }
+  
+  // Current week is the max completed week + 1, but at least the starting week
+  const maxCompleted = Math.max(...regularCompletedWeeks);
+  return Math.max(maxCompleted + 1, startingWeek);
 };
 
 export const getWeekStatus = (

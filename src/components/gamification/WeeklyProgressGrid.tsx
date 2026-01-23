@@ -84,7 +84,7 @@ export const WeeklyProgressGrid = ({
       .filter(w => w.is_completed && w.week_number < 100)
       .map(w => w.week_number);
 
-  const currentWeek = getCurrentWeekForLevel(studentLevel);
+  const currentWeek = getCurrentWeekForLevel(studentLevel, completedWeeks);
 
   // Helper to format special week names
   const formatSpecialWeekName = (weekNumber: number): string => {

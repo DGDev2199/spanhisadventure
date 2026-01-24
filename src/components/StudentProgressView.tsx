@@ -9,9 +9,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { CheckCircle, Lock, BookOpen, Trash2, Pencil, Calendar, Download, GraduationCap, Users, AlertCircle, Circle } from 'lucide-react';
+import { CheckCircle, Lock, BookOpen, Trash2, Pencil, Calendar, Download, GraduationCap, Users, AlertCircle, Circle, ArrowLeftRight, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { DayProgressModal } from './DayProgressModal';
+import { ReassignLevelDialog } from './ReassignLevelDialog';
 import { useProgramWeeks, useAllWeekTopics, useStudentTopicProgress, useCheckAndAwardBadges } from '@/hooks/useGamification';
 import jsPDF from 'jspdf';
 
@@ -53,6 +54,9 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
   
   // Validation modal state for completing week
   const [weekToComplete, setWeekToComplete] = useState<{ id: string; weekNumber: number } | null>(null);
+  
+  // Reassign level dialog state
+  const [showReassignDialog, setShowReassignDialog] = useState(false);
 
   // Fetch program weeks and topics for suggestions
   const { data: programWeeks = [] } = useProgramWeeks();
@@ -375,6 +379,30 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
     }
   });
 
+  // Reopen completed week mutation
+  const reopenWeekMutation = useMutation({
+    mutationFn: async (weekId: string) => {
+      const { error } = await supabase
+        .from('student_progress_weeks')
+        .update({
+          is_completed: false,
+          completed_at: null,
+          completed_by: null
+        })
+        .eq('id', weekId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student-progress-weeks', studentId] });
+      queryClient.invalidateQueries({ queryKey: ['completed-weeks-count', studentId] });
+      toast.success('Semana reabierta');
+    },
+    onError: () => {
+      toast.error('Error al reabrir la semana');
+    }
+  });
+
   // Determine user role for the modal
   const getUserRole = (): 'teacher' | 'tutor' | 'student' | 'admin' => {
     if (currentUser?.roles?.includes('admin')) return 'admin';
@@ -565,7 +593,7 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                 </p>
                 {currentWeek && (
                   <p className="text-xs text-muted-foreground">
-                    Semana actual: {currentWeek.week_number}
+                    Semana actual: {currentWeek.week_number} | Nivel: {studentProfile?.level || 'Sin asignar'}
                   </p>
                 )}
               </div>
@@ -575,6 +603,19 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
               </div>
             </div>
             <Progress value={progressPercentage} className="h-3" />
+            
+            {/* Reassign Level Button - Only for editable views */}
+            {isEditable && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowReassignDialog(true)}
+                className="w-full"
+              >
+                <ArrowLeftRight className="h-4 w-4 mr-2" />
+                Reasignar Nivel y Semana
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -866,10 +907,25 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
                     </div>
                   )}
                   
-                  {week.is_completed && (week as any).completed_by_profile?.full_name && (
-                    <p className="text-sm text-muted-foreground text-center">
-                      Completada por: {(week as any).completed_by_profile.full_name}
-                    </p>
+                  {/* Reopen completed week button */}
+                  {isEditable && week.is_completed && (
+                    <div className="flex flex-col gap-2 mt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => reopenWeekMutation.mutate(week.id)}
+                        disabled={reopenWeekMutation.isPending}
+                        className="w-full"
+                      >
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        {reopenWeekMutation.isPending ? 'Reabriendo...' : 'Reabrir Semana'}
+                      </Button>
+                      {(week as any).completed_by_profile?.full_name && (
+                        <p className="text-sm text-muted-foreground text-center">
+                          Completada por: {(week as any).completed_by_profile.full_name}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
               </AccordionContent>
@@ -913,7 +969,7 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
             </DialogTitle>
             <DialogDescription>
               {uncalibratedTopics.length > 0 
-                ? 'Los siguientes temas no han sido calificados aún'
+                ? 'Hay temas sin calificar. Puedes completar la semana de todos modos o crear una semana especial para cubrirlos después.'
                 : '¿Estás seguro de marcar esta semana como completada?'
               }
             </DialogDescription>
@@ -924,7 +980,7 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
               <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700">
                 <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
                 <p className="text-sm text-amber-800 dark:text-amber-300">
-                  Debes calificar todos los temas antes de completar la semana
+                  Temas sin calificar (se pueden cubrir en una semana especial)
                 </p>
               </div>
               
@@ -938,7 +994,7 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
               </div>
               
               <p className="text-xs text-muted-foreground">
-                Califica los temas desde el <strong>Progreso Semanal</strong> (tab Currículo) antes de completar esta semana.
+                💡 Puedes crear una <strong>Semana Especial</strong> para cubrir estos temas después si el estudiante tiene dificultades.
               </p>
             </div>
           ) : (
@@ -950,24 +1006,35 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
             </div>
           )}
           
-          <DialogFooter className="gap-2">
+          <DialogFooter className="flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setWeekToComplete(null)}>
               Cancelar
             </Button>
-            {uncalibratedTopics.length === 0 && weekToComplete && (
+            {weekToComplete && (
               <Button 
                 onClick={() => {
                   completeWeekMutation.mutate(weekToComplete.id);
                   setWeekToComplete(null);
                 }}
                 disabled={completeWeekMutation.isPending}
+                variant={uncalibratedTopics.length > 0 ? "secondary" : "default"}
               >
-                {completeWeekMutation.isPending ? 'Completando...' : 'Confirmar'}
+                {completeWeekMutation.isPending ? 'Completando...' : 
+                  uncalibratedTopics.length > 0 ? 'Completar de todos modos' : 'Confirmar'}
               </Button>
             )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Reassign Level Dialog */}
+      <ReassignLevelDialog
+        open={showReassignDialog}
+        onOpenChange={setShowReassignDialog}
+        studentId={studentId}
+        currentLevel={studentProfile?.level || null}
+        currentWeekNumber={currentWeekNumber}
+      />
     </div>
   );
 };

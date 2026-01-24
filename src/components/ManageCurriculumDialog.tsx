@@ -66,6 +66,12 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
   const [newTopicName, setNewTopicName] = useState("");
   const [newTopicDesc, setNewTopicDesc] = useState("");
   
+  // Week editing state
+  const [editingWeek, setEditingWeek] = useState<ProgramWeek | null>(null);
+  const [editWeekTitle, setEditWeekTitle] = useState("");
+  const [editWeekDesc, setEditWeekDesc] = useState("");
+  const [editWeekLevel, setEditWeekLevel] = useState("");
+  
   // Re-evaluation test dialog
   const [showCreateTestDialog, setShowCreateTestDialog] = useState(false);
   const [selectedTopicForTest, setSelectedTopicForTest] = useState<WeekTopic | null>(null);
@@ -151,6 +157,43 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
     } catch (error) {
       toast.error(t('errors.generic', 'Error al eliminar tema'));
     }
+  };
+
+  const handleEditWeek = (week: ProgramWeek) => {
+    setEditingWeek(week);
+    setEditWeekTitle(week.title || "");
+    setEditWeekDesc(week.description || "");
+    setEditWeekLevel(week.level || "A1");
+  };
+
+  const handleSaveWeek = async () => {
+    if (!editingWeek) return;
+    
+    try {
+      const { error } = await supabase
+        .from('program_weeks')
+        .update({
+          title: editWeekTitle.trim(),
+          description: editWeekDesc.trim() || null,
+          level: editWeekLevel,
+        })
+        .eq('id', editingWeek.id);
+      
+      if (error) throw error;
+      
+      toast.success(t('curriculum.weekUpdated', 'Semana actualizada'));
+      setEditingWeek(null);
+      queryClient.invalidateQueries({ queryKey: ['program-weeks'] });
+    } catch (error) {
+      toast.error(t('errors.generic', 'Error al actualizar semana'));
+    }
+  };
+
+  const handleCancelEditWeek = () => {
+    setEditingWeek(null);
+    setEditWeekTitle("");
+    setEditWeekDesc("");
+    setEditWeekLevel("");
   };
 
   const handleAddMaterial = async () => {
@@ -250,28 +293,99 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
                 <ScrollArea className="h-[calc(85vh-220px)] border rounded-lg p-2">
                   <div className="space-y-2">
                     {weeks.map((week) => (
-                      <button
+                      <div
                         key={week.id}
-                        onClick={() => setSelectedWeek(week)}
                         className={cn(
-                          "w-full p-3 rounded-lg border text-left transition-colors",
+                          "p-3 rounded-lg border transition-colors",
                           selectedWeek?.id === week.id 
                             ? "bg-primary/10 border-primary" 
                             : "hover:bg-muted"
                         )}
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">
-                            Semana {week.week_number}: {week.title}
-                          </span>
-                          <Badge className={cn("text-white text-xs", getLevelColor(week.level))}>
-                            {week.level}
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {getTopicsForWeek(week.id).length} temas
-                        </p>
-                      </button>
+                        {editingWeek?.id === week.id ? (
+                          <div className="space-y-3">
+                            <div className="space-y-2">
+                              <Label className="text-xs">Título</Label>
+                              <Input
+                                value={editWeekTitle}
+                                onChange={(e) => setEditWeekTitle(e.target.value)}
+                                placeholder="Título de la semana"
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs">Descripción</Label>
+                              <Textarea
+                                value={editWeekDesc}
+                                onChange={(e) => setEditWeekDesc(e.target.value)}
+                                placeholder="Descripción (opcional)"
+                                rows={2}
+                                className="text-sm"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs">Nivel</Label>
+                              <Select value={editWeekLevel} onValueChange={setEditWeekLevel}>
+                                <SelectTrigger className="h-8">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="A1">A1 - Principiante</SelectItem>
+                                  <SelectItem value="A2">A2 - Elemental</SelectItem>
+                                  <SelectItem value="B1">B1 - Intermedio</SelectItem>
+                                  <SelectItem value="B2">B2 - Intermedio Alto</SelectItem>
+                                  <SelectItem value="C1">C1 - Avanzado</SelectItem>
+                                  <SelectItem value="C2">C2 - Maestría</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button size="sm" onClick={handleSaveWeek}>
+                                <Save className="h-3 w-3 mr-1" />
+                                Guardar
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={handleCancelEditWeek}>
+                                Cancelar
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div 
+                            className="cursor-pointer"
+                            onClick={() => setSelectedWeek(week)}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium">
+                                Semana {week.week_number}: {week.title}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <Badge className={cn("text-white text-xs", getLevelColor(week.level))}>
+                                  {week.level}
+                                </Badge>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-6 w-6"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleEditWeek(week);
+                                  }}
+                                >
+                                  <Edit2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {getTopicsForWeek(week.id).length} temas
+                            </p>
+                            {week.description && (
+                              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                {week.description}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </ScrollArea>

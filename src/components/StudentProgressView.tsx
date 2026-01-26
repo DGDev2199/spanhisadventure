@@ -9,10 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { CheckCircle, Lock, BookOpen, Trash2, Pencil, Calendar, Download, GraduationCap, Users, AlertCircle, Circle, ArrowLeftRight, RotateCcw } from 'lucide-react';
+import { CheckCircle, Lock, BookOpen, Trash2, Pencil, Calendar, Download, GraduationCap, Users, AlertCircle, Circle, ArrowLeftRight, RotateCcw, UserMinus } from 'lucide-react';
 import { toast } from 'sonner';
 import { DayProgressModal } from './DayProgressModal';
 import { ReassignLevelDialog } from './ReassignLevelDialog';
+import { MarkAsAlumniDialog } from './MarkAsAlumniDialog';
 import { useProgramWeeks, useAllWeekTopics, useStudentTopicProgress, useCheckAndAwardBadges } from '@/hooks/useGamification';
 import jsPDF from 'jspdf';
 
@@ -57,6 +58,9 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
   
   // Reassign level dialog state
   const [showReassignDialog, setShowReassignDialog] = useState(false);
+  
+  // Mark as alumni dialog state
+  const [showAlumniDialog, setShowAlumniDialog] = useState(false);
 
   // Fetch program weeks and topics for suggestions
   const { data: programWeeks = [] } = useProgramWeeks();
@@ -91,6 +95,21 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
       
       if (error) throw error;
       return data;
+    },
+  });
+
+  // Fetch student name for dialogs
+  const { data: studentName } = useQuery({
+    queryKey: ['student-name', studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', studentId)
+        .single();
+      
+      if (error) return 'Estudiante';
+      return data?.full_name || 'Estudiante';
     },
   });
 
@@ -604,17 +623,30 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
             </div>
             <Progress value={progressPercentage} className="h-3" />
             
-            {/* Reassign Level Button - Only for editable views */}
+            {/* Reassign Level and Alumni Buttons - Only for editable views */}
             {isEditable && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowReassignDialog(true)}
-                className="w-full"
-              >
-                <ArrowLeftRight className="h-4 w-4 mr-2" />
-                Reasignar Nivel y Semana
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowReassignDialog(true)}
+                  className="flex-1"
+                >
+                  <ArrowLeftRight className="h-4 w-4 mr-2" />
+                  Reasignar Nivel y Semana
+                </Button>
+                {!studentProfile?.is_alumni && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowAlumniDialog(true)}
+                    className="flex-1"
+                  >
+                    <UserMinus className="h-4 w-4 mr-2" />
+                    Marcar como Alumni
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         </CardContent>
@@ -1034,6 +1066,14 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
         studentId={studentId}
         currentLevel={studentProfile?.level || null}
         currentWeekNumber={currentWeekNumber}
+      />
+
+      {/* Mark as Alumni Dialog */}
+      <MarkAsAlumniDialog
+        open={showAlumniDialog}
+        onOpenChange={setShowAlumniDialog}
+        studentId={studentId}
+        studentName={studentName || 'Estudiante'}
       />
     </div>
   );

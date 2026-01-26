@@ -523,6 +523,77 @@ export type Database = {
           },
         ]
       }
+      daily_exercise_packs: {
+        Row: {
+          analysis_summary: string | null
+          completed_at: string | null
+          completed_count: number | null
+          exercises_data: Json
+          expires_at: string
+          generated_at: string
+          id: string
+          is_completed: boolean | null
+          score: number | null
+          streak_count: number | null
+          student_id: string
+        }
+        Insert: {
+          analysis_summary?: string | null
+          completed_at?: string | null
+          completed_count?: number | null
+          exercises_data: Json
+          expires_at: string
+          generated_at?: string
+          id?: string
+          is_completed?: boolean | null
+          score?: number | null
+          streak_count?: number | null
+          student_id: string
+        }
+        Update: {
+          analysis_summary?: string | null
+          completed_at?: string | null
+          completed_count?: number | null
+          exercises_data?: Json
+          expires_at?: string
+          generated_at?: string
+          id?: string
+          is_completed?: boolean | null
+          score?: number | null
+          streak_count?: number | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_exercise_packs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_exercise_packs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "public_staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_exercise_packs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "safe_profiles_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_exercise_packs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "user_rankings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       developer_settings: {
         Row: {
           created_at: string | null
@@ -1795,9 +1866,11 @@ export type Database = {
       }
       student_profiles: {
         Row: {
+          alumni_since: string | null
           created_at: string
           id: string
           initial_feedback: string | null
+          is_alumni: boolean
           level: Database["public"]["Enums"]["cefr_level"] | null
           placement_test_answers: Json | null
           placement_test_oral_completed: boolean | null
@@ -1812,9 +1885,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          alumni_since?: string | null
           created_at?: string
           id?: string
           initial_feedback?: string | null
+          is_alumni?: boolean
           level?: Database["public"]["Enums"]["cefr_level"] | null
           placement_test_answers?: Json | null
           placement_test_oral_completed?: boolean | null
@@ -1829,9 +1904,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          alumni_since?: string | null
           created_at?: string
           id?: string
           initial_feedback?: string | null
+          is_alumni?: boolean
           level?: Database["public"]["Enums"]["cefr_level"] | null
           placement_test_answers?: Json | null
           placement_test_oral_completed?: boolean | null

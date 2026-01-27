@@ -54,17 +54,21 @@ export default function AssignExerciseDialog({
       const userRoles = roles?.map(r => r.role) || [];
 
       // Build the student profiles query based on role
+      // Filter active students who are NOT alumni
       let studentProfilesQuery = supabase
         .from('student_profiles')
         .select('user_id, teacher_id, tutor_id')
-        .eq('status', 'active');
+        .eq('status', 'active')
+        .eq('is_alumni', false);
 
       if (userRoles.includes('admin') || userRoles.includes('coordinator')) {
-        // Admin/coordinator sees all active students
+        // Admin/coordinator sees all active non-alumni students
       } else if (userRoles.includes('teacher')) {
-        studentProfilesQuery = studentProfilesQuery.eq('teacher_id', user.id);
+        // Teachers see students where they are teacher OR tutor
+        studentProfilesQuery = studentProfilesQuery.or(`teacher_id.eq.${user.id},tutor_id.eq.${user.id}`);
       } else if (userRoles.includes('tutor')) {
-        studentProfilesQuery = studentProfilesQuery.eq('tutor_id', user.id);
+        // Tutors see students where they are tutor OR teacher
+        studentProfilesQuery = studentProfilesQuery.or(`tutor_id.eq.${user.id},teacher_id.eq.${user.id}`);
       } else {
         return [];
       }

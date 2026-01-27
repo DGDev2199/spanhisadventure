@@ -1,9 +1,9 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { Clock, Edit, ChevronLeft, ChevronRight, FileImage, FileText } from 'lucide-react';
+import { Clock, Edit, ChevronLeft, ChevronRight, FileImage, FileText, Plus } from 'lucide-react';
 import { EditScheduleEventDialog } from '@/components/EditScheduleEventDialog';
 import { Button } from '@/components/ui/button';
 import { useSwipeable } from 'react-swipeable';
@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DaySelector } from '@/components/ui/day-selector';
 import { cn } from '@/lib/utils';
+import { useCalendarDrag, QuickEventDialog } from '@/components/calendar';
 
 interface ScheduleEvent {
   id: string;
@@ -64,6 +65,24 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
   const [selectedMobileDay, setSelectedMobileDay] = useState(0); // Monday
   const [isExporting, setIsExporting] = useState(false);
   const calendarRef = useRef<HTMLDivElement>(null);
+  
+  // Quick event creation state
+  const [isQuickEventOpen, setIsQuickEventOpen] = useState(false);
+  const [quickEventData, setQuickEventData] = useState({ day: 0, startTime: '09:00', endTime: '10:00' });
+
+  // Drag-to-create hook
+  const handleDragCreate = useCallback((day: number, startTime: string, endTime: string) => {
+    setQuickEventData({ day, startTime, endTime });
+    setIsQuickEventOpen(true);
+  }, []);
+
+  const {
+    isSelecting,
+    selectionStart,
+    selectionEnd,
+    handleMouseDown,
+    handleMouseEnter,
+  } = useCalendarDrag({ onCreateEvent: handleDragCreate });
 
   const exportToPNG = async () => {
     if (!calendarRef.current) return;
@@ -313,8 +332,50 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
             {[0, 1, 2, 3, 4, 5, 6].map((day) => {
               const dayEvents = getEventsForDayAndTime(day, hour);
               
+              // Check if this cell is part of the current selection
+              const isInSelection = () => {
+                if (!selectionStart || !selectionEnd) return false;
+                if (selectionStart.day !== day || selectionEnd.day !== day) return false;
+                const minHour = Math.min(selectionStart.hour, selectionEnd.hour);
+                const maxHour = Math.max(selectionStart.hour, selectionEnd.hour);
+                return hour >= minHour && hour <= maxHour;
+              };
+              
+              const inSelection = canEdit && isInSelection();
+              const isSelectionStart = selectionStart?.day === day && selectionStart?.hour === hour;
+              
               return (
-                <div key={day} className="min-h-[60px] border rounded-md p-1 bg-background relative">
+                <div
+                  key={day}
+                  className={cn(
+                    "min-h-[60px] border rounded-md p-1 bg-background relative transition-colors duration-100",
+                    canEdit && !dayEvents.length && "cursor-crosshair hover:bg-primary/5",
+                    inSelection && "bg-primary/20 border-primary"
+                  )}
+                  onMouseDown={(e) => {
+                    if (canEdit && e.button === 0 && !dayEvents.length) {
+                      e.preventDefault();
+                      handleMouseDown(day, hour);
+                    }
+                  }}
+                  onMouseEnter={() => {
+                    if (isSelecting && canEdit) {
+                      handleMouseEnter(day, hour);
+                    }
+                  }}
+                >
+                  {/* Selection preview overlay */}
+                  {inSelection && !dayEvents.length && (
+                    <div className="absolute inset-1 bg-primary/30 rounded border-2 border-dashed border-primary flex items-center justify-center z-20">
+                      {isSelectionStart && (
+                        <div className="text-xs font-medium text-primary bg-background/80 px-2 py-0.5 rounded">
+                          <Plus className="h-3 w-3 inline mr-1" />
+                          {hour.toString().padStart(2, '0')}:00
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
                   {dayEvents.map((event) => {
                     const duration = getEventDuration(event.start_time, event.end_time);
                     const height = duration * 60; // 60px per hour
@@ -329,7 +390,8 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
                           minHeight: `${Math.max(height - 8, 40)}px`,
                           zIndex: 10,
                         }}
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           if (canEdit) {
                             setSelectedEvent(event);
                             setIsEditDialogOpen(true);
@@ -374,28 +436,37 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
         ))}
       </div>
 
-      {/* Legend */}
-      <div className="mt-6 flex flex-wrap gap-3 text-xs">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-blue-100 border-l-4 border-blue-500 rounded"></div>
-          <span>Clase</span>
+      {/* Legend and Instructions */}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-3 text-xs">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-blue-100 border-l-4 border-blue-500 rounded"></div>
+            <span>Clase</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-green-100 border-l-4 border-green-500 rounded"></div>
+            <span>Tutoría</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-purple-100 border-l-4 border-purple-500 rounded"></div>
+            <span>Actividad</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-red-100 border-l-4 border-red-500 rounded"></div>
+            <span>Examen</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-gray-100 border-l-4 border-gray-500 rounded"></div>
+            <span>Descanso</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-green-100 border-l-4 border-green-500 rounded"></div>
-          <span>Tutoría</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-purple-100 border-l-4 border-purple-500 rounded"></div>
-          <span>Actividad</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-red-100 border-l-4 border-red-500 rounded"></div>
-          <span>Examen</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-gray-100 border-l-4 border-gray-500 rounded"></div>
-          <span>Descanso</span>
-        </div>
+        
+        {canEdit && (
+          <div className="text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full flex items-center gap-2">
+            <Plus className="h-3 w-3" />
+            <span>Arrastra sobre celdas vacías para crear eventos</span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -471,6 +542,15 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
           event={selectedEvent}
         />
       )}
+
+      {/* Quick Event Dialog for drag-to-create */}
+      <QuickEventDialog
+        open={isQuickEventOpen}
+        onOpenChange={setIsQuickEventOpen}
+        initialDay={quickEventData.day}
+        initialStartTime={quickEventData.startTime}
+        initialEndTime={quickEventData.endTime}
+      />
     </Card>
   );
 };

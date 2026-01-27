@@ -1,290 +1,246 @@
 
-# Plan: Sistema de Alumni con Ejercicios Diarios Personalizados
+# Plan: Corregir Errores de RLS y Permisos
 
 ## Resumen
 
-Cuando un estudiante deja la escuela físicamente pero desea continuar practicando español, se le marcará como "Alumni". Estos estudiantes tendrán acceso a un dashboard simplificado con:
-- **10 ejercicios diarios personalizados** generados por IA basados en sus debilidades
-- **Historial de progreso semanal** (solo lectura)
-- **Su progreso del estudiante** (solo lectura)
-- **Ranking y logros** basados en ejercicios completados
+Se han identificado 4 errores relacionados con políticas de seguridad (RLS) que impiden a profesores y staff realizar acciones legítimas en el sistema. Este plan corrige cada uno de ellos.
 
 ---
 
-## Cambios en la Base de Datos
+## Error 1: Marcar como Alumni
 
-### 1. Agregar columna `is_alumni` a `student_profiles`
+**Causa**: La política actual solo permite a profesores actualizar `is_alumni` si son el `teacher_id` asignado. No funciona para:
+- Admins/Coordinadores
+- Profesores que son asignados como `tutor_id`
+
+**Solución**: Crear una nueva política RLS que permita a admin, coordinador y profesores (que sean teacher_id O tutor_id) actualizar el estado de alumni.
 
 ```sql
-ALTER TABLE student_profiles 
-ADD COLUMN is_alumni BOOLEAN NOT NULL DEFAULT false,
-ADD COLUMN alumni_since TIMESTAMP WITH TIME ZONE;
+-- Eliminar política existente si existe
+DROP POLICY IF EXISTS "Teachers can update student alumni status" ON public.student_profiles;
+
+-- Nueva política más completa
+CREATE POLICY "Staff can update student alumni status" 
+ON public.student_profiles FOR UPDATE 
+USING (
+  -- Admin/Coordinator puede actualizar cualquier estudiante
+  public.has_admin_or_coordinator_role(auth.uid())
+  OR
+  -- Teacher puede actualizar si es teacher_id O tutor_id del estudiante
+  (public.has_role(auth.uid(), 'teacher') AND (teacher_id = auth.uid() OR tutor_id = auth.uid()))
+)
+WITH CHECK (
+  public.has_admin_or_coordinator_role(auth.uid())
+  OR
+  (public.has_role(auth.uid(), 'teacher') AND (teacher_id = auth.uid() OR tutor_id = auth.uid()))
+);
 ```
 
-### 2. Crear tabla `daily_exercise_packs`
+---
+
+## Error 2: Asignar Horarios (schedule_events)
+
+**Causa**: Solo admins pueden insertar en `schedule_events`. Los profesores no tienen permisos INSERT.
+
+**Solución**: Agregar política que permita a profesores y tutores crear eventos para sus estudiantes.
 
 ```sql
-CREATE TABLE daily_exercise_packs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  generated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  exercises_data JSONB NOT NULL,           -- Los 10 ejercicios generados
-  analysis_summary TEXT,                   -- Resumen del análisis de la IA
-  completed_count INTEGER DEFAULT 0,       -- Cuántos ha completado
-  is_completed BOOLEAN DEFAULT false,      -- Si completó los 10
-  completed_at TIMESTAMP WITH TIME ZONE,
-  score NUMERIC,                           -- Puntuación promedio
-  expires_at DATE NOT NULL,                -- Fecha de expiración (día siguiente)
-  UNIQUE(student_id, expires_at)           -- Un pack por día
+-- Permitir a profesores crear eventos de clase
+CREATE POLICY "Teachers can create schedule events for their students"
+ON public.schedule_events FOR INSERT
+WITH CHECK (
+  public.has_role(auth.uid(), 'teacher')
+  AND created_by = auth.uid()
 );
 
-ALTER TABLE daily_exercise_packs ENABLE ROW LEVEL SECURITY;
+-- Permitir a profesores actualizar eventos que crearon
+CREATE POLICY "Teachers can update own schedule events"
+ON public.schedule_events FOR UPDATE
+USING (
+  public.has_role(auth.uid(), 'teacher')
+  AND created_by = auth.uid()
+);
 
--- Los estudiantes pueden ver y actualizar sus propios packs
-CREATE POLICY "Students can view own packs" 
-ON daily_exercise_packs FOR SELECT 
-USING (student_id = auth.uid());
-
-CREATE POLICY "Students can update own packs" 
-ON daily_exercise_packs FOR UPDATE 
-USING (student_id = auth.uid());
-
--- Solo el sistema (via edge function) puede insertar
-CREATE POLICY "System can insert packs" 
-ON daily_exercise_packs FOR INSERT 
-WITH CHECK (true);
+-- Permitir a tutores crear eventos de tutoría
+CREATE POLICY "Tutors can create schedule events"
+ON public.schedule_events FOR INSERT
+WITH CHECK (
+  public.has_role(auth.uid(), 'tutor')
+  AND created_by = auth.uid()
+);
 ```
 
 ---
 
-## Nueva Edge Function: `generate-daily-exercises`
+## Error 3: Asignar Estudiantes a Eventos (student_schedule_assignments)
 
-Esta función analizará el progreso del estudiante y generará 10 ejercicios personalizados.
+**Causa**: Solo admins pueden insertar en `student_schedule_assignments`.
 
-### Flujo de la función:
+**Solución**: Permitir a profesores y tutores asignar estudiantes a eventos que ellos crearon.
 
-```
-┌────────────────────────────────────────────────────────────────────┐
-│                  generate-daily-exercises                          │
-├────────────────────────────────────────────────────────────────────┤
-│                                                                    │
-│  1. Recibe: student_id                                             │
-│                                                                    │
-│  2. Obtiene datos del estudiante:                                  │
-│     ├── student_profiles (level)                                   │
-│     ├── student_progress_weeks (últimas semanas)                   │
-│     ├── student_progress_notes (challenges, vocabulary, topics)    │
-│     └── student_topic_progress (colores: rojo/amarillo = debil)    │
-│                                                                    │
-│  3. Construye prompt para Lovable AI:                              │
-│     "Basándote en este análisis del estudiante:                    │
-│      - Nivel: A2                                                   │
-│      - Desafíos: [challenges de las notas]                         │
-│      - Temas con dificultad (rojo): [lista]                        │
-│      - Temas en práctica (amarillo): [lista]                       │
-│      - Vocabulario reciente: [vocabulary]                          │
-│                                                                    │
-│      Genera 10 ejercicios variados enfocados en sus debilidades"   │
-│                                                                    │
-│  4. La IA genera un pack de 10 ejercicios variados:                │
-│     ├── 3 vocabulary (palabras problemáticas)                      │
-│     ├── 2 conjugation (tiempos verbales con dificultad)            │
-│     ├── 2 fill_gaps (contexto gramatical)                          │
-│     ├── 2 multiple_choice (comprensión)                            │
-│     └── 1 sentence_order (estructura)                              │
-│                                                                    │
-│  5. Guarda en daily_exercise_packs y retorna                       │
-│                                                                    │
-└────────────────────────────────────────────────────────────────────┘
+```sql
+-- Permitir a profesores asignar estudiantes a eventos
+CREATE POLICY "Teachers can assign students to schedule events"
+ON public.student_schedule_assignments FOR INSERT
+WITH CHECK (
+  public.has_role(auth.uid(), 'teacher')
+  AND assigned_by = auth.uid()
+);
+
+-- Permitir a tutores asignar estudiantes a eventos
+CREATE POLICY "Tutors can assign students to schedule events"
+ON public.student_schedule_assignments FOR INSERT
+WITH CHECK (
+  public.has_role(auth.uid(), 'tutor')
+  AND assigned_by = auth.uid()
+);
 ```
 
 ---
 
-## Nuevos Componentes Frontend
+## Error 4: Asignar Ejercicios IA a Estudiantes
 
-### 1. `AlumniDashboard.tsx` - Dashboard para estudiantes Alumni
+**Causa**: El filtro de estudiantes en `AssignExerciseDialog` usa `status = 'active'`, pero podría haber estudiantes sin status o con status diferente. También hay que verificar que los estudiantes Alumni no aparezcan.
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│  [Logo] Spanish Adventure                            [🔔] [Logout]  │
-│         Alumni                                                      │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  ¡Hola [Nombre]! 👋                                                 │
-│  Continúa practicando tu español con ejercicios personalizados     │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │ 📅 Ejercicios de Hoy                                   [10]  │   │
-│  │                                                              │   │
-│  │  Basado en tu progreso, hemos preparado ejercicios          │   │
-│  │  enfocados en: conjugación pretérito, vocabulario viajes    │   │
-│  │                                                              │   │
-│  │  ⬛⬛⬛⬛⬛⬜⬜⬜⬜⬜  5/10 completados                    │   │
-│  │                                                              │   │
-│  │  [▶️ Continuar Ejercicios]                                   │   │
-│  │                                                              │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  ┌──────────────────────┐ ┌──────────────────────┐                 │
-│  │ 📊 Mi Nivel: A2      │ │ 🔥 Racha: 5 días     │                 │
-│  │ Ejercicios hoy: 5/10 │ │ Total ejercicios: 87 │                 │
-│  └──────────────────────┘ └──────────────────────┘                 │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │ 📅 Ejercicios Anteriores (últimos 7 días)                    │   │
-│  │                                                              │   │
-│  │  Lun 22: ✅ 10/10 - 92%                                      │   │
-│  │  Dom 21: ✅ 10/10 - 88%                                      │   │
-│  │  Sab 20: ⚠️ 7/10 - 85% [Repetir]                             │   │
-│  │  Vie 19: ✅ 10/10 - 95%                                      │   │
-│  │                                                              │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │ 🏆 Mi Ranking            │ 📈 Mi Progreso Semanal           │   │
-│  │ #15 de 48 estudiantes    │ [Semana 1] [Semana 2] ...        │   │
-│  │                          │                                   │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │ 📖 Mi Progreso del Estudiante (solo lectura)                 │   │
-│  │ [Vista colapsada de las semanas y notas de progreso]         │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-### 2. `DailyExercisePanel.tsx` - Panel de ejercicios diarios
-
-Componente que muestra el pack de ejercicios del día:
-- Genera automáticamente si no existe uno para hoy
-- Muestra progreso (X/10)
-- Permite continuar donde lo dejó
-- Muestra resumen del análisis de IA ("Enfocados en tus retos con...")
-
-### 3. `PastExercisesPanel.tsx` - Historial de ejercicios anteriores
-
-- Lista de packs anteriores (últimos 7-14 días)
-- Opción de repetir packs incompletos o para practicar más
-- Estadísticas de puntuación
-
-### 4. Modificación de `MarkAsAlumniDialog.tsx`
-
-Nuevo diálogo que se abre desde StudentProgressView:
-
-```
-┌────────────────────────────────────────────────────────┐
-│ Marcar como Alumni                                  ✕  │
-├────────────────────────────────────────────────────────┤
-│                                                        │
-│ ⚠️ Esta acción marcará a [Nombre] como estudiante     │
-│ Alumni (ya no está en la escuela físicamente).        │
-│                                                        │
-│ El estudiante:                                         │
-│ ✓ Podrá seguir practicando con ejercicios diarios     │
-│ ✓ Mantendrá acceso a su historial de progreso         │
-│ ✓ Participará en el ranking con sus ejercicios        │
-│                                                        │
-│ ✗ No tendrá acceso a chat, tareas, o profesor         │
-│ ✗ No aparecerá en listas de estudiantes activos       │
-│                                                        │
-│ ┌──────────────────────────────────────────────────┐  │
-│ │ La IA analizará sus notas de progreso y          │  │
-│ │ calificaciones de temas para generar ejercicios  │  │
-│ │ personalizados enfocados en sus debilidades.     │  │
-│ └──────────────────────────────────────────────────┘  │
-│                                                        │
-│        [Cancelar]        [Marcar como Alumni]          │
-└────────────────────────────────────────────────────────┘
-```
-
----
-
-## Modificación del Routing
-
-### `DashboardRouter.tsx`
+**Solución**: Modificar el query en `AssignExerciseDialog.tsx`:
 
 ```typescript
-// Agregar verificación de alumni
-if (userRole === 'student') {
-  // Verificar si es alumni
-  if (studentProfile?.is_alumni) {
-    return <AlumniDashboard />;
-  }
-  return <Dashboard />;
+// Filtrar estudiantes activos Y que no sean alumni
+let studentProfilesQuery = supabase
+  .from('student_profiles')
+  .select('user_id, teacher_id, tutor_id')
+  .eq('status', 'active')
+  .eq('is_alumni', false); // Excluir alumni
+```
+
+Además, para tutores, asegurarse de que también puedan ver estudiantes donde son el tutor:
+
+```typescript
+} else if (userRoles.includes('tutor')) {
+  // Tutor puede asignar a estudiantes donde es tutor O teacher
+  studentProfilesQuery = studentProfilesQuery.or(`tutor_id.eq.${user.id},teacher_id.eq.${user.id}`);
 }
 ```
 
 ---
 
-## Lógica de Generación de Ejercicios
+## Archivos a Modificar
 
-### Análisis del estudiante por la IA:
-
-1. **Obtener datos del estudiante:**
-   - `level` de student_profiles
-   - `challenges` de student_progress_notes (últimas 3-4 semanas)
-   - `vocabulary` de student_progress_notes
-   - Temas con color `red` o `yellow` en student_topic_progress
-
-2. **Construir contexto para la IA:**
-   ```
-   "Estudiante nivel A2.
-   Desafíos identificados: 'Dificultad con pretérito indefinido, confunde ser/estar'
-   Vocabulario practicado: 'viajes, comida, familia'
-   Temas con dificultad (rojo): 'Pretérito Indefinido - Irregulares'
-   Temas en práctica (amarillo): 'Ser vs Estar', 'Vocabulario de viajes'
-   
-   Genera 10 ejercicios variados enfocados en estas debilidades..."
-   ```
-
-3. **La IA genera ejercicios personalizados** enfocados en las áreas problemáticas
+| Archivo | Cambios |
+|---------|---------|
+| Nueva migración SQL | Agregar políticas RLS para schedule_events, student_schedule_assignments, y actualizar la de student_profiles |
+| `src/components/practice/AssignExerciseDialog.tsx` | Agregar filtro `is_alumni = false` y mejorar lógica de OR para tutores |
 
 ---
 
-## Sistema de Puntos para Alumni
+## Migración SQL Completa
 
-- Completar un ejercicio: +1 punto
-- Completar los 10 ejercicios del día: +5 puntos bonus
-- Respuesta correcta: +1 punto adicional
-- Racha de 7 días consecutivos: +25 puntos bonus
+```sql
+-- ===========================================
+-- Fix RLS policies for staff operations
+-- ===========================================
 
-Esto les permite seguir compitiendo en el leaderboard.
+-- 1. FIX: Mark as Alumni - Allow admin/coordinator and teachers (as teacher OR tutor)
+DROP POLICY IF EXISTS "Teachers can update student alumni status" ON public.student_profiles;
+
+CREATE POLICY "Staff can update student alumni status" 
+ON public.student_profiles FOR UPDATE 
+USING (
+  public.has_admin_or_coordinator_role(auth.uid())
+  OR
+  (public.has_role(auth.uid(), 'teacher') AND (teacher_id = auth.uid() OR tutor_id = auth.uid()))
+)
+WITH CHECK (
+  public.has_admin_or_coordinator_role(auth.uid())
+  OR
+  (public.has_role(auth.uid(), 'teacher') AND (teacher_id = auth.uid() OR tutor_id = auth.uid()))
+);
+
+-- 2. FIX: Schedule Events - Allow teachers and tutors to create and update their own events
+CREATE POLICY "Teachers can create schedule events"
+ON public.schedule_events FOR INSERT
+WITH CHECK (
+  public.has_role(auth.uid(), 'teacher')
+  AND created_by = auth.uid()
+);
+
+CREATE POLICY "Tutors can create schedule events"
+ON public.schedule_events FOR INSERT
+WITH CHECK (
+  public.has_role(auth.uid(), 'tutor')
+  AND created_by = auth.uid()
+);
+
+CREATE POLICY "Teachers can update own schedule events"
+ON public.schedule_events FOR UPDATE
+USING (
+  public.has_role(auth.uid(), 'teacher')
+  AND created_by = auth.uid()
+);
+
+CREATE POLICY "Tutors can update own schedule events"
+ON public.schedule_events FOR UPDATE
+USING (
+  public.has_role(auth.uid(), 'tutor')
+  AND created_by = auth.uid()
+);
+
+CREATE POLICY "Coordinators can manage schedule events"
+ON public.schedule_events FOR ALL
+USING (public.has_role(auth.uid(), 'coordinator'));
+
+-- 3. FIX: Student Schedule Assignments - Allow teachers and tutors to assign students
+CREATE POLICY "Teachers can assign students to events"
+ON public.student_schedule_assignments FOR INSERT
+WITH CHECK (
+  public.has_role(auth.uid(), 'teacher')
+  AND assigned_by = auth.uid()
+);
+
+CREATE POLICY "Tutors can assign students to events"
+ON public.student_schedule_assignments FOR INSERT
+WITH CHECK (
+  public.has_role(auth.uid(), 'tutor')
+  AND assigned_by = auth.uid()
+);
+
+CREATE POLICY "Coordinators can manage student schedule assignments"
+ON public.student_schedule_assignments FOR ALL
+USING (public.has_role(auth.uid(), 'coordinator'));
+```
 
 ---
 
-## Archivos a Crear/Modificar
+## Cambios en AssignExerciseDialog.tsx
 
-| Archivo | Acción | Descripción |
-|---------|--------|-------------|
-| `src/pages/AlumniDashboard.tsx` | CREAR | Dashboard simplificado para alumni |
-| `src/components/alumni/DailyExercisePanel.tsx` | CREAR | Panel de ejercicios diarios |
-| `src/components/alumni/PastExercisesPanel.tsx` | CREAR | Historial de ejercicios anteriores |
-| `src/components/alumni/DailyExerciseView.tsx` | CREAR | Vista para realizar los ejercicios |
-| `src/components/MarkAsAlumniDialog.tsx` | CREAR | Diálogo de confirmación |
-| `src/components/StudentProgressView.tsx` | MODIFICAR | Agregar botón "Marcar como Alumni" |
-| `src/components/DashboardRouter.tsx` | MODIFICAR | Redirigir alumni a su dashboard |
-| `supabase/functions/generate-daily-exercises/index.ts` | CREAR | Edge function para generar ejercicios |
-| Migración SQL | CREAR | Agregar columnas y tabla nueva |
+```typescript
+// Línea ~57-68: Agregar filtro is_alumni
+let studentProfilesQuery = supabase
+  .from('student_profiles')
+  .select('user_id, teacher_id, tutor_id')
+  .eq('status', 'active')
+  .eq('is_alumni', false); // Excluir estudiantes alumni
+
+if (userRoles.includes('admin') || userRoles.includes('coordinator')) {
+  // Admin/coordinator sees all active non-alumni students
+} else if (userRoles.includes('teacher')) {
+  // Teachers see students where they are teacher OR tutor
+  studentProfilesQuery = studentProfilesQuery.or(`teacher_id.eq.${user.id},tutor_id.eq.${user.id}`);
+} else if (userRoles.includes('tutor')) {
+  // Tutors see students where they are tutor OR teacher
+  studentProfilesQuery = studentProfilesQuery.or(`tutor_id.eq.${user.id},teacher_id.eq.${user.id}`);
+} else {
+  return [];
+}
+```
 
 ---
 
-## Detalles Técnicos
+## Resumen de Correcciones
 
-### Generación automática vs bajo demanda
-
-Los ejercicios se generan **bajo demanda** cuando el estudiante abre el dashboard:
-1. Si no hay pack para hoy → Generar nuevo pack
-2. Si hay pack incompleto → Continuar
-3. Si hay pack completo de hoy → Mostrar como completado, ofrecer repetir
-
-### Expiración de packs
-
-- Cada pack tiene `expires_at` = fecha del día siguiente
-- Los packs anteriores se mantienen para poder repetirlos
-- Después de 30 días se pueden archivar/eliminar
-
-### RLS Considerations
-
-- Los alumni no tendrán acceso a tablas como `direct_messages`, `tasks`, etc.
-- Solo tendrán acceso a: `daily_exercise_packs`, `profiles`, `student_progress_weeks/notes` (lectura), `user_rankings`
+| Error | Causa | Solución |
+|-------|-------|----------|
+| Marcar como Alumni | Política solo permitía `teacher_id` | Nueva política incluye admin, coordinator, y teacher como teacher_id O tutor_id |
+| Asignar horarios | Solo admin podía INSERT en schedule_events | Nuevas políticas INSERT para teachers/tutors |
+| Eventos en calendario | Solo admin podía INSERT en student_schedule_assignments | Nuevas políticas INSERT para teachers/tutors |
+| Asignar ejercicios IA | Query no excluía alumni; tutors no veían todos sus estudiantes | Agregar filtro `is_alumni = false` y OR para teacher_id/tutor_id |

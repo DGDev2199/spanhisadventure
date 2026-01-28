@@ -38,20 +38,20 @@ export function AssignMultipleStudentsDialog({
   const [endTime, setEndTime] = useState("10:00");
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
 
-  // Fetch students assigned to this teacher/tutor
+  // Fetch students assigned to this teacher/tutor (using OR to support dual roles)
   const { data: students } = useQuery({
     queryKey: ["teacher-students", teacherId, scheduleType],
     queryFn: async () => {
-      const field = scheduleType === "class" ? "teacher_id" : "tutor_id";
-      
+      // Staff can be both teacher and tutor, so check both fields
       const { data, error } = await supabase
         .from("student_profiles")
         .select(`
           user_id,
           profiles!inner(id, full_name)
         `)
-        .eq(field, teacherId)
-        .eq("status", "active");
+        .or(`teacher_id.eq.${teacherId},tutor_id.eq.${teacherId}`)
+        .eq("status", "active")
+        .eq("is_alumni", false);
 
       if (error) throw error;
       return data;

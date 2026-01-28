@@ -98,10 +98,10 @@ export default function ReadingExercise({ content, onComplete }: ReadingExercise
                          currentQuestionIndex === currentExercise.questions.length - 1;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Progress */}
-      <div className="flex items-center justify-between text-sm">
-        <Badge variant="outline">
+      <div className="flex items-center justify-between text-xs sm:text-sm">
+        <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2">
           Pregunta {currentQuestionNumber} de {totalQuestions}
         </Badge>
         <div className="flex gap-2">
@@ -112,15 +112,15 @@ export default function ReadingExercise({ content, onComplete }: ReadingExercise
 
       {/* Reading passage */}
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base flex items-center gap-2">
-            <BookOpen className="h-4 w-4" />
-            {currentExercise.title}
+        <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-6">
+          <CardTitle className="text-sm sm:text-base flex items-center gap-1.5 sm:gap-2">
+            <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+            <span className="truncate">{currentExercise.title}</span>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[150px]">
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+        <CardContent className="px-3 sm:px-6">
+          <ScrollArea className="h-[100px] sm:h-[150px]">
+            <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap pr-2">
               {currentExercise.text}
             </p>
           </ScrollArea>
@@ -129,10 +129,10 @@ export default function ReadingExercise({ content, onComplete }: ReadingExercise
 
       {/* Question */}
       <Card className="border-primary/30">
-        <CardContent className="pt-4">
-          <p className="font-medium mb-4">{currentQuestion.question}</p>
+        <CardContent className="pt-3 sm:pt-4 px-3 sm:px-6">
+          <p className="font-medium mb-3 sm:mb-4 text-sm sm:text-base">{currentQuestion.question}</p>
           
-          <div className="space-y-2">
+          <div className="space-y-1.5 sm:space-y-2">
             {currentQuestion.options.map((option, idx) => {
               const isSelected = selectedAnswer === option;
               const isCorrectAnswer = option === currentQuestion.correct_answer;
@@ -142,7 +142,7 @@ export default function ReadingExercise({ content, onComplete }: ReadingExercise
                   key={idx}
                   variant="outline"
                   className={cn(
-                    'w-full h-auto py-3 px-4 text-left justify-start',
+                    'w-full h-auto py-2.5 sm:py-3 px-3 sm:px-4 text-left justify-start text-xs sm:text-sm',
                     isSelected && !showResult && 'ring-2 ring-primary bg-primary/10',
                     showResult && isCorrectAnswer && 'bg-green-100 dark:bg-green-900/30 border-green-500',
                     showResult && isSelected && !isCorrectAnswer && 'bg-red-100 dark:bg-red-900/30 border-red-500'
@@ -151,8 +151,8 @@ export default function ReadingExercise({ content, onComplete }: ReadingExercise
                   disabled={showResult}
                 >
                   <span className="flex-1">{option}</span>
-                  {showResult && isCorrectAnswer && <CheckCircle className="h-5 w-5 text-green-600 ml-2" />}
-                  {showResult && isSelected && !isCorrectAnswer && <XCircle className="h-5 w-5 text-red-600 ml-2" />}
+                  {showResult && isCorrectAnswer && <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 ml-2 flex-shrink-0" />}
+                  {showResult && isSelected && !isCorrectAnswer && <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 ml-2 flex-shrink-0" />}
                 </Button>
               );
             })}
@@ -161,16 +161,16 @@ export default function ReadingExercise({ content, onComplete }: ReadingExercise
       </Card>
 
       {/* Actions */}
-      <div className="flex justify-center">
+      <div className="flex justify-center px-2">
         {!showResult ? (
-          <Button onClick={handleConfirm} disabled={!selectedAnswer}>
+          <Button size="sm" className="w-full sm:w-auto text-xs sm:text-sm h-9" onClick={handleConfirm} disabled={!selectedAnswer}>
             Confirmar respuesta
           </Button>
         ) : (
-          <Button onClick={handleNext}>
+          <Button size="sm" className="w-full sm:w-auto text-xs sm:text-sm h-9" onClick={handleNext}>
             {!isLastQuestion ? (
               <>
-                Siguiente <ArrowRight className="h-4 w-4 ml-2" />
+                Siguiente <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
               </>
             ) : (
               'Ver resultados'

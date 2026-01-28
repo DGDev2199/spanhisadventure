@@ -76,10 +76,10 @@ export default function FillGapsExercise({ content, onComplete }: FillGapsExerci
   const renderSentence = () => {
     const parts = currentExercise.sentence_with_gap.split('____');
     return (
-      <p className="text-lg text-center">
+      <p className="text-sm sm:text-lg text-center leading-relaxed">
         {parts[0]}
         <span className={cn(
-          'inline-block min-w-[80px] border-b-2 mx-1 text-center font-medium',
+          'inline-block min-w-[60px] sm:min-w-[80px] border-b-2 mx-1 text-center font-medium',
           showResult && isCorrect && 'text-green-600 border-green-500',
           showResult && !isCorrect && 'text-red-600 border-red-500',
           !showResult && selectedAnswer && 'text-primary border-primary'
@@ -92,10 +92,10 @@ export default function FillGapsExercise({ content, onComplete }: FillGapsExerci
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Progress */}
-      <div className="flex items-center justify-between text-sm">
-        <Badge variant="outline">
+      <div className="flex items-center justify-between text-xs sm:text-sm">
+        <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2">
           Ejercicio {currentIndex + 1} de {exercises.length}
         </Badge>
         <div className="flex gap-2">
@@ -106,35 +106,35 @@ export default function FillGapsExercise({ content, onComplete }: FillGapsExerci
 
       {/* Context hint */}
       {currentExercise.context && (
-        <p className="text-sm text-muted-foreground text-center italic">
+        <p className="text-xs sm:text-sm text-muted-foreground text-center italic">
           💡 {currentExercise.context}
         </p>
       )}
 
       {/* Sentence */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="pt-4 sm:pt-6 px-3 sm:px-6">
           {renderSentence()}
         </CardContent>
       </Card>
 
       {/* Result feedback */}
       {showResult && !isCorrect && (
-        <div className="flex items-center justify-center gap-2 text-red-600">
-          <XCircle className="h-5 w-5" />
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-red-600 text-xs sm:text-sm">
+          <XCircle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
           <span>Tu respuesta: {selectedAnswer}</span>
         </div>
       )}
 
       {showResult && isCorrect && (
-        <div className="flex items-center justify-center gap-2 text-green-600">
-          <CheckCircle className="h-5 w-5" />
+        <div className="flex items-center justify-center gap-1.5 sm:gap-2 text-green-600 text-xs sm:text-sm">
+          <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
           <span>¡Correcto!</span>
         </div>
       )}
 
       {/* Options */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 px-2">
         {currentExercise.options.map((option, idx) => {
           const isSelected = selectedAnswer === option;
           const isCorrectAnswer = option === currentExercise.correct_answer;
@@ -144,7 +144,7 @@ export default function FillGapsExercise({ content, onComplete }: FillGapsExerci
               key={idx}
               variant="outline"
               className={cn(
-                'h-auto py-3 px-4',
+                'h-auto py-2.5 sm:py-3 px-3 sm:px-4 text-xs sm:text-base',
                 isSelected && !showResult && 'ring-2 ring-primary bg-primary/10',
                 showResult && isCorrectAnswer && 'bg-green-100 dark:bg-green-900/30 border-green-500',
                 showResult && isSelected && !isCorrectAnswer && 'bg-red-100 dark:bg-red-900/30 border-red-500'
@@ -159,16 +159,16 @@ export default function FillGapsExercise({ content, onComplete }: FillGapsExerci
       </div>
 
       {/* Actions */}
-      <div className="flex justify-center">
+      <div className="flex justify-center px-2">
         {!showResult ? (
-          <Button onClick={handleConfirm} disabled={!selectedAnswer}>
+          <Button size="sm" className="w-full sm:w-auto text-xs sm:text-sm h-9" onClick={handleConfirm} disabled={!selectedAnswer}>
             Confirmar
           </Button>
         ) : (
-          <Button onClick={handleNext}>
+          <Button size="sm" className="w-full sm:w-auto text-xs sm:text-sm h-9" onClick={handleNext}>
             {currentIndex < exercises.length - 1 ? (
               <>
-                Siguiente <ArrowRight className="h-4 w-4 ml-2" />
+                Siguiente <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
               </>
             ) : (
               'Ver resultados'

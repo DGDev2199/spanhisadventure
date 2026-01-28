@@ -72,9 +72,9 @@ export default function VocabularyExercise({ content, onComplete }: VocabularyEx
   const renderSentence = () => {
     const parts = currentExercise.sentence_blank.split('____');
     return (
-      <p className="text-lg">
+      <p className="text-sm sm:text-lg leading-relaxed">
         {parts[0]}
-        <span className="inline-block min-w-[100px] border-b-2 border-primary mx-1 px-2">
+        <span className="inline-block min-w-[70px] sm:min-w-[100px] border-b-2 border-primary mx-1 px-1 sm:px-2">
           {showResult ? (
             <span className={cn(
               "font-bold",
@@ -90,41 +90,41 @@ export default function VocabularyExercise({ content, onComplete }: VocabularyEx
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Progress */}
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm">
+      <div className="space-y-1.5 sm:space-y-2">
+        <div className="flex justify-between text-xs sm:text-sm">
           <span>Ejercicio {currentIndex + 1} de {exercises.length}</span>
           <span>{Math.round(progress)}% completado</span>
         </div>
-        <Progress value={progress} className="h-2" />
+        <Progress value={progress} className="h-1.5 sm:h-2" />
       </div>
 
       {/* Results summary */}
-      <div className="flex gap-4 justify-center">
-        <Badge variant="outline" className="text-green-600 border-green-600">
-          <Check className="h-3 w-3 mr-1" />
+      <div className="flex gap-2 sm:gap-4 justify-center">
+        <Badge variant="outline" className="text-green-600 border-green-600 text-[10px] sm:text-xs px-1.5 sm:px-2">
+          <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
           Correctas: {Object.values(answers).filter(a => a.correct).length}
         </Badge>
-        <Badge variant="outline" className="text-red-600 border-red-600">
-          <X className="h-3 w-3 mr-1" />
+        <Badge variant="outline" className="text-red-600 border-red-600 text-[10px] sm:text-xs px-1.5 sm:px-2">
+          <X className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
           Incorrectas: {Object.values(answers).filter(a => !a.correct).length}
         </Badge>
       </div>
 
       {/* Exercise */}
       <Card>
-        <CardHeader className="text-center">
-          <CardTitle className="text-lg">
+        <CardHeader className="text-center px-3 sm:px-6 pb-2 sm:pb-4">
+          <CardTitle className="text-base sm:text-lg">
             <span className="text-primary">"{currentExercise.word}"</span>
           </CardTitle>
-          <p className="text-sm text-muted-foreground mt-2">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1.5 sm:mt-2">
             {currentExercise.definition}
           </p>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3 sm:space-y-4 px-3 sm:px-6">
           {/* Sentence with blank */}
-          <div className="text-center py-4 bg-muted/50 rounded-lg">
+          <div className="text-center py-3 sm:py-4 bg-muted/50 rounded-lg px-2">
             {renderSentence()}
           </div>
 
@@ -132,17 +132,18 @@ export default function VocabularyExercise({ content, onComplete }: VocabularyEx
           {currentExercise.context_hint && (
             <div className="flex justify-center">
               {showHint ? (
-                <p className="text-sm text-muted-foreground bg-muted px-4 py-2 rounded-lg">
+                <p className="text-xs sm:text-sm text-muted-foreground bg-muted px-3 sm:px-4 py-2 rounded-lg text-center">
                   💡 {currentExercise.context_hint}
                 </p>
               ) : (
                 <Button 
                   variant="ghost" 
                   size="sm" 
+                  className="text-xs sm:text-sm h-8"
                   onClick={() => setShowHint(true)}
                   disabled={showResult}
                 >
-                  <HelpCircle className="h-4 w-4 mr-2" />
+                  <HelpCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Ver pista
                 </Button>
               )}
@@ -157,7 +158,7 @@ export default function VocabularyExercise({ content, onComplete }: VocabularyEx
                 onChange={(e) => setUserAnswer(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Escribe la palabra..."
-                className="text-center text-lg"
+                className="text-center text-sm sm:text-lg h-10 sm:h-11"
                 autoFocus
               />
             </div>
@@ -166,7 +167,7 @@ export default function VocabularyExercise({ content, onComplete }: VocabularyEx
           {/* Feedback */}
           {showResult && (
             <div className={cn(
-              "p-3 rounded-lg text-center",
+              "p-2.5 sm:p-3 rounded-lg text-center text-xs sm:text-sm",
               answers[currentIndex]?.correct
                 ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
                 : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
@@ -177,7 +178,7 @@ export default function VocabularyExercise({ content, onComplete }: VocabularyEx
                 <p>
                   Tu respuesta: <span className="line-through">{answers[currentIndex]?.answer}</span>
                   <br />
-                  Respuesta correcta: <strong>{currentExercise.correct_answer}</strong>
+                  Correcta: <strong>{currentExercise.correct_answer}</strong>
                 </p>
               )}
             </div>
@@ -186,27 +187,28 @@ export default function VocabularyExercise({ content, onComplete }: VocabularyEx
       </Card>
 
       {/* Actions */}
-      <div className="flex justify-center gap-4">
+      <div className="flex justify-center gap-3 sm:gap-4 px-2">
         {!showResult ? (
           <Button
-            size="lg"
+            size="sm"
+            className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10"
             onClick={handleCheck}
             disabled={!userAnswer.trim()}
           >
-            <Check className="h-5 w-5 mr-2" />
+            <Check className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
             Comprobar
           </Button>
         ) : (
-          <Button size="lg" onClick={handleNext}>
+          <Button size="sm" className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10" onClick={handleNext}>
             {currentIndex < exercises.length - 1 ? (
               <>
                 Siguiente
-                <ArrowRight className="h-5 w-5 ml-2" />
+                <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 ml-1 sm:ml-2" />
               </>
             ) : (
               <>
                 Finalizar
-                <Check className="h-5 w-5 ml-2" />
+                <Check className="h-4 w-4 sm:h-5 sm:w-5 ml-1 sm:ml-2" />
               </>
             )}
           </Button>

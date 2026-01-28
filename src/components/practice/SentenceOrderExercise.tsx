@@ -96,10 +96,10 @@ export default function SentenceOrderExercise({ content, onComplete }: SentenceO
   const isCorrect = userSentence.toLowerCase() === currentExercise.correct_sentence.toLowerCase();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Progress */}
-      <div className="flex items-center justify-between text-sm">
-        <Badge variant="outline">
+      <div className="flex items-center justify-between text-xs sm:text-sm">
+        <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2">
           Oración {currentIndex + 1} de {exercises.length}
         </Badge>
         <div className="flex gap-2">
@@ -110,28 +110,28 @@ export default function SentenceOrderExercise({ content, onComplete }: SentenceO
 
       {/* Hint */}
       {currentExercise.hint && (
-        <p className="text-sm text-muted-foreground text-center italic">
+        <p className="text-xs sm:text-sm text-muted-foreground text-center italic">
           💡 {currentExercise.hint}
         </p>
       )}
 
       {/* Selected words area */}
       <Card className={cn(
-        'min-h-[80px]',
+        'min-h-[70px] sm:min-h-[80px]',
         showResult && isCorrect && 'border-green-500',
         showResult && !isCorrect && 'border-red-500'
       )}>
-        <CardContent className="pt-4">
-          <div className="flex flex-wrap gap-2 min-h-[40px]">
+        <CardContent className="pt-3 sm:pt-4 px-3 sm:px-6">
+          <div className="flex flex-wrap gap-1.5 sm:gap-2 min-h-[36px] sm:min-h-[40px]">
             {selectedWords.length === 0 ? (
-              <p className="text-muted-foreground text-sm">Haz clic en las palabras para formar la oración...</p>
+              <p className="text-muted-foreground text-xs sm:text-sm">Toca las palabras para formar la oración...</p>
             ) : (
               selectedWords.map((word, idx) => (
                 <Badge
                   key={idx}
                   variant="secondary"
                   className={cn(
-                    'text-base py-2 px-4 cursor-pointer hover:bg-destructive/20',
+                    'text-xs sm:text-base py-1.5 sm:py-2 px-2.5 sm:px-4 cursor-pointer hover:bg-destructive/20',
                     showResult && 'cursor-default'
                   )}
                   onClick={() => handleRemoveWord(idx)}
@@ -142,14 +142,14 @@ export default function SentenceOrderExercise({ content, onComplete }: SentenceO
             )}
           </div>
           {showResult && (
-            <div className="mt-3 flex items-center gap-2">
+            <div className="mt-2 sm:mt-3 flex items-center gap-1.5 sm:gap-2">
               {isCorrect ? (
-                <CheckCircle className="h-5 w-5 text-green-600" />
+                <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 flex-shrink-0" />
               ) : (
-                <XCircle className="h-5 w-5 text-red-600" />
+                <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 flex-shrink-0" />
               )}
-              <span className={cn('text-sm', isCorrect ? 'text-green-600' : 'text-red-600')}>
-                {isCorrect ? '¡Correcto!' : `Respuesta correcta: ${currentExercise.correct_sentence}`}
+              <span className={cn('text-xs sm:text-sm', isCorrect ? 'text-green-600' : 'text-red-600')}>
+                {isCorrect ? '¡Correcto!' : `Correcta: ${currentExercise.correct_sentence}`}
               </span>
             </div>
           )}
@@ -157,12 +157,12 @@ export default function SentenceOrderExercise({ content, onComplete }: SentenceO
       </Card>
 
       {/* Available words */}
-      <div className="flex flex-wrap gap-2 justify-center">
+      <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center px-2">
         {availableWords.map((word, idx) => (
           <Button
             key={idx}
             variant="outline"
-            className="text-base"
+            className="text-xs sm:text-base h-8 sm:h-10 px-2.5 sm:px-4"
             onClick={() => handleSelectWord(word, idx)}
             disabled={showResult}
           >
@@ -172,22 +172,22 @@ export default function SentenceOrderExercise({ content, onComplete }: SentenceO
       </div>
 
       {/* Actions */}
-      <div className="flex justify-center gap-3">
+      <div className="flex justify-center gap-2 sm:gap-3 px-2">
         {!showResult ? (
           <>
-            <Button variant="outline" onClick={handleReset} disabled={selectedWords.length === 0}>
-              <RotateCcw className="h-4 w-4 mr-2" />
+            <Button variant="outline" size="sm" className="text-xs sm:text-sm h-9" onClick={handleReset} disabled={selectedWords.length === 0}>
+              <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
               Reiniciar
             </Button>
-            <Button onClick={handleConfirm} disabled={availableWords.length > 0}>
+            <Button size="sm" className="text-xs sm:text-sm h-9" onClick={handleConfirm} disabled={availableWords.length > 0}>
               Confirmar
             </Button>
           </>
         ) : (
-          <Button onClick={handleNext}>
+          <Button size="sm" className="text-xs sm:text-sm h-9 w-full sm:w-auto" onClick={handleNext}>
             {currentIndex < exercises.length - 1 ? (
               <>
-                Siguiente <ArrowRight className="h-4 w-4 ml-2" />
+                Siguiente <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
               </>
             ) : (
               'Ver resultados'

@@ -60,42 +60,67 @@ export function ManageStudentScheduleDialog({
     enabled: open,
   });
 
-  // Fetch teachers
+  // Fetch all staff who can teach classes (teachers + users with both roles)
   const { data: teachers } = useQuery({
     queryKey: ["teachers-for-schedule"],
     queryFn: async () => {
-      const { data: roles } = await supabase
+      // Get users with teacher role
+      const { data: teacherRoles } = await supabase
         .from("user_roles")
         .select("user_id")
         .eq("role", "teacher");
 
-      if (!roles?.length) return [];
+      // Get users with tutor role (they can also teach if they have both roles)
+      const { data: tutorRoles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "tutor");
+
+      // Combine unique user IDs - teachers + tutors who might also be teachers
+      const allTeacherIds = new Set([
+        ...(teacherRoles?.map(r => r.user_id) || []),
+      ]);
+
+      if (allTeacherIds.size === 0) return [];
 
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, full_name")
-        .in("id", roles.map(r => r.user_id));
+        .in("id", Array.from(allTeacherIds));
 
       return profiles || [];
     },
     enabled: open,
   });
 
-  // Fetch tutors
+  // Fetch all staff who can do tutoring (tutors + teachers who might also tutor)
   const { data: tutors } = useQuery({
     queryKey: ["tutors-for-schedule"],
     queryFn: async () => {
-      const { data: roles } = await supabase
+      // Get users with tutor role
+      const { data: tutorRoles } = await supabase
         .from("user_roles")
         .select("user_id")
         .eq("role", "tutor");
 
-      if (!roles?.length) return [];
+      // Get users with teacher role (they can also tutor if they have both roles)
+      const { data: teacherRoles } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .eq("role", "teacher");
+
+      // Combine unique user IDs - tutors + teachers who might also be tutors
+      const allTutorIds = new Set([
+        ...(tutorRoles?.map(r => r.user_id) || []),
+        ...(teacherRoles?.map(r => r.user_id) || []),
+      ]);
+
+      if (allTutorIds.size === 0) return [];
 
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id, full_name")
-        .in("id", roles.map(r => r.user_id));
+        .in("id", Array.from(allTutorIds));
 
       return profiles || [];
     },

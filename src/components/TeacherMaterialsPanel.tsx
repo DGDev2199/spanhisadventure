@@ -8,6 +8,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useProgramWeeks, useAllWeekTopics } from '@/hooks/useGamification';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { SecurePDFViewer } from '@/components/curriculum';
 import { 
   BookOpen, 
   FileText, 
@@ -18,17 +20,40 @@ import {
   ChevronRight,
   ExternalLink,
   GraduationCap,
-  Loader2
+  Loader2,
+  Shield
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+interface SelectedPdf {
+  url: string;
+  title: string;
+}
+
 export const TeacherMaterialsPanel = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { data: weeks = [] } = useProgramWeeks();
   const { data: allTopics = [] } = useAllWeekTopics();
   
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set());
+  const [selectedPdf, setSelectedPdf] = useState<SelectedPdf | null>(null);
+
+  // Fetch user profile for watermark
+  const { data: userProfile } = useQuery({
+    queryKey: ['user-profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user?.id,
+  });
 
   // Fetch all materials including teacher guides
   const { data: allMaterials = [], isLoading } = useQuery({
@@ -85,6 +110,29 @@ export const TeacherMaterialsPanel = () => {
     return colors[level] || 'bg-gray-500';
   };
 
+  const handleMaterialClick = (material: { 
+    content_url: string | null; 
+    material_type: string; 
+    title: string;
+    is_teacher_guide: boolean;
+  }) => {
+    if (!material.content_url) return;
+
+    // Check if it's a PDF teacher guide - open in secure viewer
+    const isPdf = material.content_url.toLowerCase().endsWith('.pdf');
+    const isTeacherGuide = material.is_teacher_guide;
+
+    if (isPdf && isTeacherGuide) {
+      setSelectedPdf({
+        url: material.content_url,
+        title: material.title,
+      });
+    } else {
+      // Open other materials in new tab
+      window.open(material.content_url, '_blank');
+    }
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -103,163 +151,181 @@ export const TeacherMaterialsPanel = () => {
   }, 0);
 
   return (
-    <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-      <Card>
-        <CollapsibleTrigger className="w-full text-left">
-          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
-            <CardTitle className="flex items-center gap-2">
-              {isExpanded ? (
-                <ChevronDown className="h-5 w-5 text-muted-foreground" />
-              ) : (
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              )}
-              <BookOpen className="h-5 w-5 text-primary" />
-              Materiales y Guías del Currículo
-              {totalGuides > 0 && (
-                <Badge variant="secondary" className="ml-2">
-                  <GraduationCap className="h-3 w-3 mr-1" />
-                  {totalGuides} guías
-                </Badge>
-              )}
-            </CardTitle>
-            <CardDescription className="ml-10">
-              {isExpanded 
-                ? "Accede a los materiales extra y guías de enseñanza por tema"
-                : "Clic para ver materiales y guías del currículo"
-              }
-            </CardDescription>
-          </CardHeader>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <CardContent>
-        <ScrollArea className="max-h-[500px]">
-          <div className="space-y-2">
-            {weeks.map((week) => {
-              const isExpanded = expandedWeeks.has(week.id);
-              const topics = getTopicsForWeek(week.id);
-              const totalMaterials = topics.reduce(
-                (acc, topic) => acc + getMaterialsForTopic(topic.id).length, 
-                0
-              );
-              const teacherGuides = topics.reduce(
-                (acc, topic) => acc + getMaterialsForTopic(topic.id).filter(m => m.is_teacher_guide).length,
-                0
-              );
+    <>
+      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+        <Card>
+          <CollapsibleTrigger className="w-full text-left">
+            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+              <CardTitle className="flex items-center gap-2">
+                {isExpanded ? (
+                  <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                  <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                )}
+                <BookOpen className="h-5 w-5 text-primary" />
+                Materiales y Guías del Currículo
+                {totalGuides > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    <GraduationCap className="h-3 w-3 mr-1" />
+                    {totalGuides} guías
+                  </Badge>
+                )}
+              </CardTitle>
+              <CardDescription className="ml-10">
+                {isExpanded 
+                  ? "Accede a los materiales extra y guías de enseñanza por tema"
+                  : "Clic para ver materiales y guías del currículo"
+                }
+              </CardDescription>
+            </CardHeader>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <CardContent>
+          <ScrollArea className="max-h-[500px]">
+            <div className="space-y-2">
+              {weeks.map((week) => {
+                const isWeekExpanded = expandedWeeks.has(week.id);
+                const topics = getTopicsForWeek(week.id);
+                const totalMaterials = topics.reduce(
+                  (acc, topic) => acc + getMaterialsForTopic(topic.id).length, 
+                  0
+                );
+                const teacherGuides = topics.reduce(
+                  (acc, topic) => acc + getMaterialsForTopic(topic.id).filter(m => m.is_teacher_guide).length,
+                  0
+                );
 
-              return (
-                <Collapsible key={week.id} open={isExpanded}>
-                  <CollapsibleTrigger
-                    onClick={() => toggleWeek(week.id)}
-                    className="w-full p-3 rounded-lg border hover:bg-muted/50 transition-colors flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      {isExpanded ? (
-                        <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                      )}
-                      <span className="font-medium">
-                        Semana {week.week_number}: {week.title}
-                      </span>
-                      <Badge className={cn("text-white text-xs", getLevelColor(week.level))}>
-                        {week.level}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {teacherGuides > 0 && (
-                        <Badge variant="secondary" className="text-xs gap-1">
-                          <GraduationCap className="h-3 w-3" />
-                          {teacherGuides} guías
+                return (
+                  <Collapsible key={week.id} open={isWeekExpanded}>
+                    <CollapsibleTrigger
+                      onClick={() => toggleWeek(week.id)}
+                      className="w-full p-3 rounded-lg border hover:bg-muted/50 transition-colors flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-3">
+                        {isWeekExpanded ? (
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        <span className="font-medium">
+                          Semana {week.week_number}: {week.title}
+                        </span>
+                        <Badge className={cn("text-white text-xs", getLevelColor(week.level))}>
+                          {week.level}
                         </Badge>
-                      )}
-                      <Badge variant="outline" className="text-xs">
-                        {totalMaterials} materiales
-                      </Badge>
-                    </div>
-                  </CollapsibleTrigger>
-                  
-                  <CollapsibleContent className="pl-6 mt-2 space-y-2">
-                    {topics.map((topic) => {
-                      const materials = getMaterialsForTopic(topic.id);
-                      const topicGuides = materials.filter(m => m.is_teacher_guide);
-                      const studentMaterials = materials.filter(m => !m.is_teacher_guide);
-
-                      if (materials.length === 0) return null;
-
-                      return (
-                        <div key={topic.id} className="border-l-2 border-muted pl-4 py-2">
-                          <h4 className="font-medium text-sm mb-2">{topic.name}</h4>
-                          
-                          {/* Teacher Guides */}
-                          {topicGuides.length > 0 && (
-                            <div className="mb-2">
-                              <p className="text-xs font-medium text-purple-600 mb-1 flex items-center gap-1">
-                                <GraduationCap className="h-3 w-3" />
-                                Guías del Profesor:
-                              </p>
-                              <div className="space-y-1">
-                                {topicGuides.map((material) => (
-                                  <Button
-                                    key={material.id}
-                                    variant="ghost"
-                                    size="sm"
-                                    className="w-full justify-start h-auto py-1.5 px-2 text-left bg-purple-50 hover:bg-purple-100"
-                                    onClick={() => material.content_url && window.open(material.content_url, '_blank')}
-                                  >
-                                    <span className="text-purple-600">{getMaterialIcon(material.material_type)}</span>
-                                    <span className="flex-1 ml-2 text-sm truncate">{material.title}</span>
-                                    {material.content_url && (
-                                      <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                                    )}
-                                  </Button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Student Materials */}
-                          {studentMaterials.length > 0 && (
-                            <div>
-                              <p className="text-xs font-medium text-muted-foreground mb-1">
-                                Material Extra:
-                              </p>
-                              <div className="space-y-1">
-                                {studentMaterials.map((material) => (
-                                  <Button
-                                    key={material.id}
-                                    variant="ghost"
-                                    size="sm"
-                                    className="w-full justify-start h-auto py-1.5 px-2 text-left"
-                                    onClick={() => material.content_url && window.open(material.content_url, '_blank')}
-                                  >
-                                    {getMaterialIcon(material.material_type)}
-                                    <span className="flex-1 ml-2 text-sm truncate">{material.title}</span>
-                                    {material.content_url && (
-                                      <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                                    )}
-                                  </Button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {teacherGuides > 0 && (
+                          <Badge variant="secondary" className="text-xs gap-1">
+                            <GraduationCap className="h-3 w-3" />
+                            {teacherGuides} guías
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="text-xs">
+                          {totalMaterials} materiales
+                        </Badge>
+                      </div>
+                    </CollapsibleTrigger>
                     
-                    {topics.every(topic => getMaterialsForTopic(topic.id).length === 0) && (
-                      <p className="text-sm text-muted-foreground py-2">
-                        No hay materiales para esta semana
-                      </p>
-                    )}
-                  </CollapsibleContent>
-                </Collapsible>
-              );
-            })}
-          </div>
-          </ScrollArea>
-        </CardContent>
-      </CollapsibleContent>
-    </Card>
-  </Collapsible>
+                    <CollapsibleContent className="pl-6 mt-2 space-y-2">
+                      {topics.map((topic) => {
+                        const materials = getMaterialsForTopic(topic.id);
+                        const topicGuides = materials.filter(m => m.is_teacher_guide);
+                        const studentMaterials = materials.filter(m => !m.is_teacher_guide);
+
+                        if (materials.length === 0) return null;
+
+                        return (
+                          <div key={topic.id} className="border-l-2 border-muted pl-4 py-2">
+                            <h4 className="font-medium text-sm mb-2">{topic.name}</h4>
+                            
+                            {/* Teacher Guides */}
+                            {topicGuides.length > 0 && (
+                              <div className="mb-2">
+                                <p className="text-xs font-medium text-purple-600 mb-1 flex items-center gap-1">
+                                  <GraduationCap className="h-3 w-3" />
+                                  Guías del Profesor:
+                                </p>
+                                <div className="space-y-1">
+                                  {topicGuides.map((material) => {
+                                    const isPdf = material.content_url?.toLowerCase().endsWith('.pdf');
+                                    return (
+                                      <Button
+                                        key={material.id}
+                                        variant="ghost"
+                                        size="sm"
+                                        className="w-full justify-start h-auto py-1.5 px-2 text-left bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/30 dark:hover:bg-purple-950/50"
+                                        onClick={() => handleMaterialClick(material)}
+                                      >
+                                        <span className="text-purple-600">{getMaterialIcon(material.material_type)}</span>
+                                        <span className="flex-1 ml-2 text-sm truncate">{material.title}</span>
+                                        {material.content_url && (
+                                          isPdf ? (
+                                            <Shield className="h-3 w-3 text-purple-600 flex-shrink-0" />
+                                          ) : (
+                                            <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                          )
+                                        )}
+                                      </Button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Student Materials */}
+                            {studentMaterials.length > 0 && (
+                              <div>
+                                <p className="text-xs font-medium text-muted-foreground mb-1">
+                                  Material Extra:
+                                </p>
+                                <div className="space-y-1">
+                                  {studentMaterials.map((material) => (
+                                    <Button
+                                      key={material.id}
+                                      variant="ghost"
+                                      size="sm"
+                                      className="w-full justify-start h-auto py-1.5 px-2 text-left"
+                                      onClick={() => handleMaterialClick(material)}
+                                    >
+                                      {getMaterialIcon(material.material_type)}
+                                      <span className="flex-1 ml-2 text-sm truncate">{material.title}</span>
+                                      {material.content_url && (
+                                        <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                      )}
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                      
+                      {topics.every(topic => getMaterialsForTopic(topic.id).length === 0) && (
+                        <p className="text-sm text-muted-foreground py-2">
+                          No hay materiales para esta semana
+                        </p>
+                      )}
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              })}
+            </div>
+            </ScrollArea>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
+
+    {/* Secure PDF Viewer Modal */}
+    <SecurePDFViewer
+      open={!!selectedPdf}
+      onClose={() => setSelectedPdf(null)}
+      pdfUrl={selectedPdf?.url || ''}
+      title={selectedPdf?.title || ''}
+      userName={userProfile?.full_name || user?.email || 'Usuario'}
+    />
+  </>
   );
 };

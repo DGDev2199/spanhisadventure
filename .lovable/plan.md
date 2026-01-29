@@ -1,246 +1,247 @@
 
-# Plan: Corregir Errores de RLS y Permisos
+
+# Plan: Corregir Flashcards Responsive + Visor PDF Seguro para Currículo
 
 ## Resumen
 
-Se han identificado 4 errores relacionados con políticas de seguridad (RLS) que impiden a profesores y staff realizar acciones legítimas en el sistema. Este plan corrige cada uno de ellos.
+Se identificaron dos problemas principales:
+
+1. **Flashcards con problemas de visualización en móvil**: El componente FlashcardExercise tiene problemas con la animación 3D de volteo que no funciona bien en todos los navegadores móviles.
+
+2. **Visor de PDFs para guías del currículo**: Necesitan mostrar PDFs de guías de profesores en un modal tipo presentación, con medidas de protección contra capturas de pantalla.
 
 ---
 
-## Error 1: Marcar como Alumni
+## Problema 1: Flashcards Bugueadas en Móvil
 
-**Causa**: La política actual solo permite a profesores actualizar `is_alumni` si son el `teacher_id` asignado. No funciona para:
-- Admins/Coordinadores
-- Profesores que son asignados como `tutor_id`
+### Análisis del problema
 
-**Solución**: Crear una nueva política RLS que permita a admin, coordinador y profesores (que sean teacher_id O tutor_id) actualizar el estado de alumni.
+El componente actual usa CSS 3D transforms (`rotateY(180deg)`, `perspective`, `backface-visibility`) que pueden fallar en:
+- Safari iOS (problemas conocidos con `preserve-3d`)
+- Navegadores móviles antiguos
+- Dispositivos con aceleración de hardware limitada
 
-```sql
--- Eliminar política existente si existe
-DROP POLICY IF EXISTS "Teachers can update student alumni status" ON public.student_profiles;
+### Solución propuesta
 
--- Nueva política más completa
-CREATE POLICY "Staff can update student alumni status" 
-ON public.student_profiles FOR UPDATE 
-USING (
-  -- Admin/Coordinator puede actualizar cualquier estudiante
-  public.has_admin_or_coordinator_role(auth.uid())
-  OR
-  -- Teacher puede actualizar si es teacher_id O tutor_id del estudiante
-  (public.has_role(auth.uid(), 'teacher') AND (teacher_id = auth.uid() OR tutor_id = auth.uid()))
-)
-WITH CHECK (
-  public.has_admin_or_coordinator_role(auth.uid())
-  OR
-  (public.has_role(auth.uid(), 'teacher') AND (teacher_id = auth.uid() OR tutor_id = auth.uid()))
-);
+Crear un sistema de flashcard más robusto con:
+1. **Fallback para navegadores sin soporte 3D**: Usar animación de fade/scale en lugar de flip
+2. **Mejorar el layout responsive**: Asegurar que los botones y contenido se ajusten bien
+3. **Detectar soporte CSS 3D**: Si no soporta, usar animación alternativa
+
+```tsx
+// Detectar soporte de 3D transforms
+const supports3D = window.CSS?.supports?.('transform-style', 'preserve-3d') ?? true;
+
+// Si no soporta 3D, usar animación fade simple
+{supports3D ? (
+  // Animación 3D actual
+) : (
+  // Animación fade/scale simple
+  <Card className={cn(
+    "transition-all duration-300",
+    isFlipped ? "scale-95 opacity-0" : "scale-100 opacity-100"
+  )}>
+    {isFlipped ? currentCard.back : currentCard.front}
+  </Card>
+)}
 ```
+
+### Mejoras adicionales al responsive:
+- Reducir altura de tarjeta en móvil: `h-40 sm:h-48 md:h-64`
+- Botones de acción más grandes para touch: `min-h-[44px]` (recomendación Apple)
+- Espaciado ajustado para pantallas pequeñas
 
 ---
 
-## Error 2: Asignar Horarios (schedule_events)
+## Problema 2: Visor de PDF Seguro para Currículo
 
-**Causa**: Solo admins pueden insertar en `schedule_events`. Los profesores no tienen permisos INSERT.
+### Análisis de requerimientos
 
-**Solución**: Agregar política que permita a profesores y tutores crear eventos para sus estudiantes.
+El usuario quiere:
+1. Mostrar PDFs como presentación en un modal
+2. Proteger el contenido contra capturas de pantalla
 
-```sql
--- Permitir a profesores crear eventos de clase
-CREATE POLICY "Teachers can create schedule events for their students"
-ON public.schedule_events FOR INSERT
-WITH CHECK (
-  public.has_role(auth.uid(), 'teacher')
-  AND created_by = auth.uid()
-);
+### ⚠️ Realidad sobre protección de screenshots
 
--- Permitir a profesores actualizar eventos que crearon
-CREATE POLICY "Teachers can update own schedule events"
-ON public.schedule_events FOR UPDATE
-USING (
-  public.has_role(auth.uid(), 'teacher')
-  AND created_by = auth.uid()
-);
+**Es técnicamente imposible bloquear capturas de pantalla completamente** por estas razones:
+- Los navegadores no exponen APIs para detectar o bloquear screenshots
+- El sistema operativo controla la función de captura
+- CSS `user-select: none` solo previene selección de texto
+- JavaScript no puede detectar cuando se toma una captura
 
--- Permitir a tutores crear eventos de tutoría
-CREATE POLICY "Tutors can create schedule events"
-ON public.schedule_events FOR INSERT
-WITH CHECK (
-  public.has_role(auth.uid(), 'tutor')
-  AND created_by = auth.uid()
-);
+### Medidas de protección factibles
+
+Aunque no podemos bloquear screenshots, sí podemos implementar **disuasivos**:
+
+| Medida | Efectividad | Implementación |
+|--------|-------------|----------------|
+| **Marca de agua dinámica** | Alta | Superponer nombre/email del usuario sobre el PDF |
+| **Deshabilitar clic derecho** | Baja | Solo disuade usuarios básicos |
+| **Deshabilitar selección de texto** | Media | CSS `user-select: none` |
+| **No permitir descarga** | Media | No mostrar botón de descarga, usar iframe |
+| **Desenfoque al salir de foco** | Media | Si cambian de ventana, difuminar contenido |
+| **URLs firmadas temporales** | Alta | URLs de Supabase que expiran en X minutos |
+
+### Diseño del visor de PDF
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  📄 Guía del Profesor - Verbos Reflexivos                    ✕  │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌───────────────────────────────────────────────────────────┐ │
+│  │                                                           │ │
+│  │                      [PDF IFRAME]                         │ │
+│  │                                                           │ │
+│  │     ──────────────────────────────────────────────────    │ │
+│  │         MARCA DE AGUA: "Visto por: Fernando López"        │ │
+│  │               "29/01/2026 12:30 - Solo lectura"           │ │
+│  │     ──────────────────────────────────────────────────    │ │
+│  │                                                           │ │
+│  │                                                           │ │
+│  └───────────────────────────────────────────────────────────┘ │
+│                                                                 │
+│  ◀ Anterior        Página 3 de 15        Siguiente ▶            │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
----
+### Componente: SecurePDFViewer
 
-## Error 3: Asignar Estudiantes a Eventos (student_schedule_assignments)
+```tsx
+interface SecurePDFViewerProps {
+  open: boolean;
+  onClose: () => void;
+  pdfUrl: string;
+  title: string;
+  userName: string;  // Para marca de agua
+}
 
-**Causa**: Solo admins pueden insertar en `student_schedule_assignments`.
+function SecurePDFViewer({ open, onClose, pdfUrl, title, userName }: SecurePDFViewerProps) {
+  const [isBlurred, setIsBlurred] = useState(false);
 
-**Solución**: Permitir a profesores y tutores asignar estudiantes a eventos que ellos crearon.
+  // Detectar si la ventana pierde el foco (posible screenshot)
+  useEffect(() => {
+    const handleBlur = () => setIsBlurred(true);
+    const handleFocus = () => setIsBlurred(false);
+    
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
 
-```sql
--- Permitir a profesores asignar estudiantes a eventos
-CREATE POLICY "Teachers can assign students to schedule events"
-ON public.student_schedule_assignments FOR INSERT
-WITH CHECK (
-  public.has_role(auth.uid(), 'teacher')
-  AND assigned_by = auth.uid()
-);
-
--- Permitir a tutores asignar estudiantes a eventos
-CREATE POLICY "Tutors can assign students to schedule events"
-ON public.student_schedule_assignments FOR INSERT
-WITH CHECK (
-  public.has_role(auth.uid(), 'tutor')
-  AND assigned_by = auth.uid()
-);
-```
-
----
-
-## Error 4: Asignar Ejercicios IA a Estudiantes
-
-**Causa**: El filtro de estudiantes en `AssignExerciseDialog` usa `status = 'active'`, pero podría haber estudiantes sin status o con status diferente. También hay que verificar que los estudiantes Alumni no aparezcan.
-
-**Solución**: Modificar el query en `AssignExerciseDialog.tsx`:
-
-```typescript
-// Filtrar estudiantes activos Y que no sean alumni
-let studentProfilesQuery = supabase
-  .from('student_profiles')
-  .select('user_id, teacher_id, tutor_id')
-  .eq('status', 'active')
-  .eq('is_alumni', false); // Excluir alumni
-```
-
-Además, para tutores, asegurarse de que también puedan ver estudiantes donde son el tutor:
-
-```typescript
-} else if (userRoles.includes('tutor')) {
-  // Tutor puede asignar a estudiantes donde es tutor O teacher
-  studentProfilesQuery = studentProfilesQuery.or(`tutor_id.eq.${user.id},teacher_id.eq.${user.id}`);
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent 
+        className="max-w-4xl h-[85vh]"
+        onContextMenu={(e) => e.preventDefault()} // Deshabilitar clic derecho
+      >
+        <div 
+          className={cn(
+            "relative h-full select-none transition-all duration-200",
+            isBlurred && "blur-xl"
+          )}
+        >
+          {/* PDF iframe sin toolbar de descarga */}
+          <iframe 
+            src={`${pdfUrl}#toolbar=0&navpanes=0`}
+            className="w-full h-full border-0"
+          />
+          
+          {/* Marca de agua superpuesta */}
+          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+            <div className="rotate-[-30deg] opacity-10 text-4xl font-bold text-center">
+              <p>{userName}</p>
+              <p className="text-lg">{new Date().toLocaleString()}</p>
+              <p className="text-sm">Solo lectura - Contenido protegido</p>
+            </div>
+          </div>
+        </div>
+        
+        {/* Advertencia de blur */}
+        {isBlurred && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+            <p className="text-white font-bold">
+              ⚠️ Contenido protegido - Regresa a la ventana para continuar
+            </p>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
 }
 ```
 
----
+### Integración con TeacherMaterialsPanel
 
-## Archivos a Modificar
+Modificar el botón de "Guías del Profesor" para abrir el visor seguro en lugar de `window.open`:
 
-| Archivo | Cambios |
-|---------|---------|
-| Nueva migración SQL | Agregar políticas RLS para schedule_events, student_schedule_assignments, y actualizar la de student_profiles |
-| `src/components/practice/AssignExerciseDialog.tsx` | Agregar filtro `is_alumni = false` y mejorar lógica de OR para tutores |
+```tsx
+// En lugar de:
+onClick={() => material.content_url && window.open(material.content_url, '_blank')}
 
----
-
-## Migración SQL Completa
-
-```sql
--- ===========================================
--- Fix RLS policies for staff operations
--- ===========================================
-
--- 1. FIX: Mark as Alumni - Allow admin/coordinator and teachers (as teacher OR tutor)
-DROP POLICY IF EXISTS "Teachers can update student alumni status" ON public.student_profiles;
-
-CREATE POLICY "Staff can update student alumni status" 
-ON public.student_profiles FOR UPDATE 
-USING (
-  public.has_admin_or_coordinator_role(auth.uid())
-  OR
-  (public.has_role(auth.uid(), 'teacher') AND (teacher_id = auth.uid() OR tutor_id = auth.uid()))
-)
-WITH CHECK (
-  public.has_admin_or_coordinator_role(auth.uid())
-  OR
-  (public.has_role(auth.uid(), 'teacher') AND (teacher_id = auth.uid() OR tutor_id = auth.uid()))
-);
-
--- 2. FIX: Schedule Events - Allow teachers and tutors to create and update their own events
-CREATE POLICY "Teachers can create schedule events"
-ON public.schedule_events FOR INSERT
-WITH CHECK (
-  public.has_role(auth.uid(), 'teacher')
-  AND created_by = auth.uid()
-);
-
-CREATE POLICY "Tutors can create schedule events"
-ON public.schedule_events FOR INSERT
-WITH CHECK (
-  public.has_role(auth.uid(), 'tutor')
-  AND created_by = auth.uid()
-);
-
-CREATE POLICY "Teachers can update own schedule events"
-ON public.schedule_events FOR UPDATE
-USING (
-  public.has_role(auth.uid(), 'teacher')
-  AND created_by = auth.uid()
-);
-
-CREATE POLICY "Tutors can update own schedule events"
-ON public.schedule_events FOR UPDATE
-USING (
-  public.has_role(auth.uid(), 'tutor')
-  AND created_by = auth.uid()
-);
-
-CREATE POLICY "Coordinators can manage schedule events"
-ON public.schedule_events FOR ALL
-USING (public.has_role(auth.uid(), 'coordinator'));
-
--- 3. FIX: Student Schedule Assignments - Allow teachers and tutors to assign students
-CREATE POLICY "Teachers can assign students to events"
-ON public.student_schedule_assignments FOR INSERT
-WITH CHECK (
-  public.has_role(auth.uid(), 'teacher')
-  AND assigned_by = auth.uid()
-);
-
-CREATE POLICY "Tutors can assign students to events"
-ON public.student_schedule_assignments FOR INSERT
-WITH CHECK (
-  public.has_role(auth.uid(), 'tutor')
-  AND assigned_by = auth.uid()
-);
-
-CREATE POLICY "Coordinators can manage student schedule assignments"
-ON public.student_schedule_assignments FOR ALL
-USING (public.has_role(auth.uid(), 'coordinator'));
+// Usar:
+onClick={() => {
+  if (material.material_type === 'document' && material.content_url?.endsWith('.pdf')) {
+    setSelectedPdf({
+      url: material.content_url,
+      title: material.title
+    });
+  } else {
+    window.open(material.content_url, '_blank');
+  }
+}}
 ```
 
 ---
 
-## Cambios en AssignExerciseDialog.tsx
+## Archivos a Crear/Modificar
 
-```typescript
-// Línea ~57-68: Agregar filtro is_alumni
-let studentProfilesQuery = supabase
-  .from('student_profiles')
-  .select('user_id, teacher_id, tutor_id')
-  .eq('status', 'active')
-  .eq('is_alumni', false); // Excluir estudiantes alumni
-
-if (userRoles.includes('admin') || userRoles.includes('coordinator')) {
-  // Admin/coordinator sees all active non-alumni students
-} else if (userRoles.includes('teacher')) {
-  // Teachers see students where they are teacher OR tutor
-  studentProfilesQuery = studentProfilesQuery.or(`teacher_id.eq.${user.id},tutor_id.eq.${user.id}`);
-} else if (userRoles.includes('tutor')) {
-  // Tutors see students where they are tutor OR teacher
-  studentProfilesQuery = studentProfilesQuery.or(`tutor_id.eq.${user.id},teacher_id.eq.${user.id}`);
-} else {
-  return [];
-}
-```
+| Archivo | Acción | Descripción |
+|---------|--------|-------------|
+| `src/components/practice/FlashcardExercise.tsx` | MODIFICAR | Corregir animación 3D y mejorar responsive |
+| `src/components/curriculum/SecurePDFViewer.tsx` | CREAR | Nuevo visor de PDF con protecciones |
+| `src/components/TeacherMaterialsPanel.tsx` | MODIFICAR | Integrar visor seguro para guías PDF |
 
 ---
 
-## Resumen de Correcciones
+## Detalles Técnicos
 
-| Error | Causa | Solución |
-|-------|-------|----------|
-| Marcar como Alumni | Política solo permitía `teacher_id` | Nueva política incluye admin, coordinator, y teacher como teacher_id O tutor_id |
-| Asignar horarios | Solo admin podía INSERT en schedule_events | Nuevas políticas INSERT para teachers/tutors |
-| Eventos en calendario | Solo admin podía INSERT en student_schedule_assignments | Nuevas políticas INSERT para teachers/tutors |
-| Asignar ejercicios IA | Query no excluía alumni; tutors no veían todos sus estudiantes | Agregar filtro `is_alumni = false` y OR para teacher_id/tutor_id |
+### FlashcardExercise - Correcciones
+
+1. **Usar WebkitBackfaceVisibility** para Safari
+2. **Agregar fallback sin animación 3D** para navegadores no soportados
+3. **Mejorar áreas de toque** (44px mínimo según Apple HIG)
+4. **Reducir altura en móvil** para que todo quepa sin scroll
+
+### SecurePDFViewer - Características
+
+1. **Marca de agua dinámica** con nombre del usuario
+2. **Blur al perder foco** de la ventana
+3. **Sin botón de descarga** en el iframe (`#toolbar=0`)
+4. **Deshabilitar clic derecho** para evitar "Guardar como"
+5. **CSS `user-select: none`** para evitar copiar texto
+6. **URLs temporales** (opcional futuro con Supabase signed URLs)
+
+### Nota sobre la seguridad
+
+Es importante comunicar al usuario que:
+- Estas medidas son **disuasivos**, no bloqueos absolutos
+- Un usuario determinado siempre puede tomar fotos con otro dispositivo
+- La mejor protección es confiar en las personas con acceso
+- Las marcas de agua ayudan a identificar la fuente si hay fugas
+
+---
+
+## Resumen de Cambios
+
+| Problema | Solución |
+|----------|----------|
+| Flashcards no funcionan en móvil | Fallback sin 3D + mejor responsive |
+| PDFs sin protección | Visor seguro con marca de agua y blur |
+| Descarga de PDFs | Iframe sin toolbar + sin clic derecho |
+

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -7,6 +7,7 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { Shield, AlertTriangle } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface SecurePDFViewerProps {
   open: boolean;
@@ -37,7 +38,62 @@ export default function SecurePDFViewer({
     return () => clearInterval(interval);
   }, [open]);
 
-  // Detect window blur (possible screenshot attempt)
+  // Handle screenshot attempts - intercept PrintScreen key
+  const handleScreenshotAttempt = useCallback(() => {
+    setIsBlurred(true);
+    
+    // Try to clear clipboard
+    navigator.clipboard.writeText('Contenido protegido').catch(() => {});
+    
+    toast.warning('Capturas de pantalla no permitidas', {
+      description: 'Este contenido está protegido.'
+    });
+    
+    // Unblur after 2 seconds
+    setTimeout(() => setIsBlurred(false), 2000);
+  }, []);
+
+  // Detect PrintScreen key and other screenshot shortcuts
+  useEffect(() => {
+    if (!open) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // PrintScreen key (keyCode 44 or key 'PrintScreen')
+      if (e.key === 'PrintScreen' || e.keyCode === 44) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleScreenshotAttempt();
+        return false;
+      }
+      
+      // Windows Snipping Tool (Win + Shift + S)
+      if (e.key === 's' && e.shiftKey && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleScreenshotAttempt();
+        return false;
+      }
+      
+      // Mac screenshot (Cmd + Shift + 3 or 4)
+      if ((e.key === '3' || e.key === '4') && e.shiftKey && e.metaKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleScreenshotAttempt();
+        return false;
+      }
+    };
+
+    // Use capture phase to intercept before other handlers
+    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('keyup', handleKeyDown, true);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('keyup', handleKeyDown, true);
+    };
+  }, [open, handleScreenshotAttempt]);
+
+  // Detect window blur (possible screenshot attempt via external tool)
   useEffect(() => {
     if (!open) return;
 
@@ -65,7 +121,7 @@ export default function SecurePDFViewer({
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent
-        className="max-w-5xl w-[95vw] h-[90vh] max-h-[90vh] p-0 gap-0 overflow-hidden"
+        className="max-w-5xl w-[95vw] h-[90vh] max-h-[90vh] p-0 gap-0 overflow-hidden print:hidden"
         onContextMenu={handleContextMenu}
       >
         <DialogHeader className="p-4 pb-2 border-b bg-muted/30">

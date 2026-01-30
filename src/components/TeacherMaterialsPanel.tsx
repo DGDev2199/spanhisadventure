@@ -110,7 +110,7 @@ export const TeacherMaterialsPanel = () => {
     return colors[level] || 'bg-gray-500';
   };
 
-  const handleMaterialClick = (material: { 
+  const handleMaterialClick = async (material: { 
     content_url: string | null; 
     material_type: string; 
     title: string;
@@ -123,10 +123,34 @@ export const TeacherMaterialsPanel = () => {
     const isTeacherGuide = material.is_teacher_guide;
 
     if (isPdf && isTeacherGuide) {
-      setSelectedPdf({
-        url: material.content_url,
-        title: material.title,
-      });
+      // Check if it's a private material reference (bucket/path format)
+      if (material.content_url.startsWith('materials/')) {
+        // Generate a signed URL for private content
+        const path = material.content_url.replace('materials/', '');
+        const { data: signedUrl, error } = await supabase.storage
+          .from('materials')
+          .createSignedUrl(path, 3600); // 1 hour expiration
+        
+        if (error || !signedUrl?.signedUrl) {
+          console.error('Error generating signed URL:', error);
+          // Fallback to original URL if signed URL fails
+          setSelectedPdf({
+            url: material.content_url,
+            title: material.title,
+          });
+        } else {
+          setSelectedPdf({
+            url: signedUrl.signedUrl,
+            title: material.title,
+          });
+        }
+      } else {
+        // Use the URL directly for public or already-signed URLs
+        setSelectedPdf({
+          url: material.content_url,
+          title: material.title,
+        });
+      }
     } else {
       // Open other materials in new tab
       window.open(material.content_url, '_blank');

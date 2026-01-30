@@ -240,23 +240,49 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'video/mp4', 'image/png', 'image/jpeg', 'image/jpg'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error(t('curriculum.invalidFileType', 'Tipo de archivo no permitido. Use PDF, MP4, PNG o JPG.'));
+      return;
+    }
+
+    // Validate file size (max 50MB)
+    const maxSize = 50 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error(t('curriculum.fileTooLarge', 'El archivo es demasiado grande. Máximo 50MB.'));
+      return;
+    }
+
     setIsUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split('.').pop()?.toLowerCase();
       const fileName = `material-${Date.now()}.${fileExt}`;
-      const filePath = `materials/${fileName}`;
+      
+      // Use 'materials' bucket for teacher guides (private), 'task-attachments' for student materials (public)
+      const bucketName = isTeacherGuide ? 'materials' : 'task-attachments';
+      const filePath = isTeacherGuide 
+        ? `teacher-guides/${fileName}` 
+        : `materials/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('task-attachments')
+        .from(bucketName)
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage
-        .from('task-attachments')
-        .getPublicUrl(filePath);
+      // For private materials, store the bucket/path reference (we'll use signed URLs)
+      // For public materials, get the public URL
+      if (isTeacherGuide) {
+        // Store as reference for signed URL generation later
+        setMaterialUrl(`${bucketName}/${filePath}`);
+      } else {
+        const { data: urlData } = supabase.storage
+          .from(bucketName)
+          .getPublicUrl(filePath);
+        setMaterialUrl(urlData.publicUrl);
+      }
 
-      setMaterialUrl(urlData.publicUrl);
       toast.success(t('curriculum.fileUploaded', 'Archivo subido correctamente'));
     } catch (error) {
       console.error('Upload error:', error);

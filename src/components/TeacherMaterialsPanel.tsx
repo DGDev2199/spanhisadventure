@@ -118,10 +118,12 @@ export const TeacherMaterialsPanel = () => {
   }) => {
     if (!material.content_url) return;
 
-    // Check if it's a PDF teacher guide - open in secure viewer
-    const isPdf = material.content_url.toLowerCase().endsWith('.pdf');
+    // Check if it's a PDF - handle both direct URLs and signed URLs with query params
+    const urlWithoutParams = material.content_url.split('?')[0].toLowerCase();
+    const isPdf = urlWithoutParams.endsWith('.pdf') || material.material_type === 'document';
     const isTeacherGuide = material.is_teacher_guide;
 
+    // ALL teacher guide PDFs should open in secure viewer
     if (isPdf && isTeacherGuide) {
       // Check if it's a private material reference (bucket/path format)
       if (material.content_url.startsWith('materials/')) {

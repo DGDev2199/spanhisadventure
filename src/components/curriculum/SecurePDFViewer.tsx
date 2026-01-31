@@ -184,9 +184,6 @@ export default function SecurePDFViewer({
             <iframe
               src={securePdfUrl}
               className="w-full h-full border-0"
-              // sandbox helps block downloads triggered from inside the embedded viewer in many browsers.
-              // (Not a perfect guarantee, but raises the bar.)
-              sandbox="allow-same-origin"
               style={{
                 height: 'calc(90vh - 80px)',
                 pointerEvents: isBlurred ? 'none' : 'auto',

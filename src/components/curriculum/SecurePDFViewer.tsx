@@ -8,6 +8,8 @@ import {
 import { cn } from '@/lib/utils';
 import { Shield, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { PDFWatermarkOverlay } from '@/components/curriculum/PDFWatermarkOverlay';
+import { usePdfObjectUrl } from '@/components/curriculum/usePdfObjectUrl';
 
 interface SecurePDFViewerProps {
   open: boolean;
@@ -26,6 +28,8 @@ export default function SecurePDFViewer({
 }: SecurePDFViewerProps) {
   const [isBlurred, setIsBlurred] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleString());
+
+  const { objectUrl, isLoading, error } = usePdfObjectUrl(pdfUrl, open);
 
   // Update timestamp every minute
   useEffect(() => {
@@ -67,7 +71,9 @@ export default function SecurePDFViewer({
       }
       
       // Windows Snipping Tool (Win + Shift + S)
-      if (e.key === 's' && e.shiftKey && (e.metaKey || e.ctrlKey)) {
+      // Nota: en muchos PCs el SO intercepta Win+Shift+S y el navegador NO recibe el evento.
+      // Igual lo intentamos para los casos donde sí llega.
+      if (e.key?.toLowerCase() === 's' && e.shiftKey && e.metaKey) {
         e.preventDefault();
         e.stopPropagation();
         handleScreenshotAttempt();
@@ -93,6 +99,18 @@ export default function SecurePDFViewer({
     };
   }, [open, handleScreenshotAttempt]);
 
+  // Detect tab visibility changes (some capture tools trigger visibility changes)
+  useEffect(() => {
+    if (!open) return;
+
+    const onVis = () => {
+      if (document.hidden) setIsBlurred(true);
+    };
+
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [open]);
+
   // Detect window blur (possible screenshot attempt via external tool)
   useEffect(() => {
     if (!open) return;
@@ -116,7 +134,7 @@ export default function SecurePDFViewer({
   };
 
   // Build PDF URL with parameters to hide toolbar
-  const securePdfUrl = `${pdfUrl}#toolbar=0&navpanes=0&scrollbar=1`;
+  const securePdfUrl = objectUrl ? `${objectUrl}#toolbar=0&navpanes=0&scrollbar=1` : '';
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
@@ -146,42 +164,39 @@ export default function SecurePDFViewer({
           )}
           style={{ minHeight: 0 }}
         >
-          {/* PDF iframe */}
-          <iframe
-            src={securePdfUrl}
-            className="w-full h-full border-0"
-            style={{ 
-              height: 'calc(90vh - 80px)',
-              pointerEvents: isBlurred ? 'none' : 'auto' 
-            }}
-            title={title}
-          />
-
-          {/* Dynamic watermark overlay */}
-          <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
-            <div 
-              className="text-center opacity-[0.08] select-none"
-              style={{ transform: 'rotate(-30deg)' }}
-            >
-              <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground whitespace-nowrap">
-                {userName}
-              </p>
-              <p className="text-sm sm:text-base md:text-lg text-foreground mt-1">
-                {currentTime}
-              </p>
-              <p className="text-xs sm:text-sm text-foreground mt-1">
-                Solo lectura - Contenido protegido
-              </p>
+          {/* PDF iframe (rendered from blob URL to avoid forced downloads) */}
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background">
+              <div className="text-sm text-muted-foreground">Cargando PDF…</div>
             </div>
-          </div>
+          )}
 
-          {/* Secondary watermarks for better coverage */}
-          <div className="absolute top-8 left-8 pointer-events-none opacity-[0.05] select-none">
-            <p className="text-lg font-semibold text-foreground">{userName}</p>
-          </div>
-          <div className="absolute bottom-8 right-8 pointer-events-none opacity-[0.05] select-none">
-            <p className="text-lg font-semibold text-foreground">{userName}</p>
-          </div>
+          {error && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background">
+              <div className="text-center p-6 max-w-md">
+                <p className="text-base font-semibold mb-1">No se pudo cargar el PDF</p>
+                <p className="text-sm text-muted-foreground">{error}</p>
+              </div>
+            </div>
+          )}
+
+          {!!securePdfUrl && !error && (
+            <iframe
+              src={securePdfUrl}
+              className="w-full h-full border-0"
+              // sandbox helps block downloads triggered from inside the embedded viewer in many browsers.
+              // (Not a perfect guarantee, but raises the bar.)
+              sandbox="allow-same-origin"
+              style={{
+                height: 'calc(90vh - 80px)',
+                pointerEvents: isBlurred ? 'none' : 'auto',
+              }}
+              title={title}
+            />
+          )}
+
+          {/* Dynamic watermark overlay (logo + user/time) */}
+          <PDFWatermarkOverlay userName={userName} currentTime={currentTime} />
         </div>
 
         {/* Blur warning overlay */}

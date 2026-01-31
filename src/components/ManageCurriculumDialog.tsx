@@ -267,7 +267,11 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
 
       const { error: uploadError } = await supabase.storage
         .from(bucketName)
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          contentType: file.type,
+          cacheControl: '3600',
+          upsert: false,
+        });
 
       if (uploadError) throw uploadError;
 

@@ -90,9 +90,9 @@ export default function VocabularyExercise({ content, onComplete }: VocabularyEx
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Progress */}
-      <div className="space-y-1.5 sm:space-y-2">
+    <div className="h-full flex flex-col space-y-3 sm:space-y-4">
+      {/* Progress - fixed at top */}
+      <div className="flex-shrink-0 space-y-1.5 sm:space-y-2">
         <div className="flex justify-between text-xs sm:text-sm">
           <span>Ejercicio {currentIndex + 1} de {exercises.length}</span>
           <span>{Math.round(progress)}% completado</span>
@@ -101,7 +101,7 @@ export default function VocabularyExercise({ content, onComplete }: VocabularyEx
       </div>
 
       {/* Results summary */}
-      <div className="flex gap-2 sm:gap-4 justify-center">
+      <div className="flex-shrink-0 flex gap-2 sm:gap-4 justify-center">
         <Badge variant="outline" className="text-green-600 border-green-600 text-[10px] sm:text-xs px-1.5 sm:px-2">
           <Check className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
           Correctas: {Object.values(answers).filter(a => a.correct).length}
@@ -112,86 +112,88 @@ export default function VocabularyExercise({ content, onComplete }: VocabularyEx
         </Badge>
       </div>
 
-      {/* Exercise */}
-      <Card>
-        <CardHeader className="text-center px-3 sm:px-6 pb-2 sm:pb-4">
-          <CardTitle className="text-base sm:text-lg">
-            <span className="text-primary">"{currentExercise.word}"</span>
-          </CardTitle>
-          <p className="text-xs sm:text-sm text-muted-foreground mt-1.5 sm:mt-2">
-            {currentExercise.definition}
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-3 sm:space-y-4 px-3 sm:px-6">
-          {/* Sentence with blank */}
-          <div className="text-center py-3 sm:py-4 bg-muted/50 rounded-lg px-2">
-            {renderSentence()}
-          </div>
-
-          {/* Hint */}
-          {currentExercise.context_hint && (
-            <div className="flex justify-center">
-              {showHint ? (
-                <p className="text-xs sm:text-sm text-muted-foreground bg-muted px-3 sm:px-4 py-2 rounded-lg text-center">
-                  💡 {currentExercise.context_hint}
-                </p>
-              ) : (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="text-xs sm:text-sm h-8"
-                  onClick={() => setShowHint(true)}
-                  disabled={showResult}
-                >
-                  <HelpCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                  Ver pista
-                </Button>
-              )}
+      {/* Scrollable content area */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        {/* Exercise */}
+        <Card>
+          <CardHeader className="text-center px-3 sm:px-6 pb-2 sm:pb-3 pt-3 sm:pt-4">
+            <CardTitle className="text-sm sm:text-base">
+              <span className="text-primary break-words">"{currentExercise.word}"</span>
+            </CardTitle>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1.5 sm:mt-2 break-words">
+              {currentExercise.definition}
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-3 sm:space-y-4 px-3 sm:px-6 pb-3 sm:pb-4">
+            {/* Sentence with blank */}
+            <div className="text-center py-2.5 sm:py-3 bg-muted/50 rounded-lg px-2">
+              {renderSentence()}
             </div>
-          )}
 
-          {/* Input */}
-          {!showResult && (
-            <div className="flex gap-2">
-              <Input
-                value={userAnswer}
-                onChange={(e) => setUserAnswer(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Escribe la palabra..."
-                className="text-center text-sm sm:text-lg h-10 sm:h-11"
-                autoFocus
-              />
-            </div>
-          )}
+            {/* Hint */}
+            {currentExercise.context_hint && (
+              <div className="flex justify-center">
+                {showHint ? (
+                  <p className="text-xs sm:text-sm text-muted-foreground bg-muted px-3 sm:px-4 py-2 rounded-lg text-center break-words max-w-full">
+                    💡 {currentExercise.context_hint}
+                  </p>
+                ) : (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-xs sm:text-sm h-9 min-h-[44px]"
+                    onClick={() => setShowHint(true)}
+                    disabled={showResult}
+                  >
+                    <HelpCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    Ver pista
+                  </Button>
+                )}
+              </div>
+            )}
 
-          {/* Feedback */}
-          {showResult && (
-            <div className={cn(
-              "p-2.5 sm:p-3 rounded-lg text-center text-xs sm:text-sm",
-              answers[currentIndex]?.correct
-                ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
-                : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
-            )}>
-              {answers[currentIndex]?.correct ? (
-                <p>¡Correcto! 🎉</p>
-              ) : (
-                <p>
-                  Tu respuesta: <span className="line-through">{answers[currentIndex]?.answer}</span>
-                  <br />
-                  Correcta: <strong>{currentExercise.correct_answer}</strong>
-                </p>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            {/* Input */}
+            {!showResult && (
+              <div className="flex gap-2">
+                <Input
+                  value={userAnswer}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Escribe la palabra..."
+                  className="text-center text-sm sm:text-base h-11 min-h-[44px]"
+                  autoFocus
+                />
+              </div>
+            )}
 
-      {/* Actions */}
-      <div className="flex justify-center gap-3 sm:gap-4 px-2">
+            {/* Feedback */}
+            {showResult && (
+              <div className={cn(
+                "p-2.5 sm:p-3 rounded-lg text-center text-xs sm:text-sm",
+                answers[currentIndex]?.correct
+                  ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200"
+                  : "bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200"
+              )}>
+                {answers[currentIndex]?.correct ? (
+                  <p>¡Correcto! 🎉</p>
+                ) : (
+                  <p className="break-words">
+                    Tu respuesta: <span className="line-through">{answers[currentIndex]?.answer}</span>
+                    <br />
+                    Correcta: <strong>{currentExercise.correct_answer}</strong>
+                  </p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Actions - fixed at bottom */}
+      <div className="flex-shrink-0 flex justify-center pt-2">
         {!showResult ? (
           <Button
-            size="sm"
-            className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10"
+            className="w-full sm:w-auto text-xs sm:text-sm h-10 min-h-[44px]"
             onClick={handleCheck}
             disabled={!userAnswer.trim()}
           >
@@ -199,7 +201,7 @@ export default function VocabularyExercise({ content, onComplete }: VocabularyEx
             Comprobar
           </Button>
         ) : (
-          <Button size="sm" className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10" onClick={handleNext}>
+          <Button className="w-full sm:w-auto text-xs sm:text-sm h-10 min-h-[44px]" onClick={handleNext}>
             {currentIndex < exercises.length - 1 ? (
               <>
                 Siguiente

@@ -84,25 +84,25 @@ export default function FlashcardExercise({ content, onComplete }: FlashcardExer
   // Fallback card for browsers without 3D support
   const renderFallbackCard = () => (
     <div
-      className="relative w-full max-w-md h-40 sm:h-48 md:h-56 cursor-pointer"
+      className="relative w-full max-w-md min-h-[120px] sm:min-h-[140px] md:min-h-[160px] cursor-pointer"
       onClick={handleFlip}
     >
       <Card
         className={cn(
-          "absolute inset-0 w-full h-full flex items-center justify-center transition-all duration-300",
+          "w-full h-full flex items-center justify-center transition-all duration-300 overflow-hidden",
           isFlipped 
             ? "bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20" 
             : "bg-gradient-to-br from-primary/5 to-primary/10"
         )}
       >
-        <CardContent className="text-center p-3 sm:p-4 md:p-6">
+        <CardContent className="text-center p-3 sm:p-4 md:p-6 max-h-[180px] overflow-y-auto w-full">
           {isFlipped ? (
-            <p className="text-lg sm:text-xl md:text-2xl font-bold text-green-700 dark:text-green-400">
+            <p className="text-base sm:text-lg md:text-xl font-bold text-green-700 dark:text-green-400 break-words">
               {currentCard.back}
             </p>
           ) : (
             <>
-              <p className="text-sm sm:text-base md:text-lg font-medium">{currentCard.front}</p>
+              <p className="text-sm sm:text-base md:text-lg font-medium break-words">{currentCard.front}</p>
               <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 sm:mt-3">
                 Toca para voltear
               </p>
@@ -116,12 +116,12 @@ export default function FlashcardExercise({ content, onComplete }: FlashcardExer
   // 3D flip card for supported browsers
   const render3DCard = () => (
     <div
-      className="relative w-full max-w-md h-40 sm:h-48 md:h-56 cursor-pointer"
+      className="relative w-full max-w-md min-h-[120px] sm:min-h-[140px] md:min-h-[160px] cursor-pointer"
       style={{ perspective: '1000px' }}
       onClick={handleFlip}
     >
       <div
-        className="absolute inset-0 w-full h-full transition-transform duration-500"
+        className="w-full h-full transition-transform duration-500"
         style={{
           transformStyle: 'preserve-3d',
           WebkitTransformStyle: 'preserve-3d',
@@ -130,14 +130,14 @@ export default function FlashcardExercise({ content, onComplete }: FlashcardExer
       >
         {/* Front */}
         <Card
-          className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10"
+          className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10 overflow-hidden"
           style={{ 
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
           }}
         >
-          <CardContent className="text-center p-3 sm:p-4 md:p-6">
-            <p className="text-sm sm:text-base md:text-lg font-medium">{currentCard.front}</p>
+          <CardContent className="text-center p-3 sm:p-4 md:p-6 max-h-[180px] overflow-y-auto w-full">
+            <p className="text-sm sm:text-base md:text-lg font-medium break-words">{currentCard.front}</p>
             <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 sm:mt-3">
               Toca para voltear
             </p>
@@ -146,15 +146,15 @@ export default function FlashcardExercise({ content, onComplete }: FlashcardExer
 
         {/* Back */}
         <Card
-          className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20"
+          className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 overflow-hidden"
           style={{
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
             transform: 'rotateY(180deg)',
           }}
         >
-          <CardContent className="text-center p-3 sm:p-4 md:p-6">
-            <p className="text-lg sm:text-xl md:text-2xl font-bold text-green-700 dark:text-green-400">
+          <CardContent className="text-center p-3 sm:p-4 md:p-6 max-h-[180px] overflow-y-auto w-full">
+            <p className="text-base sm:text-lg md:text-xl font-bold text-green-700 dark:text-green-400 break-words">
               {currentCard.back}
             </p>
           </CardContent>

@@ -113,8 +113,13 @@ export function AdminAssignMultipleSchedulesDialog({
 
       // Create schedules for each selected student and each selected day
       const schedulesToCreate = [];
-      for (const studentId of selectedStudents) {
-        for (const day of selectedDays) {
+      
+      // For each unique day+time combination, generate a group_session_id if multiple students
+      for (const day of selectedDays) {
+        // Generate a unique group_session_id for this day+time slot when there are multiple students
+        const groupSessionId = selectedStudents.length > 1 ? crypto.randomUUID() : null;
+        
+        for (const studentId of selectedStudents) {
           const scheduleData: any = {
             student_id: studentId,
             schedule_type: scheduleType,
@@ -122,6 +127,7 @@ export function AdminAssignMultipleSchedulesDialog({
             start_time: startTime,
             end_time: endTime,
             created_by: user.id,
+            group_session_id: groupSessionId, // Link students in the same group session
           };
 
           if (scheduleType === "class") {

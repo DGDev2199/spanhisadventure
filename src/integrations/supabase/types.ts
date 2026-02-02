@@ -1825,6 +1825,7 @@ export type Database = {
           created_by: string
           day_of_week: number
           end_time: string
+          group_session_id: string | null
           id: string
           is_active: boolean
           schedule_type: string
@@ -1839,6 +1840,7 @@ export type Database = {
           created_by: string
           day_of_week: number
           end_time: string
+          group_session_id?: string | null
           id?: string
           is_active?: boolean
           schedule_type: string
@@ -1853,6 +1855,7 @@ export type Database = {
           created_by?: string
           day_of_week?: number
           end_time?: string
+          group_session_id?: string | null
           id?: string
           is_active?: boolean
           schedule_type?: string

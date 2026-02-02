@@ -274,8 +274,8 @@ export default function PracticeExerciseView({
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto p-3 sm:p-6">
-        <DialogHeader className="space-y-1 sm:space-y-2">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[95vh] overflow-hidden flex flex-col p-0">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2 flex-shrink-0 space-y-1 sm:space-y-2">
           <DialogTitle className="flex flex-wrap items-center gap-1 sm:gap-2 text-base sm:text-lg">
             <span className="flex-shrink-0">{getExerciseIcon()}</span>
             <span className="truncate">{exercise.title}</span>
@@ -288,7 +288,7 @@ export default function PracticeExerciseView({
           )}
         </DialogHeader>
 
-        <div className="py-2 sm:py-4">
+        <div className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-6 pb-4 sm:pb-6">
           {isCompleted ? renderCompletionScreen() : renderExercise()}
         </div>
       </DialogContent>

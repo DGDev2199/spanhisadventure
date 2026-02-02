@@ -98,9 +98,9 @@ export default function ReadingExercise({ content, onComplete }: ReadingExercise
                          currentQuestionIndex === currentExercise.questions.length - 1;
 
   return (
-    <div className="space-y-3 sm:space-y-4">
-      {/* Progress */}
-      <div className="flex items-center justify-between text-xs sm:text-sm">
+    <div className="h-full flex flex-col space-y-3 sm:space-y-4">
+      {/* Progress - fixed at top */}
+      <div className="flex-shrink-0 flex items-center justify-between text-xs sm:text-sm">
         <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2">
           Pregunta {currentQuestionNumber} de {totalQuestions}
         </Badge>
@@ -110,67 +110,70 @@ export default function ReadingExercise({ content, onComplete }: ReadingExercise
         </div>
       </div>
 
-      {/* Reading passage */}
-      <Card>
-        <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-6">
-          <CardTitle className="text-sm sm:text-base flex items-center gap-1.5 sm:gap-2">
-            <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-            <span className="truncate">{currentExercise.title}</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-3 sm:px-6">
-          <ScrollArea className="h-[100px] sm:h-[150px]">
-            <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap pr-2">
-              {currentExercise.text}
-            </p>
-          </ScrollArea>
-        </CardContent>
-      </Card>
+      {/* Scrollable content area */}
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-3 sm:space-y-4">
+        {/* Reading passage */}
+        <Card>
+          <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-4 pt-3 sm:pt-4">
+            <CardTitle className="text-sm sm:text-base flex items-center gap-1.5 sm:gap-2">
+              <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="truncate">{currentExercise.title}</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
+            <ScrollArea className="h-[80px] sm:h-[120px]">
+              <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap pr-2 break-words">
+                {currentExercise.text}
+              </p>
+            </ScrollArea>
+          </CardContent>
+        </Card>
 
-      {/* Question */}
-      <Card className="border-primary/30">
-        <CardContent className="pt-3 sm:pt-4 px-3 sm:px-6">
-          <p className="font-medium mb-3 sm:mb-4 text-sm sm:text-base">{currentQuestion.question}</p>
-          
-          <div className="space-y-1.5 sm:space-y-2">
-            {currentQuestion.options.map((option, idx) => {
-              const isSelected = selectedAnswer === option;
-              const isCorrectAnswer = option === currentQuestion.correct_answer;
+        {/* Question */}
+        <Card className="border-primary/30">
+          <CardContent className="pt-3 sm:pt-4 px-3 sm:px-4 pb-3 sm:pb-4">
+            <p className="font-medium mb-3 sm:mb-4 text-xs sm:text-sm break-words">{currentQuestion.question}</p>
+            
+            <div className="space-y-1.5 sm:space-y-2">
+              {currentQuestion.options.map((option, idx) => {
+                const isSelected = selectedAnswer === option;
+                const isCorrectAnswer = option === currentQuestion.correct_answer;
 
-              return (
-                <Button
-                  key={idx}
-                  variant="outline"
-                  className={cn(
-                    'w-full h-auto py-2.5 sm:py-3 px-3 sm:px-4 text-left justify-start text-xs sm:text-sm',
-                    isSelected && !showResult && 'ring-2 ring-primary bg-primary/10',
-                    showResult && isCorrectAnswer && 'bg-green-100 dark:bg-green-900/30 border-green-500',
-                    showResult && isSelected && !isCorrectAnswer && 'bg-red-100 dark:bg-red-900/30 border-red-500'
-                  )}
-                  onClick={() => handleSelectAnswer(option)}
-                  disabled={showResult}
-                >
-                  <span className="flex-1">{option}</span>
-                  {showResult && isCorrectAnswer && <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 ml-2 flex-shrink-0" />}
-                  {showResult && isSelected && !isCorrectAnswer && <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 ml-2 flex-shrink-0" />}
-                </Button>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+                return (
+                  <Button
+                    key={idx}
+                    variant="outline"
+                    className={cn(
+                      'w-full h-auto min-h-[44px] py-2.5 sm:py-3 px-3 sm:px-4 text-left justify-start text-xs sm:text-sm whitespace-normal',
+                      isSelected && !showResult && 'ring-2 ring-primary bg-primary/10',
+                      showResult && isCorrectAnswer && 'bg-green-100 dark:bg-green-900/30 border-green-500',
+                      showResult && isSelected && !isCorrectAnswer && 'bg-red-100 dark:bg-red-900/30 border-red-500'
+                    )}
+                    onClick={() => handleSelectAnswer(option)}
+                    disabled={showResult}
+                  >
+                    <span className="flex-1 break-words">{option}</span>
+                    {showResult && isCorrectAnswer && <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 ml-2 flex-shrink-0" />}
+                    {showResult && isSelected && !isCorrectAnswer && <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 ml-2 flex-shrink-0" />}
+                  </Button>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Actions */}
-      <div className="flex justify-center px-2">
+      {/* Actions - fixed at bottom */}
+      <div className="flex-shrink-0 flex justify-center pt-2">
         {!showResult ? (
-          <Button size="sm" className="w-full sm:w-auto text-xs sm:text-sm h-9" onClick={handleConfirm} disabled={!selectedAnswer}>
+          <Button className="w-full sm:w-auto text-xs sm:text-sm h-10 min-h-[44px]" onClick={handleConfirm} disabled={!selectedAnswer}>
             Confirmar respuesta
           </Button>
         ) : (
-          <Button size="sm" className="w-full sm:w-auto text-xs sm:text-sm h-9" onClick={handleNext}>
+          <Button className="w-full sm:w-auto text-xs sm:text-sm h-10 min-h-[44px]" onClick={handleNext}>
             {!isLastQuestion ? (
               <>
-                Siguiente <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
+                Siguiente <ArrowRight className="h-4 w-4 ml-2" />
               </>
             ) : (
               'Ver resultados'

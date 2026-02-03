@@ -98,7 +98,7 @@ export default function StudentPracticePanel() {
               {pendingAssignments.length > 0 && (
                 <div>
                   <h4 className="text-xs sm:text-sm font-medium mb-2">Por completar</h4>
-                  <ScrollArea className="h-[180px] sm:h-[200px]">
+                  <ScrollArea className="h-auto max-h-[350px]">
                     <div className="space-y-2">
                       {pendingAssignments.map((assignment) => (
                         <Card key={assignment.id} className="hover:bg-muted/50 transition-colors">
@@ -139,7 +139,7 @@ export default function StudentPracticePanel() {
               {completedAssignments.length > 0 && (
                 <div>
                   <h4 className="text-xs sm:text-sm font-medium mb-2 text-muted-foreground">Completados</h4>
-                  <ScrollArea className="h-[130px] sm:h-[150px]">
+                  <ScrollArea className="h-auto max-h-[250px]">
                     <div className="space-y-2">
                       {completedAssignments.map((assignment) => (
                         <Card key={assignment.id} className="bg-muted/30">

@@ -9,10 +9,12 @@ import { useStudentAssignments, PracticeAssignment, PracticeExercise } from '@/h
 import PracticeExerciseView from './PracticeExerciseView';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function StudentPracticePanel() {
   const { user } = useAuth();
   const [selectedAssignment, setSelectedAssignment] = useState<(PracticeAssignment & { exercise: PracticeExercise }) | null>(null);
+  const isMobile = useIsMobile();
 
   const { data: assignments, isLoading } = useStudentAssignments(user?.id);
 
@@ -98,7 +100,7 @@ export default function StudentPracticePanel() {
               {pendingAssignments.length > 0 && (
                 <div>
                   <h4 className="text-xs sm:text-sm font-medium mb-2">Por completar</h4>
-                  <ScrollArea className="h-auto max-h-[350px]">
+                  <ScrollArea className={isMobile ? 'h-auto max-h-[60vh]' : 'h-auto max-h-[350px]'}>
                     <div className="space-y-2">
                       {pendingAssignments.map((assignment) => (
                         <Card key={assignment.id} className="hover:bg-muted/50 transition-colors">
@@ -130,6 +132,9 @@ export default function StudentPracticePanel() {
                           </CardContent>
                         </Card>
                       ))}
+
+                      {/* Spacer to avoid last item's button being clipped by nested scroll on some mobiles */}
+                      <div className="h-2" />
                     </div>
                   </ScrollArea>
                 </div>
@@ -139,7 +144,7 @@ export default function StudentPracticePanel() {
               {completedAssignments.length > 0 && (
                 <div>
                   <h4 className="text-xs sm:text-sm font-medium mb-2 text-muted-foreground">Completados</h4>
-                  <ScrollArea className="h-auto max-h-[250px]">
+                  <ScrollArea className={isMobile ? 'h-auto max-h-[45vh]' : 'h-auto max-h-[250px]'}>
                     <div className="space-y-2">
                       {completedAssignments.map((assignment) => (
                         <Card key={assignment.id} className="bg-muted/30">
@@ -175,6 +180,8 @@ export default function StudentPracticePanel() {
                           </CardContent>
                         </Card>
                       ))}
+
+                      <div className="h-2" />
                     </div>
                   </ScrollArea>
                 </div>

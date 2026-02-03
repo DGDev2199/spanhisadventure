@@ -84,26 +84,26 @@ export default function FlashcardExercise({ content, onComplete }: FlashcardExer
   // Fallback card for browsers without 3D support
   const renderFallbackCard = () => (
     <div
-      className="relative w-full max-w-md min-h-[120px] sm:min-h-[140px] md:min-h-[160px] cursor-pointer"
+      className="relative w-full max-w-md cursor-pointer"
       onClick={handleFlip}
     >
       <Card
         className={cn(
-          "w-full h-full flex items-center justify-center transition-all duration-300 overflow-hidden",
+          "w-full flex items-center justify-center transition-all duration-300 overflow-hidden",
           isFlipped 
             ? "bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20" 
             : "bg-gradient-to-br from-primary/5 to-primary/10"
         )}
       >
-        <CardContent className="text-center p-3 sm:p-4 md:p-6 max-h-[180px] overflow-y-auto w-full">
+        <CardContent className="text-center p-4 sm:p-5 md:p-6 w-full min-h-[140px] sm:min-h-[160px] md:min-h-[180px] flex flex-col items-center justify-center">
           {isFlipped ? (
-            <p className="text-base sm:text-lg md:text-xl font-bold text-green-700 dark:text-green-400 break-words">
+            <p className="text-base sm:text-lg md:text-xl font-bold text-green-700 dark:text-green-400 break-words leading-relaxed">
               {currentCard.back}
             </p>
           ) : (
             <>
-              <p className="text-sm sm:text-base md:text-lg font-medium break-words">{currentCard.front}</p>
-              <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 sm:mt-3">
+              <p className="text-sm sm:text-base md:text-lg font-medium break-words leading-relaxed">{currentCard.front}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground mt-3">
                 Toca para voltear
               </p>
             </>
@@ -116,45 +116,51 @@ export default function FlashcardExercise({ content, onComplete }: FlashcardExer
   // 3D flip card for supported browsers
   const render3DCard = () => (
     <div
-      className="relative w-full max-w-md min-h-[120px] sm:min-h-[140px] md:min-h-[160px] cursor-pointer"
+      className="relative w-full max-w-md cursor-pointer"
       style={{ perspective: '1000px' }}
       onClick={handleFlip}
     >
       <div
-        className="w-full h-full transition-transform duration-500"
+        className="relative w-full transition-transform duration-500"
         style={{
           transformStyle: 'preserve-3d',
           WebkitTransformStyle: 'preserve-3d',
           transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
         }}
       >
-        {/* Front */}
+        {/* Front - visible, provides height */}
         <Card
-          className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10 overflow-hidden"
+          className={cn(
+            "w-full flex items-center justify-center bg-gradient-to-br from-primary/5 to-primary/10 overflow-hidden",
+            isFlipped && "invisible"
+          )}
           style={{ 
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
           }}
         >
-          <CardContent className="text-center p-3 sm:p-4 md:p-6 max-h-[180px] overflow-y-auto w-full">
-            <p className="text-sm sm:text-base md:text-lg font-medium break-words">{currentCard.front}</p>
-            <p className="text-[10px] sm:text-xs text-muted-foreground mt-2 sm:mt-3">
+          <CardContent className="text-center p-4 sm:p-5 md:p-6 w-full min-h-[140px] sm:min-h-[160px] md:min-h-[180px] flex flex-col items-center justify-center">
+            <p className="text-sm sm:text-base md:text-lg font-medium break-words leading-relaxed">{currentCard.front}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-3">
               Toca para voltear
             </p>
           </CardContent>
         </Card>
 
-        {/* Back */}
+        {/* Back - absolute positioned on top */}
         <Card
-          className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 overflow-hidden"
+          className={cn(
+            "absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 overflow-hidden",
+            !isFlipped && "invisible"
+          )}
           style={{
             backfaceVisibility: 'hidden',
             WebkitBackfaceVisibility: 'hidden',
             transform: 'rotateY(180deg)',
           }}
         >
-          <CardContent className="text-center p-3 sm:p-4 md:p-6 max-h-[180px] overflow-y-auto w-full">
-            <p className="text-base sm:text-lg md:text-xl font-bold text-green-700 dark:text-green-400 break-words">
+          <CardContent className="text-center p-4 sm:p-5 md:p-6 w-full flex flex-col items-center justify-center">
+            <p className="text-base sm:text-lg md:text-xl font-bold text-green-700 dark:text-green-400 break-words leading-relaxed">
               {currentCard.back}
             </p>
           </CardContent>

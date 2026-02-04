@@ -5,11 +5,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Shield, AlertTriangle } from 'lucide-react';
+import { Shield, AlertTriangle, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { PDFWatermarkOverlay } from '@/components/curriculum/PDFWatermarkOverlay';
 import { usePdfObjectUrl } from '@/components/curriculum/usePdfObjectUrl';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useTranslation } from 'react-i18next';
 
 interface SecurePDFViewerProps {
   open: boolean;
@@ -26,6 +35,8 @@ export default function SecurePDFViewer({
   title,
   userName,
 }: SecurePDFViewerProps) {
+  const { t } = useTranslation();
+  const isMobile = useIsMobile();
   const [isBlurred, setIsBlurred] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleString());
 
@@ -49,13 +60,13 @@ export default function SecurePDFViewer({
     // Try to clear clipboard
     navigator.clipboard.writeText('Contenido protegido').catch(() => {});
     
-    toast.warning('Capturas de pantalla no permitidas', {
-      description: 'Este contenido está protegido.'
+    toast.warning(t('curriculum.screenshotsNotAllowed', 'Capturas de pantalla no permitidas'), {
+      description: t('curriculum.protectedContent', 'Este contenido está protegido.')
     });
     
     // Unblur after 2 seconds
     setTimeout(() => setIsBlurred(false), 2000);
-  }, []);
+  }, [t]);
 
   // Detect PrintScreen key and other screenshot shortcuts
   useEffect(() => {
@@ -71,8 +82,6 @@ export default function SecurePDFViewer({
       }
       
       // Windows Snipping Tool (Win + Shift + S)
-      // Nota: en muchos PCs el SO intercepta Win+Shift+S y el navegador NO recibe el evento.
-      // Igual lo intentamos para los casos donde sí llega.
       if (e.key?.toLowerCase() === 's' && e.shiftKey && e.metaKey) {
         e.preventDefault();
         e.stopPropagation();
@@ -136,6 +145,109 @@ export default function SecurePDFViewer({
   // Build PDF URL with parameters to hide toolbar
   const securePdfUrl = objectUrl ? `${objectUrl}#toolbar=0&navpanes=0&scrollbar=1` : '';
 
+  // Shared content for both mobile and desktop
+  const renderPDFContent = (heightClass: string) => (
+    <div
+      className={cn(
+        'relative flex-1 select-none transition-all duration-300 overflow-hidden',
+        isBlurred && 'blur-xl pointer-events-none'
+      )}
+      style={{ minHeight: 0 }}
+      onContextMenu={handleContextMenu}
+    >
+      {/* PDF iframe (rendered from blob URL to avoid forced downloads) */}
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background">
+          <div className="text-sm text-muted-foreground">
+            {t('curriculum.loadingPdf', 'Cargando PDF…')}
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background">
+          <div className="text-center p-6 max-w-md">
+            <p className="text-base font-semibold mb-1">
+              {t('curriculum.pdfLoadError', 'No se pudo cargar el PDF')}
+            </p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </div>
+        </div>
+      )}
+
+      {!!securePdfUrl && !error && (
+        <iframe
+          src={securePdfUrl}
+          className={cn("w-full border-0", heightClass)}
+          style={{
+            pointerEvents: isBlurred ? 'none' : 'auto',
+          }}
+          title={title}
+        />
+      )}
+
+      {/* Dynamic watermark overlay (logo + user/time) */}
+      <PDFWatermarkOverlay userName={userName} currentTime={currentTime} />
+    </div>
+  );
+
+  // Blur warning overlay
+  const renderBlurOverlay = () => (
+    isBlurred && (
+      <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50">
+        <div className="text-center p-6 max-w-sm">
+          <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+          <p className="text-lg font-semibold mb-2">
+            {t('curriculum.protectedContentTitle', 'Contenido Protegido')}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {t('curriculum.returnToWindow', 'Regresa a esta ventana para continuar visualizando el documento.')}
+          </p>
+        </div>
+      </div>
+    )
+  );
+
+  // Mobile: Use Drawer from bottom
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+        <DrawerContent className="h-[95vh] max-h-[95vh] flex flex-col">
+          <DrawerHeader className="p-4 pb-2 border-b flex-shrink-0">
+            <div className="flex items-center justify-between">
+              <DrawerTitle className="flex items-center gap-2 text-sm">
+                <Shield className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                <span className="truncate">{title}</span>
+              </DrawerTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                className="h-8 w-8 flex-shrink-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-1">
+              <span className="inline-flex items-center gap-1 text-purple-600">
+                <Shield className="h-3 w-3" />
+                {t('curriculum.protectedContent', 'Contenido protegido')}
+              </span>
+              <span className="mx-1">•</span>
+              {t('curriculum.readOnly', 'Solo lectura')}
+            </p>
+          </DrawerHeader>
+
+          <div className="flex-1 overflow-hidden relative">
+            {renderPDFContent("h-full")}
+            {renderBlurOverlay()}
+          </div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  // Desktop: Use Dialog
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent
@@ -150,64 +262,15 @@ export default function SecurePDFViewer({
           <p className="text-[10px] sm:text-xs text-muted-foreground flex items-center gap-1">
             <span className="inline-flex items-center gap-1 text-purple-600">
               <Shield className="h-3 w-3" />
-              Contenido protegido
+              {t('curriculum.protectedContent', 'Contenido protegido')}
             </span>
             <span className="mx-1">•</span>
-            Solo lectura
+            {t('curriculum.readOnly', 'Solo lectura')}
           </p>
         </DialogHeader>
 
-        <div
-          className={cn(
-            'relative flex-1 select-none transition-all duration-300 overflow-hidden',
-            isBlurred && 'blur-xl pointer-events-none'
-          )}
-          style={{ minHeight: 0 }}
-        >
-          {/* PDF iframe (rendered from blob URL to avoid forced downloads) */}
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background">
-              <div className="text-sm text-muted-foreground">Cargando PDF…</div>
-            </div>
-          )}
-
-          {error && (
-            <div className="absolute inset-0 flex items-center justify-center bg-background">
-              <div className="text-center p-6 max-w-md">
-                <p className="text-base font-semibold mb-1">No se pudo cargar el PDF</p>
-                <p className="text-sm text-muted-foreground">{error}</p>
-              </div>
-            </div>
-          )}
-
-          {!!securePdfUrl && !error && (
-            <iframe
-              src={securePdfUrl}
-              className="w-full h-full border-0"
-              style={{
-                height: 'calc(90vh - 80px)',
-                pointerEvents: isBlurred ? 'none' : 'auto',
-              }}
-              title={title}
-            />
-          )}
-
-          {/* Dynamic watermark overlay (logo + user/time) */}
-          <PDFWatermarkOverlay userName={userName} currentTime={currentTime} />
-        </div>
-
-        {/* Blur warning overlay */}
-        {isBlurred && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm z-50">
-            <div className="text-center p-6 max-w-sm">
-              <AlertTriangle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
-              <p className="text-lg font-semibold mb-2">Contenido Protegido</p>
-              <p className="text-sm text-muted-foreground">
-                Regresa a esta ventana para continuar visualizando el documento.
-              </p>
-            </div>
-          </div>
-        )}
+        {renderPDFContent("h-[calc(90vh-80px)]")}
+        {renderBlurOverlay()}
       </DialogContent>
     </Dialog>
   );

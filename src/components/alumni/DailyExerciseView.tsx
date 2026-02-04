@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ArrowLeft, ArrowRight, CheckCircle, XCircle, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SentenceOrderExercise, FlashcardExercise } from './exercises';
 
 interface ExercisePack {
   id: string;
@@ -72,6 +73,11 @@ export function DailyExerciseView({
     setIsCorrect(false);
   };
 
+  const handleFlashcardCorrect = () => {
+    setIsCorrect(true);
+    setShowResult(true);
+  };
+
   const getCorrectAnswer = (exercise: { type: string; content: any }): string => {
     const { type, content } = exercise;
     switch (type) {
@@ -98,7 +104,6 @@ export function DailyExerciseView({
       case 'multiple_choice':
         return content.options || [];
       case 'vocabulary':
-        // Create options from the correct answer and generate distractors
         return content.options || [content.correct_answer];
       default:
         return content.options || [];
@@ -122,6 +127,39 @@ export function DailyExerciseView({
         return content.hint;
       default:
         return null;
+    }
+  };
+
+  const getExerciseTypeLabel = (type: string): string => {
+    const labels: Record<string, string> = {
+      vocabulary: 'Vocabulario',
+      conjugation: 'Conjugación',
+      fill_gaps: 'Completar espacios',
+      multiple_choice: 'Opción múltiple',
+      sentence_order: 'Ordenar oración',
+      flashcard: 'Tarjeta de memoria',
+      reading: 'Comprensión lectora',
+    };
+    return labels[type] || type;
+  };
+
+  const getExerciseQuestion = (exercise: { type: string; content: any }): string => {
+    const { type, content } = exercise;
+    switch (type) {
+      case 'vocabulary':
+        return content.sentence_blank || `¿Qué significa "${content.word}"?`;
+      case 'conjugation':
+        return `Conjuga el verbo "${content.verb}" en ${content.tense} para ${content.subject}`;
+      case 'fill_gaps':
+        return content.sentence_with_gap;
+      case 'multiple_choice':
+        return content.question;
+      case 'sentence_order':
+        return 'Ordena las palabras para formar una oración correcta';
+      case 'flashcard':
+        return 'Tarjeta de vocabulario';
+      default:
+        return content.question || 'Ejercicio';
     }
   };
 
@@ -160,8 +198,8 @@ export function DailyExerciseView({
           </div>
         )}
 
-        {/* Options */}
-        {options.length > 0 ? (
+        {/* Options for multiple choice type exercises */}
+        {options.length > 0 && type !== 'sentence_order' && type !== 'flashcard' ? (
           <div className="grid grid-cols-1 gap-3">
             {options.map((option, index) => {
               const isSelected = selectedAnswer === option;
@@ -207,9 +245,18 @@ export function DailyExerciseView({
             })}
           </div>
         ) : type === 'sentence_order' ? (
-          renderSentenceOrder(content)
+          <SentenceOrderExercise
+            content={content}
+            showResult={showResult}
+            onAnswerChange={setSelectedAnswer}
+          />
         ) : type === 'flashcard' ? (
-          renderFlashcard(content)
+          <FlashcardExercise
+            content={content}
+            showResult={showResult}
+            onAnswerChange={setSelectedAnswer}
+            onCorrect={handleFlashcardCorrect}
+          />
         ) : null}
 
         {/* Result and explanation */}
@@ -243,133 +290,6 @@ export function DailyExerciseView({
         )}
       </div>
     );
-  };
-
-  const renderSentenceOrder = (content: any) => {
-    const [orderedWords, setOrderedWords] = useState<string[]>([]);
-    const availableWords = content.scrambled_words?.filter(
-      (w: string) => !orderedWords.includes(w)
-    ) || [];
-
-    const handleWordClick = (word: string) => {
-      if (showResult) return;
-      setOrderedWords([...orderedWords, word]);
-      setSelectedAnswer([...orderedWords, word].join(' '));
-    };
-
-    const handleRemoveWord = (index: number) => {
-      if (showResult) return;
-      const newWords = orderedWords.filter((_, i) => i !== index);
-      setOrderedWords(newWords);
-      setSelectedAnswer(newWords.join(' '));
-    };
-
-    return (
-      <div className="space-y-4">
-        <div className="min-h-[60px] p-4 border-2 border-dashed rounded-lg flex flex-wrap gap-2">
-          {orderedWords.map((word, index) => (
-            <button
-              key={index}
-              onClick={() => handleRemoveWord(index)}
-              disabled={showResult}
-              className="px-3 py-1.5 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary/80"
-            >
-              {word}
-            </button>
-          ))}
-          {orderedWords.length === 0 && (
-            <span className="text-muted-foreground text-sm">Haz clic en las palabras para ordenarlas</span>
-          )}
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {availableWords.map((word: string, index: number) => (
-            <button
-              key={index}
-              onClick={() => handleWordClick(word)}
-              disabled={showResult}
-              className="px-3 py-1.5 bg-muted hover:bg-muted/80 rounded-md text-sm font-medium transition-colors"
-            >
-              {word}
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const renderFlashcard = (content: any) => {
-    const [flipped, setFlipped] = useState(false);
-
-    return (
-      <div className="space-y-4">
-        <button
-          onClick={() => {
-            setFlipped(!flipped);
-            if (!flipped) {
-              setSelectedAnswer(content.back);
-            }
-          }}
-          className="w-full min-h-[150px] p-6 border-2 rounded-xl transition-all hover:border-primary/50 flex items-center justify-center"
-        >
-          <div className="text-center">
-            <p className="text-lg font-medium">
-              {flipped ? content.back : content.front}
-            </p>
-            {!flipped && (
-              <p className="text-sm text-muted-foreground mt-2">Haz clic para ver la respuesta</p>
-            )}
-          </div>
-        </button>
-        
-        {flipped && !showResult && (
-          <div className="flex gap-2 justify-center">
-            <Button variant="outline" onClick={() => setFlipped(false)}>
-              Ver de nuevo
-            </Button>
-            <Button onClick={() => {
-              setIsCorrect(true);
-              setShowResult(true);
-            }}>
-              ¡Lo sabía!
-            </Button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const getExerciseTypeLabel = (type: string): string => {
-    const labels: Record<string, string> = {
-      vocabulary: 'Vocabulario',
-      conjugation: 'Conjugación',
-      fill_gaps: 'Completar espacios',
-      multiple_choice: 'Opción múltiple',
-      sentence_order: 'Ordenar oración',
-      flashcard: 'Tarjeta de memoria',
-      reading: 'Comprensión lectora',
-    };
-    return labels[type] || type;
-  };
-
-  const getExerciseQuestion = (exercise: { type: string; content: any }): string => {
-    const { type, content } = exercise;
-    switch (type) {
-      case 'vocabulary':
-        return content.sentence_blank || `¿Qué significa "${content.word}"?`;
-      case 'conjugation':
-        return `Conjuga el verbo "${content.verb}" en ${content.tense} para ${content.subject}`;
-      case 'fill_gaps':
-        return content.sentence_with_gap;
-      case 'multiple_choice':
-        return content.question;
-      case 'sentence_order':
-        return 'Ordena las palabras para formar una oración correcta';
-      case 'flashcard':
-        return 'Tarjeta de vocabulario';
-      default:
-        return content.question || 'Ejercicio';
-    }
   };
 
   return (

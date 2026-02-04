@@ -1692,6 +1692,77 @@ export type Database = {
           },
         ]
       }
+      staff_hours_detail: {
+        Row: {
+          created_at: string | null
+          day_of_week: number | null
+          end_time: string | null
+          hours: number
+          id: string
+          month_year: string
+          source_id: string | null
+          source_title: string | null
+          source_type: string
+          start_time: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          day_of_week?: number | null
+          end_time?: string | null
+          hours: number
+          id?: string
+          month_year: string
+          source_id?: string | null
+          source_title?: string | null
+          source_type: string
+          start_time?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          day_of_week?: number | null
+          end_time?: string | null
+          hours?: number
+          id?: string
+          month_year?: string
+          source_id?: string | null
+          source_title?: string | null
+          source_type?: string
+          start_time?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_hours_detail_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_hours_detail_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_hours_detail_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "safe_profiles_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_hours_detail_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_rankings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff_modality_requests: {
         Row: {
           created_at: string | null
@@ -3675,6 +3746,7 @@ export type Database = {
     }
     Functions: {
       calculate_staff_hours: { Args: never; Returns: undefined }
+      calculate_staff_hours_detailed: { Args: never; Returns: undefined }
       create_notification: {
         Args: {
           p_message: string

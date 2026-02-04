@@ -1,11 +1,11 @@
 import { WeekTopic } from "@/hooks/useGamification";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, AlertCircle, Circle, HelpCircle, Lock, Sparkles } from "lucide-react";
+import { CheckCircle2, AlertCircle, Circle, HelpCircle, Lock, Sparkles, TrendingUp, RotateCcw } from "lucide-react";
 
 interface TopicCardProps {
   topic: WeekTopic;
   status: 'not_started' | 'in_progress' | 'needs_review' | 'completed';
-  color?: 'green' | 'yellow' | 'red' | 'blue' | null;
+  color?: 'green' | 'yellow' | 'red' | 'blue' | 'purple' | 'orange' | 'gray' | null;
   onClick: () => void;
   isLocked?: boolean;
 }
@@ -52,6 +52,27 @@ export const TopicCard = ({ topic, status, color, onClick, isLocked = false }: T
             icon: <Circle className="h-5 w-5 text-blue-600 fill-blue-200" />,
             label: 'En progreso',
             textColor: 'text-blue-800 dark:text-blue-300',
+          };
+        case 'purple':
+          return {
+            bg: 'bg-purple-100 dark:bg-purple-900/30 border-purple-500',
+            icon: <Sparkles className="h-5 w-5 text-purple-600" />,
+            label: 'Excelente',
+            textColor: 'text-purple-800 dark:text-purple-300',
+          };
+        case 'orange':
+          return {
+            bg: 'bg-orange-100 dark:bg-orange-900/30 border-orange-500',
+            icon: <TrendingUp className="h-5 w-5 text-orange-600" />,
+            label: 'En camino',
+            textColor: 'text-orange-800 dark:text-orange-300',
+          };
+        case 'gray':
+          return {
+            bg: 'bg-gray-100 dark:bg-gray-900/30 border-gray-400',
+            icon: <RotateCcw className="h-5 w-5 text-gray-500" />,
+            label: 'Sin evaluar',
+            textColor: 'text-gray-700 dark:text-gray-300',
           };
       }
     }

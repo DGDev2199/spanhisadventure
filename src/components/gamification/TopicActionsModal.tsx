@@ -62,7 +62,7 @@ export const TopicActionsModal = ({
   
   const currentProgress = allProgress.find(p => p.topic_id === topic.id);
   const currentStatus = currentProgress?.status || 'not_started';
-  const currentColor = currentProgress?.color as 'green' | 'yellow' | 'red' | 'blue' | null | undefined;
+  const currentColor = currentProgress?.color as 'green' | 'yellow' | 'red' | 'blue' | 'purple' | 'orange' | 'gray' | null | undefined;
 
   // Fetch student's assigned teacher
   const { data: studentProfile } = useQuery({
@@ -138,25 +138,29 @@ export const TopicActionsModal = ({
     }
   };
 
-  const handleColorChange = async (newColor: 'green' | 'yellow' | 'red' | 'blue') => {
+  const handleColorChange = async (newColor: 'green' | 'yellow' | 'red' | 'blue' | 'purple' | 'orange' | 'gray') => {
     if (!user) return;
     try {
+      // Si es gray, es un reset - pasamos null como color
+      const colorToSave = newColor === 'gray' ? null : newColor;
+      
       await updateProgress.mutateAsync({
         studentId,
         topicId: topic.id,
-        color: newColor,
+        color: colorToSave,
         updatedBy: user.id,
       });
       
-      // Award points when topic is marked as green (mastered)
-      if (newColor === 'green' && currentColor !== 'green') {
+      // Award points when topic is marked as green or purple (mastered/excellent)
+      if ((newColor === 'green' || newColor === 'purple') && currentColor !== 'green' && currentColor !== 'purple') {
+        const points = newColor === 'purple' ? 15 : 10;
         await supabase.from('user_points').insert({
           user_id: studentId,
-          points: 10,
-          reason: 'topic_mastered',
+          points,
+          reason: newColor === 'purple' ? 'topic_excellent' : 'topic_mastered',
           related_id: topic.id,
         });
-        toast.success(t('progress.colorUpdated', 'Color de evaluación actualizado') + ' (+10 pts)');
+        toast.success(t('progress.colorUpdated', 'Color de evaluación actualizado') + ` (+${points} pts)`);
       } else {
         toast.success(t('progress.colorUpdated', 'Color de evaluación actualizado'));
       }
@@ -235,7 +239,18 @@ export const TopicActionsModal = ({
                   <Palette className="h-3 w-3 sm:h-4 sm:w-4" />
                   Asignar color de evaluación:
                 </p>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className={cn(
+                      "h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full",
+                      currentColor === 'purple' ? 'ring-2 ring-purple-600 ring-offset-2' : ''
+                    )}
+                    style={{ backgroundColor: '#a855f7' }}
+                    onClick={() => handleColorChange('purple')}
+                    title="Excelente"
+                  />
                   <Button
                     size="sm"
                     variant="outline"
@@ -246,6 +261,17 @@ export const TopicActionsModal = ({
                     style={{ backgroundColor: '#22c55e' }}
                     onClick={() => handleColorChange('green')}
                     title="Dominado"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className={cn(
+                      "h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full",
+                      currentColor === 'orange' ? 'ring-2 ring-orange-600 ring-offset-2' : ''
+                    )}
+                    style={{ backgroundColor: '#f97316' }}
+                    onClick={() => handleColorChange('orange')}
+                    title="En camino"
                   />
                   <Button
                     size="sm"
@@ -263,6 +289,17 @@ export const TopicActionsModal = ({
                     variant="outline"
                     className={cn(
                       "h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full",
+                      currentColor === 'blue' ? 'ring-2 ring-blue-600 ring-offset-2' : ''
+                    )}
+                    style={{ backgroundColor: '#3b82f6' }}
+                    onClick={() => handleColorChange('blue')}
+                    title="En progreso"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className={cn(
+                      "h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full",
                       currentColor === 'red' ? 'ring-2 ring-red-600 ring-offset-2' : ''
                     )}
                     style={{ backgroundColor: '#ef4444' }}
@@ -273,16 +310,16 @@ export const TopicActionsModal = ({
                     size="sm"
                     variant="outline"
                     className={cn(
-                      "h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full",
-                      currentColor === 'blue' ? 'ring-2 ring-blue-600 ring-offset-2' : ''
+                      "h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full border-2 border-dashed",
+                      !currentColor ? 'ring-2 ring-gray-400 ring-offset-2' : ''
                     )}
-                    style={{ backgroundColor: '#3b82f6' }}
-                    onClick={() => handleColorChange('blue')}
-                    title="En progreso"
+                    style={{ backgroundColor: '#9ca3af' }}
+                    onClick={() => handleColorChange('gray')}
+                    title="Sin evaluar / Reset"
                   />
                 </div>
                 <p className="text-[10px] sm:text-xs text-muted-foreground">
-                  🟢 Dominado • 🟡 Práctica • 🔴 Dificultad • 🔵 En progreso
+                  🟣 Excelente • 🟢 Dominado • 🟠 En camino • 🟡 Práctica • 🔵 Progreso • 🔴 Dificultad • ⚪ Reset
                 </p>
               </div>
 

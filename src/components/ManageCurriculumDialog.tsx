@@ -564,7 +564,9 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
                   <div className="space-y-3 pr-2">
                     {/* Existing topics */}
                     <div className="space-y-2">
-                      {selectedWeek && getTopicsForWeek(selectedWeek.id).map((topic) => (
+                      {selectedWeek && getTopicsForWeek(selectedWeek.id).map((topic) => {
+                        const topicMaterials = getMaterialsForTopic(topic.id);
+                        return (
                         <div
                           key={topic.id}
                           className="p-4 rounded-lg border bg-muted/30"
@@ -577,6 +579,58 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
                               )}
                             </div>
                           </div>
+                          
+                          {/* Materials list for this topic */}
+                          {topicMaterials.length > 0 && (
+                            <div className="mt-3 space-y-1">
+                              <p className="text-xs font-medium text-muted-foreground mb-2">
+                                {t('curriculum.existingMaterials', 'Materiales')} ({topicMaterials.length}):
+                              </p>
+                              {topicMaterials.map((material) => (
+                                <div 
+                                  key={material.id}
+                                  className={cn(
+                                    "flex items-center justify-between p-2 rounded-lg text-sm",
+                                    material.is_teacher_guide 
+                                      ? "bg-purple-50 dark:bg-purple-950/30" 
+                                      : "bg-blue-50 dark:bg-blue-950/30"
+                                  )}
+                                >
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    {material.is_teacher_guide ? (
+                                      <BookMarked className="h-4 w-4 text-purple-500 flex-shrink-0" />
+                                    ) : (
+                                      <GraduationCap className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                                    )}
+                                    <span className="truncate text-xs">{material.title}</span>
+                                  </div>
+                                  <div className="flex gap-1 flex-shrink-0">
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-8 w-8"
+                                      onClick={() => handleEditMaterial(material)}
+                                    >
+                                      <Edit2 className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-8 w-8 text-destructive"
+                                      onClick={() => handleDeleteMaterial(
+                                        material.id, 
+                                        material.content_url, 
+                                        material.is_teacher_guide
+                                      )}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
                           <div className="flex flex-wrap gap-2 mt-3">
                             <Button
                               size="sm"
@@ -634,7 +688,7 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
                             </Button>
                           </div>
                         </div>
-                      ))}
+                      );})}
                       {selectedWeek && getTopicsForWeek(selectedWeek.id).length === 0 && (
                         <p className="text-sm text-muted-foreground text-center py-4">
                           {t('curriculum.noTopics', 'No hay temas. Agrega uno abajo.')}
@@ -794,79 +848,136 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
                   <div className="space-y-3">
                     {/* Existing topics */}
                     <div className="space-y-2">
-                      {getTopicsForWeek(selectedWeek.id).map((topic) => (
+                      {getTopicsForWeek(selectedWeek.id).map((topic) => {
+                        const topicMaterials = getMaterialsForTopic(topic.id);
+                        return (
                         <div
                           key={topic.id}
-                          className="p-3 rounded-lg border bg-muted/30 flex items-center justify-between"
+                          className="p-3 rounded-lg border bg-muted/30"
                         >
-                          <div>
-                            <p className="font-medium text-sm">{topic.name}</p>
-                            {topic.description && (
-                              <p className="text-xs text-muted-foreground">{topic.description}</p>
-                            )}
-                          </div>
-                          <div className="flex gap-1">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8"
-                              title={t('curriculum.addStudentMaterial', 'Agregar material del estudiante')}
-                              onClick={() => {
-                                setMaterialTopicId(topic.id);
-                                setIsTeacherGuide(false);
-                                setAddingMaterial(true);
-                              }}
-                            >
-                              <GraduationCap className="h-4 w-4 text-blue-500" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8"
-                              title={t('curriculum.addTeacherGuide', 'Agregar guía del profesor')}
-                              onClick={() => {
-                                setMaterialTopicId(topic.id);
-                                setIsTeacherGuide(true);
-                                setAddingMaterial(true);
-                              }}
-                            >
-                              <BookMarked className="h-4 w-4 text-purple-500" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className={cn(
-                                "h-8 w-8",
-                                hasReevaluationTest(topic.id) 
-                                  ? "text-green-500" 
-                                  : "text-amber-500"
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-sm">{topic.name}</p>
+                              {topic.description && (
+                                <p className="text-xs text-muted-foreground">{topic.description}</p>
                               )}
-                              title={hasReevaluationTest(topic.id) 
-                                ? t('curriculum.reevaluationCreated', 'Examen de reevaluación creado')
-                                : t('curriculum.createReevaluation', 'Crear examen de reevaluación')
-                              }
-                              onClick={() => {
-                                setSelectedTopicForTest(topic);
-                                setShowCreateTestDialog(true);
-                              }}
-                            >
-                              {hasReevaluationTest(topic.id) ? (
-                                <CheckCircle2 className="h-4 w-4" />
-                              ) : (
-                                <ClipboardList className="h-4 w-4" />
-                              )}
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 text-destructive"
-                              onClick={() => handleDeleteTopic(topic.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                            </div>
+                            <div className="flex gap-1">
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8"
+                                title={t('curriculum.addStudentMaterial', 'Agregar material del estudiante')}
+                                onClick={() => {
+                                  setMaterialTopicId(topic.id);
+                                  setIsTeacherGuide(false);
+                                  setAddingMaterial(true);
+                                }}
+                              >
+                                <GraduationCap className="h-4 w-4 text-blue-500" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8"
+                                title={t('curriculum.addTeacherGuide', 'Agregar guía del profesor')}
+                                onClick={() => {
+                                  setMaterialTopicId(topic.id);
+                                  setIsTeacherGuide(true);
+                                  setAddingMaterial(true);
+                                }}
+                              >
+                                <BookMarked className="h-4 w-4 text-purple-500" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className={cn(
+                                  "h-8 w-8",
+                                  hasReevaluationTest(topic.id) 
+                                    ? "text-green-500" 
+                                    : "text-amber-500"
+                                )}
+                                title={hasReevaluationTest(topic.id) 
+                                  ? t('curriculum.reevaluationCreated', 'Examen de reevaluación creado')
+                                  : t('curriculum.createReevaluation', 'Crear examen de reevaluación')
+                                }
+                                onClick={() => {
+                                  setSelectedTopicForTest(topic);
+                                  setShowCreateTestDialog(true);
+                                }}
+                              >
+                                {hasReevaluationTest(topic.id) ? (
+                                  <CheckCircle2 className="h-4 w-4" />
+                                ) : (
+                                  <ClipboardList className="h-4 w-4" />
+                                )}
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 text-destructive"
+                                onClick={() => handleDeleteTopic(topic.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </div>
+                          
+                          {/* Materials list for this topic */}
+                          {topicMaterials.length > 0 && (
+                            <div className="mt-2 space-y-1 border-t pt-2">
+                              {topicMaterials.map((material) => (
+                                <div 
+                                  key={material.id}
+                                  className={cn(
+                                    "flex items-center justify-between p-2 rounded text-sm",
+                                    material.is_teacher_guide 
+                                      ? "bg-purple-50 dark:bg-purple-950/30" 
+                                      : "bg-blue-50 dark:bg-blue-950/30"
+                                  )}
+                                >
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    {material.is_teacher_guide ? (
+                                      <BookMarked className="h-3 w-3 text-purple-500 flex-shrink-0" />
+                                    ) : (
+                                      <GraduationCap className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                                    )}
+                                    <span className="truncate text-xs">{material.title}</span>
+                                    {material.is_teacher_guide && (
+                                      <Badge variant="outline" className="text-[10px] text-purple-600 px-1 py-0">
+                                        {t('curriculum.guide', 'Guía')}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-0.5 flex-shrink-0">
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-6 w-6"
+                                      onClick={() => handleEditMaterial(material)}
+                                    >
+                                      <Edit2 className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-6 w-6 text-destructive"
+                                      onClick={() => handleDeleteMaterial(
+                                        material.id, 
+                                        material.content_url, 
+                                        material.is_teacher_guide
+                                      )}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      ))}
+                      );})}
                       {getTopicsForWeek(selectedWeek.id).length === 0 && (
                         <p className="text-sm text-muted-foreground text-center py-4">
                           {t('curriculum.noTopics', 'No hay temas. Agrega uno abajo.')}

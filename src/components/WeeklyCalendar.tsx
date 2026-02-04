@@ -3,8 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { Clock, Edit, ChevronLeft, ChevronRight, FileImage, FileText, Plus } from 'lucide-react';
+import { Clock, Edit, ChevronLeft, ChevronRight, FileImage, FileText, Plus, Info } from 'lucide-react';
 import { EditScheduleEventDialog } from '@/components/EditScheduleEventDialog';
+import { EventDetailsDialog } from '@/components/EventDetailsDialog';
 import { Button } from '@/components/ui/button';
 import { useSwipeable } from 'react-swipeable';
 import html2canvas from 'html2canvas';
@@ -35,6 +36,12 @@ interface ScheduleEvent {
   teacher2?: { full_name: string } | null;
   tutor?: { full_name: string } | null;
   tutor2?: { full_name: string } | null;
+  // New detail fields
+  details_info?: string | null;
+  attachment_url?: string | null;
+  attachment_name?: string | null;
+  elective_option_1?: string | null;
+  elective_option_2?: string | null;
 }
 
 // Sin Domingo - Solo Lunes a Sábado
@@ -163,6 +170,8 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
   const isMobile = useIsMobile();
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [detailsEvent, setDetailsEvent] = useState<ScheduleEvent | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
   const [selectedMobileDay, setSelectedMobileDay] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
@@ -369,6 +378,7 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
           ) : (
             dayEvents.map((event) => {
               const typeInfo = getEventTypeInfo(event.event_type);
+              const hasDetails = event.details_info || event.attachment_url;
               
               return (
                 <div
@@ -376,12 +386,16 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
                   className={cn(
                     "border-l-4 rounded-lg px-3 py-2 text-sm",
                     getEventTypeStyles(event.event_type),
-                    canEdit ? 'cursor-pointer active:scale-[0.98] transition-transform' : ''
+                    "cursor-pointer active:scale-[0.98] transition-transform"
                   )}
                   onClick={() => {
                     if (canEdit) {
                       setSelectedEvent(event);
                       setIsEditDialogOpen(true);
+                    } else {
+                      // Students see details dialog
+                      setDetailsEvent(event);
+                      setIsDetailsDialogOpen(true);
                     }
                   }}
                 >
@@ -531,7 +545,7 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
                 className={cn(
                   "absolute border-l-4 rounded px-1.5 py-1 text-xs group overflow-hidden",
                   getEventTypeStyles(event.event_type),
-                  canEdit ? 'cursor-pointer hover:shadow-lg transition-shadow hover:z-30' : ''
+                  'cursor-pointer hover:shadow-lg transition-shadow hover:z-30'
                 )}
                 style={{
                   top: `${top}px`,
@@ -545,6 +559,10 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
                   if (canEdit) {
                     setSelectedEvent(event);
                     setIsEditDialogOpen(true);
+                  } else {
+                    // Students see details dialog
+                    setDetailsEvent(event);
+                    setIsDetailsDialogOpen(true);
                   }
                 }}
               >
@@ -711,6 +729,12 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
         initialEndDay={quickEventData.endDay}
         initialStartTime={quickEventData.startTime}
         initialEndTime={quickEventData.endTime}
+      />
+
+      <EventDetailsDialog
+        open={isDetailsDialogOpen}
+        onOpenChange={setIsDetailsDialogOpen}
+        event={detailsEvent}
       />
     </Card>
   );

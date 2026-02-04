@@ -26,6 +26,8 @@ import { useSubmitTask } from "@/hooks/useSubmitTask";
 import { WeeklyProgressGrid, GamificationPanel, LeaderboardCard } from "@/components/gamification";
 // Practice components
 import { StudentPracticePanel } from "@/components/practice";
+// Daily reminders
+import { DailyRemindersModal } from "@/components/DailyRemindersModal";
 
 // Optimized hooks and components
 import {
@@ -182,6 +184,9 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Daily reminders modal - only for presencial students */}
+      {!isOnlineStudent && <DailyRemindersModal />}
+
       {/* Header */}
       <header className="border-b bg-gradient-primary shadow-md safe-top">
         <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-2">

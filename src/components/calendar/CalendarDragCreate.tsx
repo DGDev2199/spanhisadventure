@@ -1,17 +1,11 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-
-interface DragSelection {
-  day: number;
-  startHour: number;
-  endHour: number;
-}
 
 interface CalendarDragCreateProps {
   day: number;
   hour: number;
   canEdit: boolean;
-  onDragComplete: (day: number, startHour: number, endHour: number) => void;
+  onDragComplete: (startDay: number, endDay: number, startHour: number, endHour: number) => void;
   isSelecting: boolean;
   selectionStart: { day: number; hour: number } | null;
   selectionEnd: { day: number; hour: number } | null;
@@ -31,18 +25,19 @@ export const CalendarDragCell = ({
   onMouseEnter,
   children,
 }: CalendarDragCreateProps) => {
+  // Detectar si esta celda está dentro del rectángulo de selección
   const isInSelection = useCallback(() => {
     if (!selectionStart || !selectionEnd) return false;
-    if (selectionStart.day !== day || selectionEnd.day !== day) return false;
     
+    const minDay = Math.min(selectionStart.day, selectionEnd.day);
+    const maxDay = Math.max(selectionStart.day, selectionEnd.day);
     const minHour = Math.min(selectionStart.hour, selectionEnd.hour);
     const maxHour = Math.max(selectionStart.hour, selectionEnd.hour);
     
-    return hour >= minHour && hour <= maxHour;
+    return day >= minDay && day <= maxDay && hour >= minHour && hour <= maxHour;
   }, [selectionStart, selectionEnd, day, hour]);
 
   const isStart = selectionStart?.day === day && selectionStart?.hour === hour;
-  const isEnd = selectionEnd?.day === day && selectionEnd?.hour === hour;
   const inSelection = isInSelection();
 
   return (
@@ -51,8 +46,6 @@ export const CalendarDragCell = ({
         "min-h-[60px] border rounded-md p-1 bg-background relative transition-colors duration-100",
         canEdit && "cursor-crosshair hover:bg-primary/5",
         inSelection && "bg-primary/20 border-primary",
-        isStart && "rounded-b-none",
-        isEnd && "rounded-t-none"
       )}
       onMouseDown={(e) => {
         if (canEdit && e.button === 0) {
@@ -82,7 +75,7 @@ export const CalendarDragCell = ({
 };
 
 interface UseCalendarDragProps {
-  onCreateEvent: (day: number, startTime: string, endTime: string) => void;
+  onCreateEvent: (startDay: number, endDay: number, startTime: string, endTime: string) => void;
 }
 
 export const useCalendarDrag = ({ onCreateEvent }: UseCalendarDragProps) => {
@@ -96,24 +89,24 @@ export const useCalendarDrag = ({ onCreateEvent }: UseCalendarDragProps) => {
     setSelectionEnd({ day, hour });
   }, []);
 
+  // Permitir selección en cualquier día (multi-día / rectangular)
   const handleMouseEnter = useCallback((day: number, hour: number) => {
     if (isSelecting && selectionStart) {
-      // Only allow vertical selection within the same day
-      if (day === selectionStart.day) {
-        setSelectionEnd({ day, hour });
-      }
+      setSelectionEnd({ day, hour });
     }
   }, [isSelecting, selectionStart]);
 
   const handleMouseUp = useCallback(() => {
     if (isSelecting && selectionStart && selectionEnd) {
+      const minDay = Math.min(selectionStart.day, selectionEnd.day);
+      const maxDay = Math.max(selectionStart.day, selectionEnd.day);
       const minHour = Math.min(selectionStart.hour, selectionEnd.hour);
       const maxHour = Math.max(selectionStart.hour, selectionEnd.hour);
       
       const startTime = `${minHour.toString().padStart(2, '0')}:00`;
       const endTime = `${(maxHour + 1).toString().padStart(2, '0')}:00`;
       
-      onCreateEvent(selectionStart.day, startTime, endTime);
+      onCreateEvent(minDay, maxDay, startTime, endTime);
     }
     
     setIsSelecting(false);

@@ -26,6 +26,8 @@ const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const EVENT_TYPES = [
   { value: 'class', label: 'Clase', emoji: '📚' },
   { value: 'tutoring', label: 'Práctica', emoji: '👨‍🏫' },
+  { value: 'project', label: 'Proyecto', emoji: '🎯' },
+  { value: 'welcome', label: 'Bienvenida', emoji: '👋' },
   { value: 'breakfast', label: 'Desayuno', emoji: '🍳' },
   { value: 'lunch', label: 'Almuerzo', emoji: '🍽️' },
   { value: 'break', label: 'Descanso', emoji: '☕' },

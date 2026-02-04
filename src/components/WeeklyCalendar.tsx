@@ -79,6 +79,20 @@ const EVENT_TYPE_CONFIG: Record<string, { label: string; emoji: string; bg: stri
     border: 'border-green-500',
     text: 'text-green-900 dark:text-green-200' 
   },
+  project: { 
+    label: 'Proyecto', 
+    emoji: '🎯', 
+    bg: 'bg-violet-100 dark:bg-violet-900/40', 
+    border: 'border-violet-500',
+    text: 'text-violet-900 dark:text-violet-200' 
+  },
+  welcome: { 
+    label: 'Bienvenida', 
+    emoji: '👋', 
+    bg: 'bg-amber-100 dark:bg-amber-900/40', 
+    border: 'border-amber-500',
+    text: 'text-amber-900 dark:text-amber-200' 
+  },
   breakfast: { 
     label: 'Desayuno', 
     emoji: '🍳', 

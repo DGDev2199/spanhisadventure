@@ -10,12 +10,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface CreateScheduleEventDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+// Sin Domingo
 const DAYS = [
   { value: '0', label: 'Lunes' },
   { value: '1', label: 'Martes' },
@@ -23,15 +25,20 @@ const DAYS = [
   { value: '3', label: 'Jueves' },
   { value: '4', label: 'Viernes' },
   { value: '5', label: 'Sábado' },
-  { value: '6', label: 'Domingo' },
 ];
 
 const EVENT_TYPES = [
-  { value: 'class', label: 'Clase' },
-  { value: 'tutoring', label: 'Tutoría' },
-  { value: 'activity', label: 'Actividad' },
-  { value: 'exam', label: 'Examen' },
-  { value: 'break', label: 'Descanso' },
+  { value: 'class', label: 'Clase', emoji: '📚' },
+  { value: 'tutoring', label: 'Práctica', emoji: '👨‍🏫' },
+  { value: 'breakfast', label: 'Desayuno', emoji: '🍳' },
+  { value: 'lunch', label: 'Almuerzo', emoji: '🍽️' },
+  { value: 'break', label: 'Descanso', emoji: '☕' },
+  { value: 'cultural', label: 'Cultural', emoji: '🎭' },
+  { value: 'sports', label: 'Deportiva', emoji: '⚽' },
+  { value: 'adventure', label: 'Aventura', emoji: '🏔️' },
+  { value: 'exchange', label: 'Intercambio', emoji: '🌎' },
+  { value: 'dance', label: 'Baile', emoji: '💃' },
+  { value: 'elective', label: 'Electiva', emoji: '📖' },
 ];
 
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
@@ -116,7 +123,6 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
       if (!title || !eventType) throw new Error('Fill required fields');
       if (selectedDays.length === 0) throw new Error('Selecciona al menos un día');
 
-      // Create one event for each selected day
       const eventsToCreate = selectedDays.map(day => ({
         title,
         description: description || null,
@@ -178,6 +184,29 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
         </DialogHeader>
 
         <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
+          {/* Grid de tipos de evento */}
+          <div>
+            <Label className="mb-2 block">Tipo de Evento *</Label>
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+              {EVENT_TYPES.map((type) => (
+                <button
+                  key={type.value}
+                  type="button"
+                  onClick={() => setEventType(type.value)}
+                  className={cn(
+                    "flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all",
+                    eventType === type.value
+                      ? 'border-primary bg-primary/10'
+                      : 'border-muted bg-muted/30 hover:bg-muted/50'
+                  )}
+                >
+                  <span className="text-xl">{type.emoji}</span>
+                  <span className="text-[10px] font-medium leading-tight text-center">{type.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div>
             <Label>Título *</Label>
             <Input
@@ -194,24 +223,6 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Detalles adicionales..."
             />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Tipo de Evento *</Label>
-              <Select value={eventType} onValueChange={setEventType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {EVENT_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           <div>
@@ -247,6 +258,7 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
+                step="1800"
               />
             </div>
 
@@ -256,6 +268,7 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
+                step="1800"
               />
             </div>
           </div>

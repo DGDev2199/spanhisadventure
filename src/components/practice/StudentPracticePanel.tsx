@@ -100,7 +100,7 @@ export default function StudentPracticePanel() {
               {pendingAssignments.length > 0 && (
                 <div>
                   <h4 className="text-xs sm:text-sm font-medium mb-2">Por completar</h4>
-                  <ScrollArea className={isMobile ? 'h-auto max-h-[60vh]' : 'h-auto max-h-[350px]'}>
+                  {isMobile ? (
                     <div className="space-y-2">
                       {pendingAssignments.map((assignment) => (
                         <Card key={assignment.id} className="hover:bg-muted/50 transition-colors">
@@ -132,11 +132,44 @@ export default function StudentPracticePanel() {
                           </CardContent>
                         </Card>
                       ))}
-
-                      {/* Spacer to avoid last item's button being clipped by nested scroll on some mobiles */}
-                      <div className="h-2" />
                     </div>
-                  </ScrollArea>
+                  ) : (
+                    <ScrollArea className="h-auto max-h-[350px]">
+                      <div className="space-y-2">
+                        {pendingAssignments.map((assignment) => (
+                          <Card key={assignment.id} className="hover:bg-muted/50 transition-colors">
+                            <CardContent className="p-2 sm:p-3">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
+                                    <span className="flex-shrink-0">{getExerciseIcon(assignment.exercise.exercise_type)}</span>
+                                    <span className="font-medium truncate text-xs sm:text-sm">
+                                      {assignment.exercise.title}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center">
+                                    <Badge variant="outline" className="text-[10px] sm:text-xs px-1.5 sm:px-2">
+                                      {getExerciseLabel(assignment.exercise.exercise_type)}
+                                    </Badge>
+                                    {getStatusBadge(assignment.status)}
+                                  </div>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  className="w-full sm:w-auto text-xs sm:text-sm h-8 sm:h-9"
+                                  onClick={() => setSelectedAssignment(assignment)}
+                                >
+                                  <Play className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                  Iniciar
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                        <div className="h-2" />
+                      </div>
+                    </ScrollArea>
+                  )}
                 </div>
               )}
 
@@ -144,7 +177,7 @@ export default function StudentPracticePanel() {
               {completedAssignments.length > 0 && (
                 <div>
                   <h4 className="text-xs sm:text-sm font-medium mb-2 text-muted-foreground">Completados</h4>
-                  <ScrollArea className={isMobile ? 'h-auto max-h-[45vh]' : 'h-auto max-h-[250px]'}>
+                  {isMobile ? (
                     <div className="space-y-2">
                       {completedAssignments.map((assignment) => (
                         <Card key={assignment.id} className="bg-muted/30">
@@ -160,10 +193,11 @@ export default function StudentPracticePanel() {
                                 <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center">
                                   {getStatusBadge(assignment.status, assignment.score)}
                                   <span className="text-[10px] sm:text-xs text-muted-foreground">
-                                    {assignment.completed_at && formatDistanceToNow(new Date(assignment.completed_at), {
-                                      addSuffix: true,
-                                      locale: es,
-                                    })}
+                                    {assignment.completed_at &&
+                                      formatDistanceToNow(new Date(assignment.completed_at), {
+                                        addSuffix: true,
+                                        locale: es,
+                                      })}
                                   </span>
                                 </div>
                               </div>
@@ -180,10 +214,49 @@ export default function StudentPracticePanel() {
                           </CardContent>
                         </Card>
                       ))}
-
-                      <div className="h-2" />
                     </div>
-                  </ScrollArea>
+                  ) : (
+                    <ScrollArea className="h-auto max-h-[250px]">
+                      <div className="space-y-2">
+                        {completedAssignments.map((assignment) => (
+                          <Card key={assignment.id} className="bg-muted/30">
+                            <CardContent className="p-2 sm:p-3">
+                              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
+                                    <span className="flex-shrink-0">{getExerciseIcon(assignment.exercise.exercise_type)}</span>
+                                    <span className="font-medium truncate text-xs sm:text-sm">
+                                      {assignment.exercise.title}
+                                    </span>
+                                  </div>
+                                  <div className="flex flex-wrap gap-1.5 sm:gap-2 items-center">
+                                    {getStatusBadge(assignment.status, assignment.score)}
+                                    <span className="text-[10px] sm:text-xs text-muted-foreground">
+                                      {assignment.completed_at &&
+                                        formatDistanceToNow(new Date(assignment.completed_at), {
+                                          addSuffix: true,
+                                          locale: es,
+                                        })}
+                                    </span>
+                                  </div>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="w-full sm:w-auto h-8 sm:h-9"
+                                  onClick={() => setSelectedAssignment(assignment)}
+                                >
+                                  <Play className="h-3 w-3 sm:h-4 sm:w-4" />
+                                  <span className="sm:hidden ml-1">Ver</span>
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                        <div className="h-2" />
+                      </div>
+                    </ScrollArea>
+                  )}
                 </div>
               )}
             </div>

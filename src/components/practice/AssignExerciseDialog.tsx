@@ -84,10 +84,10 @@ export default function AssignExerciseDialog({
         return [];
       }
 
-      // Get profiles for these students separately
+      // Get profiles for these students using safe_profiles_view (respects RLS)
       const userIds = studentProfiles.map(sp => sp.user_id);
       const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
+        .from('safe_profiles_view')
         .select('id, full_name, email')
         .in('id', userIds);
 

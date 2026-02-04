@@ -23,6 +23,7 @@ import { CreateTestDialog } from '@/components/CreateTestDialog';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 import { TestDetailsDialog } from '@/components/TestDetailsDialog';
 import { FinalTestReviewDialog } from '@/components/FinalTestReviewDialog';
+import { ManualLevelAssignDialog } from '@/components/ManualLevelAssignDialog';
 import { StaffHoursCard } from '@/components/StaffHoursCard';
 import { TeacherTaskReviewPanel } from '@/components/TeacherTaskReviewPanel';
 import { TeacherScheduledClassesCard } from '@/components/TeacherScheduledClassesCard';
@@ -175,6 +176,7 @@ const TeacherDashboard = () => {
   const [videoCallStudent, setVideoCallStudent] = useState<{ id: string; name: string } | null>(null);
   const [createAchievementOpen, setCreateAchievementOpen] = useState(false);
   const [awardAchievementOpen, setAwardAchievementOpen] = useState(false);
+  const [isManualLevelOpen, setIsManualLevelOpen] = useState(false);
 
   const { data: myStudents, isLoading: studentsLoading } = useQuery({
     queryKey: ['teacher-students', user?.id],
@@ -730,6 +732,21 @@ const TeacherDashboard = () => {
                                 Revisar Test
                               </Button>
                             )}
+                            {/* Show manual level assign when no level and test not pending */}
+                            {!student.level && student.placement_test_status !== 'pending' && (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                onClick={() => {
+                                  setSelectedStudent(student);
+                                  setIsManualLevelOpen(true);
+                                }}
+                                className="w-full"
+                              >
+                                <GraduationCap className="h-4 w-4 mr-1" />
+                                Asignar Nivel
+                              </Button>
+                            )}
                           </div>
                         </CardContent>
                       </Card>
@@ -871,6 +888,20 @@ const TeacherDashboard = () => {
                             >
                               <FileCheck className="h-4 w-4 mr-1" />
                               Revisar Test
+                            </Button>
+                          )}
+                          {/* Show manual level assign when no level and test not pending */}
+                          {!student.level && student.placement_test_status !== 'pending' && (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => {
+                                setSelectedStudent(student);
+                                setIsManualLevelOpen(true);
+                              }}
+                            >
+                              <GraduationCap className="h-4 w-4 mr-1" />
+                              Asignar Nivel
                             </Button>
                           )}
                         </div>
@@ -1293,6 +1324,17 @@ const TeacherDashboard = () => {
           onOpenChange={setAwardAchievementOpen}
           studentId={progressStudent.id}
           studentName={progressStudent.name}
+        />
+      )}
+
+      {/* Manual Level Assign Dialog */}
+      {selectedStudent && (
+        <ManualLevelAssignDialog
+          open={isManualLevelOpen}
+          onOpenChange={setIsManualLevelOpen}
+          studentId={selectedStudent.user_id}
+          studentName={selectedStudent.profiles?.full_name || 'Estudiante'}
+          currentLevel={selectedStudent.level}
         />
       )}
     </div>

@@ -1474,11 +1474,16 @@ export type Database = {
       }
       schedule_events: {
         Row: {
+          attachment_name: string | null
+          attachment_url: string | null
           color: string | null
           created_at: string
           created_by: string
           day_of_week: number
           description: string | null
+          details_info: string | null
+          elective_option_1: string | null
+          elective_option_2: string | null
           end_time: string
           event_type: string
           id: string
@@ -1495,11 +1500,16 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attachment_name?: string | null
+          attachment_url?: string | null
           color?: string | null
           created_at?: string
           created_by: string
           day_of_week: number
           description?: string | null
+          details_info?: string | null
+          elective_option_1?: string | null
+          elective_option_2?: string | null
           end_time: string
           event_type: string
           id?: string
@@ -1516,11 +1526,16 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attachment_name?: string | null
+          attachment_url?: string | null
           color?: string | null
           created_at?: string
           created_by?: string
           day_of_week?: number
           description?: string | null
+          details_info?: string | null
+          elective_option_1?: string | null
+          elective_option_2?: string | null
           end_time?: string
           event_type?: string
           id?: string
@@ -1999,6 +2014,72 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      student_elective_selections: {
+        Row: {
+          created_at: string | null
+          event_date: string
+          event_id: string
+          id: string
+          selected_at: string | null
+          selected_option: number
+          student_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_date: string
+          event_id: string
+          id?: string
+          selected_at?: string | null
+          selected_option: number
+          student_id: string
+        }
+        Update: {
+          created_at?: string | null
+          event_date?: string
+          event_id?: string
+          id?: string
+          selected_at?: string | null
+          selected_option?: number
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_elective_selections_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_elective_selections_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_elective_selections_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "public_staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_elective_selections_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "safe_profiles_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_elective_selections_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "user_rankings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       student_profiles: {
         Row: {

@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { FileText, X, Upload } from 'lucide-react';
 
 interface EditScheduleEventDialogProps {
   open: boolean;
@@ -60,6 +61,14 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
   const [tutor1, setTutor1] = useState('');
   const [tutor2, setTutor2] = useState('');
 
+  // New fields for event details
+  const [detailsInfo, setDetailsInfo] = useState('');
+  const [attachmentUrl, setAttachmentUrl] = useState('');
+  const [attachmentName, setAttachmentName] = useState('');
+  const [electiveOption1, setElectiveOption1] = useState('');
+  const [electiveOption2, setElectiveOption2] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
+
   useEffect(() => {
     if (event) {
       setTitle(event.title || '');
@@ -74,6 +83,12 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
       setTutor1(event.tutor_id || 'none');
       setTutor2(event.tutor_id_2 || 'none');
       setLevel(event.level || 'none');
+      // New fields
+      setDetailsInfo(event.details_info || '');
+      setAttachmentUrl(event.attachment_url || '');
+      setAttachmentName(event.attachment_name || '');
+      setElectiveOption1(event.elective_option_1 || '');
+      setElectiveOption2(event.elective_option_2 || '');
     }
   }, [event]);
 
@@ -136,6 +151,42 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
     }
   });
 
+  // Handle file upload
+  const handleFileUpload = async (file: File) => {
+    if (!event?.id) return;
+    
+    setIsUploading(true);
+    try {
+      const filePath = `event-attachments/${event.id}/${Date.now()}-${file.name}`;
+      const { error } = await supabase.storage
+        .from('materials')
+        .upload(filePath, file);
+      
+      if (error) throw error;
+      
+      setAttachmentUrl(`materials/${filePath}`);
+      setAttachmentName(file.name);
+      toast({ title: 'Archivo subido exitosamente' });
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({ title: 'Error al subir archivo', variant: 'destructive' });
+    }
+    setIsUploading(false);
+  };
+
+  const handleRemoveAttachment = async () => {
+    if (attachmentUrl) {
+      try {
+        const path = attachmentUrl.replace('materials/', '');
+        await supabase.storage.from('materials').remove([path]);
+      } catch (e) {
+        // Ignore removal errors
+      }
+    }
+    setAttachmentUrl('');
+    setAttachmentName('');
+  };
+
   const updateMutation = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
@@ -153,6 +204,12 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
           tutor_id: tutor1 === 'none' ? null : tutor1,
           tutor_id_2: tutor2 === 'none' ? null : tutor2,
           level: (level === 'none' ? null : level) as any,
+          // New fields
+          details_info: detailsInfo || null,
+          attachment_url: attachmentUrl || null,
+          attachment_name: attachmentName || null,
+          elective_option_1: electiveOption1 || null,
+          elective_option_2: electiveOption2 || null,
         })
         .eq('id', event.id);
       
@@ -160,6 +217,7 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['schedule-events'] });
+      queryClient.invalidateQueries({ queryKey: ['today-events'] });
       toast({ title: 'Evento actualizado exitosamente' });
       onOpenChange(false);
     },
@@ -362,6 +420,89 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
               </div>
             </div>
           </div>
+
+          {/* Conditional sections based on event type */}
+          {/* Details for adventure/cultural/sports events */}
+          {['adventure', 'cultural', 'sports', 'exchange'].includes(eventType) && (
+            <div className="space-y-4 border-t pt-4">
+              <h4 className="font-medium text-sm flex items-center gap-2">
+                📋 Información Detallada
+              </h4>
+              <div>
+                <Label className="text-xs text-muted-foreground">Instrucciones y Detalles</Label>
+                <Textarea 
+                  value={detailsInfo} 
+                  onChange={(e) => setDetailsInfo(e.target.value)}
+                  placeholder="Instrucciones, punto de encuentro, qué traer, horarios especiales..."
+                  rows={4}
+                  className="mt-1"
+                />
+              </div>
+              
+              {/* PDF upload */}
+              <div>
+                <Label className="text-xs text-muted-foreground">Archivo Adjunto (PDF)</Label>
+                {attachmentUrl ? (
+                  <div className="flex items-center gap-2 mt-2 p-2 bg-muted/50 rounded-lg">
+                    <FileText className="h-4 w-4 text-primary" />
+                    <span className="text-sm flex-1 truncate">{attachmentName}</span>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={handleRemoveAttachment}
+                      className="h-7 w-7 p-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="mt-1">
+                    <Input 
+                      type="file" 
+                      accept=".pdf" 
+                      disabled={isUploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileUpload(file);
+                      }}
+                    />
+                    {isUploading && (
+                      <p className="text-xs text-muted-foreground mt-1">Subiendo...</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Elective options */}
+          {eventType === 'elective' && (
+            <div className="space-y-4 border-t pt-4">
+              <h4 className="font-medium text-sm flex items-center gap-2">
+                📖 Opciones de Electiva
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Opción 1</Label>
+                  <Input 
+                    value={electiveOption1} 
+                    onChange={(e) => setElectiveOption1(e.target.value)}
+                    placeholder="Ej: Cultural - Cocina Costarricense"
+                    className="mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Opción 2</Label>
+                  <Input 
+                    value={electiveOption2} 
+                    onChange={(e) => setElectiveOption2(e.target.value)}
+                    placeholder="Ej: Gramática - Subjuntivo"
+                    className="mt-1"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <DialogFooter className="gap-2">
@@ -371,7 +512,7 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button onClick={() => updateMutation.mutate()} disabled={!title || !eventType || !dayOfWeek || !startTime || !endTime || updateMutation.isPending}>
+          <Button onClick={() => updateMutation.mutate()} disabled={!title || !eventType || !dayOfWeek || !startTime || !endTime || updateMutation.isPending || isUploading}>
             {updateMutation.isPending ? 'Guardando...' : 'Guardar Cambios'}
           </Button>
         </DialogFooter>

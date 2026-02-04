@@ -45,13 +45,21 @@ export default function AssignExerciseDialog({
     queryFn: async () => {
       if (!user) return [];
 
+      console.log('[AssignExercise] Fetching students for user:', user.id);
+
       // Get user's roles
-      const { data: roles } = await supabase
+      const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id);
 
+      if (rolesError) {
+        console.error('[AssignExercise] Error fetching roles:', rolesError);
+        return [];
+      }
+
       const userRoles = roles?.map(r => r.role) || [];
+      console.log('[AssignExercise] User roles:', userRoles);
 
       // Build the student profiles query based on role
       // Filter active students who are NOT alumni
@@ -75,32 +83,40 @@ export default function AssignExerciseDialog({
 
       const { data: studentProfiles, error: spError } = await studentProfilesQuery;
 
+      console.log('[AssignExercise] Student profiles result:', studentProfiles, 'Error:', spError);
+
       if (spError) {
         console.error('Error fetching student profiles:', spError);
         return [];
       }
 
       if (!studentProfiles || studentProfiles.length === 0) {
+        console.log('[AssignExercise] No student profiles found');
         return [];
       }
 
       // Get profiles for these students using safe_profiles_view (respects RLS)
+      // Note: email may be null for non-admin users due to privacy restrictions
       const userIds = studentProfiles.map(sp => sp.user_id);
+      console.log('[AssignExercise] Looking up profiles for user IDs:', userIds);
+
       const { data: profiles, error: profilesError } = await supabase
         .from('safe_profiles_view')
         .select('id, full_name, email')
         .in('id', userIds);
+
+      console.log('[AssignExercise] Profiles result:', profiles, 'Error:', profilesError);
 
       if (profilesError) {
         console.error('Error fetching profiles:', profilesError);
         return [];
       }
 
-      // Combine the results
+      // Combine the results - email may be null for non-admin users
       return profiles?.map(p => ({
         id: p.id,
-        name: p.full_name,
-        email: p.email,
+        name: p.full_name || 'Sin nombre',
+        email: p.email || '',
       })) || [];
     },
     enabled: open && !!user,
@@ -175,7 +191,7 @@ export default function AssignExerciseDialog({
                 <SelectContent>
                   {students.map(student => (
                     <SelectItem key={student.id} value={student.id}>
-                      {student.name} ({student.email})
+                      {student.name}{student.email ? ` (${student.email})` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>

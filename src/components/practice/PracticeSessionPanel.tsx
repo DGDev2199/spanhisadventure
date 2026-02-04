@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sparkles, BookOpen, Languages, MessageSquare, Plus, Play, Users, Clock, Trash2, ListOrdered, CheckSquare, Shuffle, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { usePracticeExercises, useDeleteExercise, PracticeExercise } from '@/hooks/usePracticeExercises';
 import GenerateExercisesDialog from './GenerateExercisesDialog';
 import PracticeExerciseView from './PracticeExerciseView';
@@ -37,6 +38,7 @@ export default function PracticeSessionPanel({
 }: PracticeSessionPanelProps) {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [showGenerateDialog, setShowGenerateDialog] = useState(false);
   const [selectedExercise, setSelectedExercise] = useState<PracticeExercise | null>(null);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
@@ -147,24 +149,95 @@ export default function PracticeSessionPanel({
 
             {exerciseTypes.map((tab) => (
               <TabsContent key={tab} value={tab}>
-                <ScrollArea className="h-[300px]">
-                  {isLoading ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      Cargando ejercicios...
-                    </div>
-                  ) : exercises?.filter(e => tab === 'all' || e.exercise_type === tab).length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p>No hay ejercicios todavía</p>
-                      <Button
-                        variant="link"
-                        onClick={() => setShowGenerateDialog(true)}
-                        className="mt-2"
-                      >
-                        Generar tu primer ejercicio
-                      </Button>
-                    </div>
-                  ) : (
+                {isLoading ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Cargando ejercicios...
+                  </div>
+                ) : exercises?.filter(e => tab === 'all' || e.exercise_type === tab).length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>No hay ejercicios todavía</p>
+                    <Button
+                      variant="link"
+                      onClick={() => setShowGenerateDialog(true)}
+                      className="mt-2"
+                    >
+                      Generar tu primer ejercicio
+                    </Button>
+                  </div>
+                ) : isMobile ? (
+                  <div className="space-y-3">
+                    {exercises
+                      ?.filter(e => tab === 'all' || e.exercise_type === tab)
+                      .map((exercise) => (
+                        <Card key={exercise.id} className="hover:bg-muted/50 transition-colors">
+                          <CardContent className="p-4">
+                            <div className="flex flex-col gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  {getExerciseIcon(exercise.exercise_type)}
+                                  <h4 className="font-medium truncate">{exercise.title}</h4>
+                                </div>
+                                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                  <Badge variant="outline" className="text-xs">
+                                    {getExerciseLabel(exercise.exercise_type)}
+                                  </Badge>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {formatDistanceToNow(new Date(exercise.created_at), {
+                                      addSuffix: true,
+                                      locale: es,
+                                    })}
+                                  </span>
+                                  <span>{getExerciseCount(exercise)} items</span>
+                                  {exercise.level && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {exercise.level}
+                                    </Badge>
+                                  )}
+                                </div>
+                                {exercise.topic_context && (
+                                  <p className="text-xs text-muted-foreground mt-1 truncate">
+                                    Tema: {exercise.topic_context}
+                                  </p>
+                                )}
+                              </div>
+                              <div className="flex gap-2 justify-end">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleAssign(exercise.id)}
+                                  title="Asignar a estudiante"
+                                >
+                                  <Users className="h-4 w-4 mr-1" />
+                                  Asignar
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => setSelectedExercise(exercise)}
+                                  title="Practicar"
+                                >
+                                  <Play className="h-4 w-4 mr-1" />
+                                  Practicar
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDelete(exercise)}
+                                  title="Eliminar ejercicio"
+                                  className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    <div className="h-4" />
+                  </div>
+                ) : (
+                  <ScrollArea className="h-auto max-h-[350px]">
                     <div className="space-y-3">
                       {exercises
                         ?.filter(e => tab === 'all' || e.exercise_type === tab)
@@ -231,9 +304,10 @@ export default function PracticeSessionPanel({
                             </CardContent>
                           </Card>
                         ))}
+                      <div className="h-2" />
                     </div>
-                  )}
-                </ScrollArea>
+                  </ScrollArea>
+                )}
               </TabsContent>
             ))}
           </Tabs>

@@ -425,6 +425,7 @@ export const StudentProgressView = ({ studentId, isEditable }: StudentProgressVi
   // Determine user role for the modal
   const getUserRole = (): 'teacher' | 'tutor' | 'student' | 'admin' => {
     if (currentUser?.roles?.includes('admin')) return 'admin';
+    if (currentUser?.roles?.includes('coordinator')) return 'admin'; // Coordinador actua como admin
     if (currentUser?.roles?.includes('teacher')) return 'teacher';
     if (currentUser?.roles?.includes('tutor')) return 'tutor';
     return 'student';

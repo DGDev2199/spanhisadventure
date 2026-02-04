@@ -31,6 +31,7 @@ import { EarningsPanel } from '@/components/EarningsPanel';
 import { ModalityRequestsPanel } from '@/components/ModalityRequestsPanel';
 import { ManageCurriculumDialog } from '@/components/ManageCurriculumDialog';
 import { ManageAchievementsDialog } from '@/components/ManageAchievementsDialog';
+import { ManualLevelAssignDialog } from '@/components/ManualLevelAssignDialog';
 import { useSwipeable } from 'react-swipeable';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
@@ -64,6 +65,8 @@ const AdminDashboard = () => {
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [curriculumDialogOpen, setCurriculumDialogOpen] = useState(false);
   const [achievementsDialogOpen, setAchievementsDialogOpen] = useState(false);
+  const [manualLevelDialogOpen, setManualLevelDialogOpen] = useState(false);
+  const [manualLevelStudent, setManualLevelStudent] = useState<any>(null);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
@@ -639,6 +642,18 @@ const AdminDashboard = () => {
                               size="sm"
                               variant="outline"
                               onClick={() => {
+                                setManualLevelStudent(student);
+                                setManualLevelDialogOpen(true);
+                              }}
+                              className="flex-1 min-w-[100px]"
+                            >
+                              <GraduationCap className="h-4 w-4 mr-1" />
+                              Nivel
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
                                 setSelectedStudent(student);
                                 setAssignDialogOpen(true);
                               }}
@@ -727,6 +742,17 @@ const AdminDashboard = () => {
                             >
                               <Calendar className="h-4 w-4 sm:mr-1" />
                               <span className="hidden sm:inline">Horario</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setManualLevelStudent(student);
+                                setManualLevelDialogOpen(true);
+                              }}
+                            >
+                              <GraduationCap className="h-4 w-4 sm:mr-1" />
+                              <span className="hidden sm:inline">Nivel</span>
                             </Button>
                             <Button
                               size="sm"
@@ -974,6 +1000,17 @@ const AdminDashboard = () => {
         open={achievementsDialogOpen}
         onOpenChange={setAchievementsDialogOpen}
       />
+
+      {/* Manual Level Assignment Dialog */}
+      {manualLevelStudent && (
+        <ManualLevelAssignDialog
+          open={manualLevelDialogOpen}
+          onOpenChange={setManualLevelDialogOpen}
+          studentId={manualLevelStudent.user_id}
+          studentName={manualLevelStudent.profiles?.full_name || 'Estudiante'}
+          currentLevel={manualLevelStudent.level}
+        />
+      )}
     </div>
   );
 };

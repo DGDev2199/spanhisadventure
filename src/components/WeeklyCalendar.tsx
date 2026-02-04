@@ -29,8 +29,11 @@ interface ScheduleEvent {
   rooms?: { name: string } | null;
   teacher_id: string | null;
   tutor_id: string | null;
+  teacher?: { full_name: string } | null;
+  tutor?: { full_name: string } | null;
 }
 
+// Sin Domingo - Solo Lunes a Sábado
 const DAYS_CONFIG = [
   { value: 0, label: "Lun", fullLabel: "Lunes", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" },
   { value: 1, label: "Mar", fullLabel: "Martes", color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" },
@@ -38,18 +41,113 @@ const DAYS_CONFIG = [
   { value: 3, label: "Jue", fullLabel: "Jueves", color: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300" },
   { value: 4, label: "Vie", fullLabel: "Viernes", color: "bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-300" },
   { value: 5, label: "Sáb", fullLabel: "Sábado", color: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300" },
-  { value: 6, label: "Dom", fullLabel: "Domingo", color: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300" },
 ];
 
-const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
-const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 8 AM to 8 PM
+const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
-const EVENT_TYPE_COLORS = {
-  class: 'bg-blue-100 border-blue-500 text-blue-900 dark:bg-blue-900/30 dark:text-blue-300',
-  tutoring: 'bg-green-100 border-green-500 text-green-900 dark:bg-green-900/30 dark:text-green-300',
-  activity: 'bg-purple-100 border-purple-500 text-purple-900 dark:bg-purple-900/30 dark:text-purple-300',
-  exam: 'bg-red-100 border-red-500 text-red-900 dark:bg-red-900/30 dark:text-red-300',
-  break: 'bg-gray-100 border-gray-500 text-gray-900 dark:bg-gray-900/30 dark:text-gray-300',
+// Slots de 30 minutos (8:00 - 21:00)
+const TIME_SLOTS = Array.from({ length: 26 }, (_, i) => {
+  const hour = Math.floor(i / 2) + 8;
+  const minutes = (i % 2) * 30;
+  return { hour, minutes, label: `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}` };
+});
+
+// Configuración de colores por tipo de evento
+const EVENT_TYPE_CONFIG: Record<string, { label: string; emoji: string; bg: string; border: string; text: string }> = {
+  class: { 
+    label: 'Clase', 
+    emoji: '📚', 
+    bg: 'bg-blue-100 dark:bg-blue-900/40', 
+    border: 'border-blue-500',
+    text: 'text-blue-900 dark:text-blue-200' 
+  },
+  tutoring: { 
+    label: 'Práctica', 
+    emoji: '👨‍🏫', 
+    bg: 'bg-green-100 dark:bg-green-900/40', 
+    border: 'border-green-500',
+    text: 'text-green-900 dark:text-green-200' 
+  },
+  breakfast: { 
+    label: 'Desayuno', 
+    emoji: '🍳', 
+    bg: 'bg-yellow-100 dark:bg-yellow-900/40', 
+    border: 'border-yellow-500',
+    text: 'text-yellow-900 dark:text-yellow-200' 
+  },
+  lunch: { 
+    label: 'Almuerzo', 
+    emoji: '🍽️', 
+    bg: 'bg-orange-100 dark:bg-orange-900/40', 
+    border: 'border-orange-500',
+    text: 'text-orange-900 dark:text-orange-200' 
+  },
+  break: { 
+    label: 'Descanso', 
+    emoji: '☕', 
+    bg: 'bg-gray-100 dark:bg-gray-800/40', 
+    border: 'border-gray-400',
+    text: 'text-gray-800 dark:text-gray-200' 
+  },
+  cultural: { 
+    label: 'Act. Cultural', 
+    emoji: '🎭', 
+    bg: 'bg-purple-100 dark:bg-purple-900/40', 
+    border: 'border-purple-500',
+    text: 'text-purple-900 dark:text-purple-200' 
+  },
+  sports: { 
+    label: 'Act. Deportiva', 
+    emoji: '⚽', 
+    bg: 'bg-red-100 dark:bg-red-900/40', 
+    border: 'border-red-500',
+    text: 'text-red-900 dark:text-red-200' 
+  },
+  adventure: { 
+    label: 'Aventura', 
+    emoji: '🏔️', 
+    bg: 'bg-cyan-100 dark:bg-cyan-900/40', 
+    border: 'border-cyan-500',
+    text: 'text-cyan-900 dark:text-cyan-200' 
+  },
+  exchange: { 
+    label: 'Intercambio', 
+    emoji: '🌎', 
+    bg: 'bg-pink-100 dark:bg-pink-900/40', 
+    border: 'border-pink-500',
+    text: 'text-pink-900 dark:text-pink-200' 
+  },
+  dance: { 
+    label: 'Baile', 
+    emoji: '💃', 
+    bg: 'bg-fuchsia-100 dark:bg-fuchsia-900/40', 
+    border: 'border-fuchsia-500',
+    text: 'text-fuchsia-900 dark:text-fuchsia-200' 
+  },
+  elective: { 
+    label: 'Electiva', 
+    emoji: '📖', 
+    bg: 'bg-indigo-100 dark:bg-indigo-900/40', 
+    border: 'border-indigo-500',
+    text: 'text-indigo-900 dark:text-indigo-200' 
+  },
+};
+
+// Helper para obtener posición vertical del evento (basado en slots de 30 min)
+const getEventTopPosition = (startTime: string) => {
+  const [h, m] = startTime.split(':').map(Number);
+  const slotsFromStart = (h - 8) * 2 + Math.floor(m / 30);
+  return slotsFromStart * 30; // 30px por slot de 30 min
+};
+
+// Helper para obtener altura del evento
+const getEventHeight = (startTime: string, endTime: string) => {
+  const [sh, sm] = startTime.split(':').map(Number);
+  const [eh, em] = endTime.split(':').map(Number);
+  const startMinutes = sh * 60 + sm;
+  const endMinutes = eh * 60 + em;
+  const durationSlots = (endMinutes - startMinutes) / 30;
+  return Math.max(durationSlots * 30, 30); // Mínimo 30px
 };
 
 interface WeeklyCalendarProps {
@@ -62,15 +160,13 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
-  const [selectedMobileDay, setSelectedMobileDay] = useState(0); // Monday
+  const [selectedMobileDay, setSelectedMobileDay] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
   const calendarRef = useRef<HTMLDivElement>(null);
   
-  // Quick event creation state
   const [isQuickEventOpen, setIsQuickEventOpen] = useState(false);
   const [quickEventData, setQuickEventData] = useState({ day: 0, startTime: '09:00', endTime: '10:00' });
 
-  // Drag-to-create hook
   const handleDragCreate = useCallback((day: number, startTime: string, endTime: string) => {
     setQuickEventData({ day, startTime, endTime });
     setIsQuickEventOpen(true);
@@ -164,7 +260,9 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
         .from('schedule_events')
         .select(`
           *,
-          rooms (name)
+          rooms (name),
+          teacher:profiles!schedule_events_teacher_id_fkey(full_name),
+          tutor:profiles!schedule_events_tutor_id_fkey(full_name)
         `)
         .eq('is_active', true)
         .order('day_of_week', { ascending: true })
@@ -176,7 +274,6 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
     enabled: !!user?.id,
   });
 
-  // Setup realtime subscription
   useEffect(() => {
     if (!user?.id) return;
 
@@ -200,13 +297,9 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
     };
   }, [user?.id, refetch]);
 
-  const getEventsForDayAndTime = (day: number, hour: number) => {
+  const getEventsForDay = (day: number) => {
     if (!events) return [];
-    
-    return events.filter((event) => {
-      const eventStart = parseInt(event.start_time.split(':')[0]);
-      return event.day_of_week === day && eventStart === hour;
-    });
+    return events.filter((event) => event.day_of_week === day);
   };
 
   const formatTime = (time: string) => {
@@ -214,10 +307,16 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
     return `${hours}:${minutes}`;
   };
 
-  const getEventDuration = (startTime: string, endTime: string) => {
-    const start = parseInt(startTime.split(':')[0]) + parseInt(startTime.split(':')[1]) / 60;
-    const end = parseInt(endTime.split(':')[0]) + parseInt(endTime.split(':')[1]) / 60;
-    return end - start;
+  const getEventTypeStyles = (eventType: string) => {
+    const config = EVENT_TYPE_CONFIG[eventType];
+    if (config) {
+      return `${config.bg} ${config.border} ${config.text}`;
+    }
+    return EVENT_TYPE_CONFIG.class.bg + ' ' + EVENT_TYPE_CONFIG.class.border + ' ' + EVENT_TYPE_CONFIG.class.text;
+  };
+
+  const getEventTypeInfo = (eventType: string) => {
+    return EVENT_TYPE_CONFIG[eventType] || EVENT_TYPE_CONFIG.class;
   };
 
   if (isLoading) {
@@ -237,7 +336,7 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
 
   // Mobile single-day view
   const renderMobileCalendar = () => {
-    const currentDayInfo = DAYS_CONFIG[selectedMobileDay];
+    const dayEvents = getEventsForDay(selectedMobileDay);
 
     return (
       <div {...dayHandlers} className="space-y-4 px-1">
@@ -251,65 +350,73 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
           Desliza para cambiar de día
         </p>
 
-        <div className="space-y-1">
-          {HOURS.map((hour) => {
-            const dayEvents = getEventsForDayAndTime(selectedMobileDay, hour);
-            
-            return (
-              <div key={hour} className="flex gap-2 items-stretch">
-                <div className="w-12 text-xs text-muted-foreground py-2 flex-shrink-0">
-                  {hour.toString().padStart(2, '0')}:00
-                </div>
-                <div className="flex-1 min-h-[50px] border rounded-md p-1 bg-background relative">
-                  {dayEvents.map((event) => {
-                    const duration = getEventDuration(event.start_time, event.end_time);
-                    
-                    return (
-                      <div
-                        key={event.id}
-                        className={cn(
-                          "border-l-4 rounded px-2 py-1.5 text-xs group",
-                          EVENT_TYPE_COLORS[event.event_type as keyof typeof EVENT_TYPE_COLORS] || EVENT_TYPE_COLORS.class,
-                          canEdit ? 'cursor-pointer active:scale-[0.98] transition-transform' : ''
-                        )}
-                        onClick={() => {
-                          if (canEdit) {
-                            setSelectedEvent(event);
-                            setIsEditDialogOpen(true);
-                          }
-                        }}
-                      >
-                        <div className="font-semibold truncate">{event.title}</div>
-                        <div className="text-xs opacity-75">
-                          {formatTime(event.start_time)} - {formatTime(event.end_time)}
-                        </div>
-                        {event.rooms && (
-                          <div className="text-xs opacity-75">
-                            📍 {event.rooms.name}
-                          </div>
-                        )}
-                        {event.level && (
-                          <div className="text-xs font-medium">
-                            Nivel: {event.level}
-                          </div>
-                        )}
+        <div className="space-y-2">
+          {dayEvents.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No hay eventos este día
+            </div>
+          ) : (
+            dayEvents.map((event) => {
+              const typeInfo = getEventTypeInfo(event.event_type);
+              
+              return (
+                <div
+                  key={event.id}
+                  className={cn(
+                    "border-l-4 rounded-lg px-3 py-2 text-sm",
+                    getEventTypeStyles(event.event_type),
+                    canEdit ? 'cursor-pointer active:scale-[0.98] transition-transform' : ''
+                  )}
+                  onClick={() => {
+                    if (canEdit) {
+                      setSelectedEvent(event);
+                      setIsEditDialogOpen(true);
+                    }
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{typeInfo.emoji}</span>
+                    <div className="flex-1">
+                      <div className="font-semibold">{event.title}</div>
+                      <div className="text-xs opacity-75">
+                        {formatTime(event.start_time)} - {formatTime(event.end_time)}
                       </div>
-                    );
-                  })}
+                    </div>
+                  </div>
+                  {event.rooms && (
+                    <div className="text-xs opacity-75 mt-1">📍 {event.rooms.name}</div>
+                  )}
+                  {event.level && (
+                    <div className="text-xs font-medium mt-1">Nivel: {event.level}</div>
+                  )}
+                  {(event.teacher || event.tutor) && (
+                    <div className="flex gap-2 mt-2 flex-wrap">
+                      {event.teacher && (
+                        <span className="text-[10px] bg-blue-200/50 dark:bg-blue-800/30 px-1.5 py-0.5 rounded">
+                          👨‍🏫 {event.teacher.full_name?.split(' ')[0]}
+                        </span>
+                      )}
+                      {event.tutor && (
+                        <span className="text-[10px] bg-green-200/50 dark:bg-green-800/30 px-1.5 py-0.5 rounded">
+                          🎓 {event.tutor.full_name?.split(' ')[0]}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
     );
   };
 
-  // Desktop full calendar view
+  // Desktop full calendar view con slots de 30 min
   const renderDesktopCalendar = () => (
     <div ref={calendarRef} className="bg-background">
-      {/* Header with days */}
-      <div className="grid grid-cols-8 gap-2 mb-2">
+      {/* Header - 7 columnas (hora + 6 días) */}
+      <div className="grid grid-cols-7 gap-1 mb-1">
         <div className="text-xs font-medium text-muted-foreground p-2">Hora</div>
         {DAYS.map((day, index) => (
           <div key={index} className="text-center text-sm font-semibold p-2 bg-primary/5 rounded-t-md">
@@ -319,146 +426,167 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
         ))}
       </div>
 
-      {/* Time slots */}
-      <div className="space-y-1">
-        {HOURS.map((hour) => (
-          <div key={hour} className="grid grid-cols-8 gap-2">
-            {/* Time label */}
-            <div className="text-xs text-muted-foreground p-2 flex items-start">
-              {hour.toString().padStart(2, '0')}:00
-            </div>
+      {/* Time slots - ahora cada slot es 30 min */}
+      <div className="relative">
+        {TIME_SLOTS.map((slot, slotIndex) => {
+          const isHourMark = slot.minutes === 0;
+          
+          return (
+            <div key={slotIndex} className="grid grid-cols-7 gap-1" style={{ height: '30px' }}>
+              {/* Time label - solo mostrar en horas completas */}
+              <div className="text-xs text-muted-foreground px-2 flex items-start">
+                {isHourMark && (
+                  <span className="text-[11px]">{slot.label}</span>
+                )}
+              </div>
 
-            {/* Days */}
-            {[0, 1, 2, 3, 4, 5, 6].map((day) => {
-              const dayEvents = getEventsForDayAndTime(day, hour);
-              
-              // Check if this cell is part of the current selection
-              const isInSelection = () => {
-                if (!selectionStart || !selectionEnd) return false;
-                if (selectionStart.day !== day || selectionEnd.day !== day) return false;
-                const minHour = Math.min(selectionStart.hour, selectionEnd.hour);
-                const maxHour = Math.max(selectionStart.hour, selectionEnd.hour);
-                return hour >= minHour && hour <= maxHour;
-              };
-              
-              const inSelection = canEdit && isInSelection();
-              const isSelectionStart = selectionStart?.day === day && selectionStart?.hour === hour;
-              
-              return (
-                <div
-                  key={day}
-                  className={cn(
-                    "min-h-[60px] border rounded-md p-1 bg-background relative transition-colors duration-100",
-                    canEdit && !dayEvents.length && "cursor-crosshair hover:bg-primary/5",
-                    inSelection && "bg-primary/20 border-primary"
-                  )}
-                  onMouseDown={(e) => {
-                    if (canEdit && e.button === 0 && !dayEvents.length) {
-                      e.preventDefault();
-                      handleMouseDown(day, hour);
-                    }
-                  }}
-                  onMouseEnter={() => {
-                    if (isSelecting && canEdit) {
-                      handleMouseEnter(day, hour);
-                    }
-                  }}
-                >
-                  {/* Selection preview overlay */}
-                  {inSelection && !dayEvents.length && (
-                    <div className="absolute inset-1 bg-primary/30 rounded border-2 border-dashed border-primary flex items-center justify-center z-20">
-                      {isSelectionStart && (
+              {/* Days - 6 columnas para Lun-Sáb */}
+              {[0, 1, 2, 3, 4, 5].map((day) => {
+                const isInSelection = () => {
+                  if (!selectionStart || !selectionEnd) return false;
+                  if (selectionStart.day !== day || selectionEnd.day !== day) return false;
+                  const minHour = Math.min(selectionStart.hour, selectionEnd.hour);
+                  const maxHour = Math.max(selectionStart.hour, selectionEnd.hour);
+                  return slot.hour >= minHour && slot.hour <= maxHour;
+                };
+                
+                const inSelection = canEdit && isInSelection();
+                const isSelectionStart = selectionStart?.day === day && selectionStart?.hour === slot.hour && slot.minutes === 0;
+                
+                return (
+                  <div
+                    key={day}
+                    className={cn(
+                      "border-t border-border/30 relative",
+                      isHourMark && "border-t-border/60",
+                      canEdit && "cursor-crosshair hover:bg-primary/5",
+                      inSelection && "bg-primary/20"
+                    )}
+                    onMouseDown={(e) => {
+                      if (canEdit && e.button === 0) {
+                        e.preventDefault();
+                        handleMouseDown(day, slot.hour);
+                      }
+                    }}
+                    onMouseEnter={() => {
+                      if (isSelecting && canEdit) {
+                        handleMouseEnter(day, slot.hour);
+                      }
+                    }}
+                  >
+                    {inSelection && isSelectionStart && (
+                      <div className="absolute inset-0 bg-primary/30 border-2 border-dashed border-primary flex items-center justify-center z-20">
                         <div className="text-xs font-medium text-primary bg-background/80 px-2 py-0.5 rounded">
                           <Plus className="h-3 w-3 inline mr-1" />
-                          {hour.toString().padStart(2, '0')}:00
+                          {slot.label}
                         </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {dayEvents.map((event) => {
-                    const duration = getEventDuration(event.start_time, event.end_time);
-                    const height = duration * 60; // 60px per hour
-                    
-                    return (
-                      <div
-                        key={event.id}
-                        className={`absolute left-1 right-1 border-l-4 rounded px-2 py-1 text-xs group ${
-                          EVENT_TYPE_COLORS[event.event_type as keyof typeof EVENT_TYPE_COLORS] || EVENT_TYPE_COLORS.class
-                        } ${canEdit ? 'cursor-pointer hover:shadow-lg transition-shadow' : ''}`}
-                        style={{
-                          minHeight: `${Math.max(height - 8, 40)}px`,
-                          zIndex: 10,
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (canEdit) {
-                            setSelectedEvent(event);
-                            setIsEditDialogOpen(true);
-                          }
-                        }}
-                      >
-                        {canEdit && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="absolute top-1 right-1 h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedEvent(event);
-                              setIsEditDialogOpen(true);
-                            }}
-                          >
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                        )}
-                        <div className="font-semibold text-xs truncate">{event.title}</div>
-                        <div className="text-xs opacity-75 truncate">
-                          {formatTime(event.start_time)} - {formatTime(event.end_time)}
-                        </div>
-                        {event.rooms && (
-                          <div className="text-xs opacity-75 truncate">
-                            📍 {event.rooms.name}
-                          </div>
-                        )}
-                        {event.level && (
-                          <div className="text-xs font-medium mt-1">
-                            Nivel: {event.level}
-                          </div>
-                        )}
                       </div>
-                    );
-                  })}
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+
+        {/* Overlay de eventos con posicionamiento absoluto */}
+        {[0, 1, 2, 3, 4, 5].map((day) => {
+          const dayEvents = getEventsForDay(day);
+          
+          return dayEvents.map((event) => {
+            const top = getEventTopPosition(event.start_time);
+            const height = getEventHeight(event.start_time, event.end_time);
+            const typeInfo = getEventTypeInfo(event.event_type);
+            // Calcular posición horizontal: columna 1 + ancho de columna * día
+            // El grid tiene 7 columnas, la primera es la hora
+            const leftPercent = ((day + 1) / 7) * 100;
+            const widthPercent = (1 / 7) * 100;
+            
+            return (
+              <div
+                key={event.id}
+                className={cn(
+                  "absolute border-l-4 rounded px-1.5 py-1 text-xs group overflow-hidden",
+                  getEventTypeStyles(event.event_type),
+                  canEdit ? 'cursor-pointer hover:shadow-lg transition-shadow hover:z-30' : ''
+                )}
+                style={{
+                  top: `${top}px`,
+                  height: `${height - 2}px`,
+                  left: `calc(${leftPercent}% + 2px)`,
+                  width: `calc(${widthPercent}% - 6px)`,
+                  zIndex: 10,
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (canEdit) {
+                    setSelectedEvent(event);
+                    setIsEditDialogOpen(true);
+                  }
+                }}
+              >
+                {canEdit && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="absolute top-0 right-0 h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedEvent(event);
+                      setIsEditDialogOpen(true);
+                    }}
+                  >
+                    <Edit className="h-3 w-3" />
+                  </Button>
+                )}
+                <div className="flex items-center gap-1">
+                  <span className="text-sm">{typeInfo.emoji}</span>
+                  <span className="font-semibold truncate text-[11px]">{event.title}</span>
                 </div>
-              );
-            })}
-          </div>
-        ))}
+                {height > 40 && (
+                  <div className="text-[10px] opacity-75 truncate">
+                    {formatTime(event.start_time)} - {formatTime(event.end_time)}
+                  </div>
+                )}
+                {height > 60 && event.rooms && (
+                  <div className="text-[10px] opacity-75 truncate">
+                    📍 {event.rooms.name}
+                  </div>
+                )}
+                {height > 75 && event.level && (
+                  <div className="text-[10px] font-medium">
+                    {event.level}
+                  </div>
+                )}
+                {height > 90 && (event.teacher || event.tutor) && (
+                  <div className="flex gap-1 mt-0.5 flex-wrap">
+                    {event.teacher && (
+                      <span className="text-[9px] bg-blue-200/50 dark:bg-blue-800/30 px-1 py-0.5 rounded truncate max-w-[60px]">
+                        👨‍🏫 {event.teacher.full_name?.split(' ')[0]}
+                      </span>
+                    )}
+                    {event.tutor && (
+                      <span className="text-[9px] bg-green-200/50 dark:bg-green-800/30 px-1 py-0.5 rounded truncate max-w-[60px]">
+                        🎓 {event.tutor.full_name?.split(' ')[0]}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          });
+        })}
       </div>
 
-      {/* Legend and Instructions */}
+      {/* Legend */}
       <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-blue-100 border-l-4 border-blue-500 rounded"></div>
-            <span>Clase</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-green-100 border-l-4 border-green-500 rounded"></div>
-            <span>Tutoría</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-purple-100 border-l-4 border-purple-500 rounded"></div>
-            <span>Actividad</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-red-100 border-l-4 border-red-500 rounded"></div>
-            <span>Examen</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-gray-100 border-l-4 border-gray-500 rounded"></div>
-            <span>Descanso</span>
-          </div>
+        <div className="flex flex-wrap gap-2 text-xs">
+          {Object.entries(EVENT_TYPE_CONFIG).map(([key, config]) => (
+            <div key={key} className="flex items-center gap-1.5">
+              <div className={cn("w-3 h-3 rounded border-l-2", config.bg, config.border)} />
+              <span>{config.emoji} {config.label}</span>
+            </div>
+          ))}
         </div>
         
         {canEdit && (
@@ -543,7 +671,6 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
         />
       )}
 
-      {/* Quick Event Dialog for drag-to-create */}
       <QuickEventDialog
         open={isQuickEventOpen}
         onOpenChange={setIsQuickEventOpen}

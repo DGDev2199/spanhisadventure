@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { Clock, Calendar } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface QuickEventDialogProps {
   open: boolean;
@@ -18,14 +19,21 @@ interface QuickEventDialogProps {
   initialEndTime: string;
 }
 
-const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+// Sin Domingo
+const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
 const EVENT_TYPES = [
   { value: 'class', label: 'Clase', emoji: '📚' },
-  { value: 'tutoring', label: 'Tutoría', emoji: '👨‍🏫' },
-  { value: 'activity', label: 'Actividad', emoji: '🎯' },
-  { value: 'exam', label: 'Examen', emoji: '📝' },
+  { value: 'tutoring', label: 'Práctica', emoji: '👨‍🏫' },
+  { value: 'breakfast', label: 'Desayuno', emoji: '🍳' },
+  { value: 'lunch', label: 'Almuerzo', emoji: '🍽️' },
   { value: 'break', label: 'Descanso', emoji: '☕' },
+  { value: 'cultural', label: 'Cultural', emoji: '🎭' },
+  { value: 'sports', label: 'Deportiva', emoji: '⚽' },
+  { value: 'adventure', label: 'Aventura', emoji: '🏔️' },
+  { value: 'exchange', label: 'Intercambio', emoji: '🌎' },
+  { value: 'dance', label: 'Baile', emoji: '💃' },
+  { value: 'elective', label: 'Electiva', emoji: '📖' },
 ];
 
 const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
@@ -46,8 +54,9 @@ export const QuickEventDialog = ({
   const [endTime, setEndTime] = useState(initialEndTime);
   const [level, setLevel] = useState('none');
   const [roomId, setRoomId] = useState('none');
+  const [teacherId, setTeacherId] = useState('none');
+  const [tutorId, setTutorId] = useState('none');
 
-  // Reset form when dialog opens with new values
   useEffect(() => {
     if (open) {
       setStartTime(initialStartTime);
@@ -56,6 +65,8 @@ export const QuickEventDialog = ({
       setEventType('class');
       setLevel('none');
       setRoomId('none');
+      setTeacherId('none');
+      setTutorId('none');
     }
   }, [open, initialStartTime, initialEndTime]);
 
@@ -72,6 +83,52 @@ export const QuickEventDialog = ({
     },
   });
 
+  const { data: teachers } = useQuery({
+    queryKey: ['teachers'],
+    queryFn: async () => {
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'teacher');
+      
+      if (rolesError) throw rolesError;
+      
+      const userIds = rolesData.map(r => r.user_id);
+      if (userIds.length === 0) return [];
+      
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+      
+      if (profilesError) throw profilesError;
+      return profilesData;
+    },
+  });
+
+  const { data: tutors } = useQuery({
+    queryKey: ['tutors'],
+    queryFn: async () => {
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'tutor');
+      
+      if (rolesError) throw rolesError;
+      
+      const userIds = rolesData.map(r => r.user_id);
+      if (userIds.length === 0) return [];
+      
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+      
+      if (profilesError) throw profilesError;
+      return profilesData;
+    },
+  });
+
   const createEventMutation = useMutation({
     mutationFn: async () => {
       if (!user?.id) throw new Error('No user');
@@ -85,6 +142,8 @@ export const QuickEventDialog = ({
         end_time: endTime,
         level: (level === 'none' ? null : level) as any,
         room_id: roomId === 'none' ? null : roomId,
+        teacher_id: teacherId === 'none' ? null : teacherId,
+        tutor_id: tutorId === 'none' ? null : tutorId,
         created_by: user.id,
       });
 
@@ -104,7 +163,7 @@ export const QuickEventDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
@@ -119,29 +178,30 @@ export const QuickEventDialog = ({
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
-          {/* Quick event type buttons */}
+          {/* Grid de tipos de evento con emojis */}
           <div>
             <Label className="text-xs text-muted-foreground mb-2 block">Tipo de Evento</Label>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
               {EVENT_TYPES.map((type) => (
                 <button
                   key={type.value}
                   type="button"
                   onClick={() => setEventType(type.value)}
-                  className={`flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all ${
+                  className={cn(
+                    "flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all",
                     eventType === type.value
                       ? 'border-primary bg-primary/10'
-                      : 'border-transparent bg-muted/50 hover:bg-muted'
-                  }`}
+                      : 'border-muted bg-muted/30 hover:bg-muted/50'
+                  )}
                 >
                   <span className="text-lg">{type.emoji}</span>
-                  <span className="text-[10px] font-medium">{type.label}</span>
+                  <span className="text-[10px] font-medium leading-tight text-center">{type.label}</span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Title with auto-suggestion */}
+          {/* Título */}
           <div>
             <Label htmlFor="title">Título</Label>
             <Input
@@ -153,7 +213,7 @@ export const QuickEventDialog = ({
             />
           </div>
 
-          {/* Time adjustment */}
+          {/* Horario */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="startTime" className="text-xs">Inicio</Label>
@@ -162,6 +222,7 @@ export const QuickEventDialog = ({
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
+                step="1800"
               />
             </div>
             <div>
@@ -171,11 +232,12 @@ export const QuickEventDialog = ({
                 type="time"
                 value={endTime}
                 onChange={(e) => setEndTime(e.target.value)}
+                step="1800"
               />
             </div>
           </div>
 
-          {/* Level and Room in compact row */}
+          {/* Nivel y Habitación */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs">Nivel</Label>
@@ -207,7 +269,39 @@ export const QuickEventDialog = ({
             </div>
           </div>
 
-          {/* Actions */}
+          {/* Profesor y Tutor (ambos opcionales) */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs">Profesor (opcional)</Label>
+              <Select value={teacherId} onValueChange={setTeacherId}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Profesor..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin asignar</SelectItem>
+                  {teachers?.map((teacher) => (
+                    <SelectItem key={teacher.id} value={teacher.id}>{teacher.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Tutor (opcional)</Label>
+              <Select value={tutorId} onValueChange={setTutorId}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Tutor..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin asignar</SelectItem>
+                  {tutors?.map((tutor) => (
+                    <SelectItem key={tutor.id} value={tutor.id}>{tutor.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Botones */}
           <div className="flex gap-2 pt-2">
             <Button
               variant="outline"

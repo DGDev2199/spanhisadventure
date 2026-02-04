@@ -8,12 +8,39 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
+import { cn } from '@/lib/utils';
 
 interface EditScheduleEventDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   event: any;
 }
+
+// Sin Domingo
+const DAYS = [
+  { value: '0', label: 'Lunes' },
+  { value: '1', label: 'Martes' },
+  { value: '2', label: 'Miércoles' },
+  { value: '3', label: 'Jueves' },
+  { value: '4', label: 'Viernes' },
+  { value: '5', label: 'Sábado' },
+];
+
+const EVENT_TYPES = [
+  { value: 'class', label: 'Clase', emoji: '📚' },
+  { value: 'tutoring', label: 'Práctica', emoji: '👨‍🏫' },
+  { value: 'breakfast', label: 'Desayuno', emoji: '🍳' },
+  { value: 'lunch', label: 'Almuerzo', emoji: '🍽️' },
+  { value: 'break', label: 'Descanso', emoji: '☕' },
+  { value: 'cultural', label: 'Cultural', emoji: '🎭' },
+  { value: 'sports', label: 'Deportiva', emoji: '⚽' },
+  { value: 'adventure', label: 'Aventura', emoji: '🏔️' },
+  { value: 'exchange', label: 'Intercambio', emoji: '🌎' },
+  { value: 'dance', label: 'Baile', emoji: '💃' },
+  { value: 'elective', label: 'Electiva', emoji: '📖' },
+];
+
+const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 
 export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditScheduleEventDialogProps) => {
   const { toast } = useToast();
@@ -28,13 +55,12 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
   const [teacherId, setTeacherId] = useState('');
   const [tutorId, setTutorId] = useState('');
   const [level, setLevel] = useState('');
-  const [color, setColor] = useState('');
 
   useEffect(() => {
     if (event) {
       setTitle(event.title || '');
       setDescription(event.description || '');
-      setEventType(event.event_type || '');
+      setEventType(event.event_type || 'class');
       setDayOfWeek(event.day_of_week?.toString() || '');
       setStartTime(event.start_time || '');
       setEndTime(event.end_time || '');
@@ -42,7 +68,6 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
       setTeacherId(event.teacher_id || 'none');
       setTutorId(event.tutor_id || 'none');
       setLevel(event.level || 'none');
-      setColor(event.color || '#3b82f6');
     }
   }, [event]);
 
@@ -120,7 +145,6 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
           teacher_id: teacherId === 'none' ? null : teacherId,
           tutor_id: tutorId === 'none' ? null : tutorId,
           level: (level === 'none' ? null : level) as any,
-          color
         })
         .eq('id', event.id);
       
@@ -155,18 +179,6 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
     }
   });
 
-  const days = [
-    { value: '0', label: 'Lunes' },
-    { value: '1', label: 'Martes' },
-    { value: '2', label: 'Miércoles' },
-    { value: '3', label: 'Jueves' },
-    { value: '4', label: 'Viernes' },
-    { value: '5', label: 'Sábado' },
-    { value: '6', label: 'Domingo' }
-  ];
-
-  const levels = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -175,14 +187,46 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Grid de tipos de evento */}
+          <div>
+            <Label className="mb-2 block">Tipo de Evento *</Label>
+            <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+              {EVENT_TYPES.map((type) => (
+                <button
+                  key={type.value}
+                  type="button"
+                  onClick={() => setEventType(type.value)}
+                  className={cn(
+                    "flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all",
+                    eventType === type.value
+                      ? 'border-primary bg-primary/10'
+                      : 'border-muted bg-muted/30 hover:bg-muted/50'
+                  )}
+                >
+                  <span className="text-xl">{type.emoji}</span>
+                  <span className="text-[10px] font-medium leading-tight text-center">{type.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Título *</Label>
               <Input value={title} onChange={(e) => setTitle(e.target.value)} />
             </div>
             <div>
-              <Label>Tipo de Evento *</Label>
-              <Input value={eventType} onChange={(e) => setEventType(e.target.value)} placeholder="Ej: Clase, Tutoría" />
+              <Label>Día de la Semana *</Label>
+              <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar día" />
+                </SelectTrigger>
+                <SelectContent>
+                  {DAYS.map(day => (
+                    <SelectItem key={day.value} value={day.value}>{day.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -193,18 +237,16 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Día de la Semana *</Label>
-              <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar día" />
-                </SelectTrigger>
-                <SelectContent>
-                  {days.map(day => (
-                    <SelectItem key={day.value} value={day.value}>{day.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Hora de Inicio *</Label>
+              <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} step="1800" />
             </div>
+            <div>
+              <Label>Hora de Fin *</Label>
+              <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} step="1800" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Nivel</Label>
               <Select value={level} onValueChange={setLevel}>
@@ -213,8 +255,22 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Sin nivel específico</SelectItem>
-                  {levels.map(l => (
+                  {LEVELS.map(l => (
                     <SelectItem key={l} value={l}>{l}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Sala</Label>
+              <Select value={roomId} onValueChange={setRoomId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccionar sala" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sin sala</SelectItem>
+                  {rooms?.map((room: any) => (
+                    <SelectItem key={room.id} value={room.id}>{room.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -223,33 +279,7 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Hora de Inicio *</Label>
-              <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-            </div>
-            <div>
-              <Label>Hora de Fin *</Label>
-              <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
-            </div>
-          </div>
-
-          <div>
-            <Label>Sala</Label>
-            <Select value={roomId} onValueChange={setRoomId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccionar sala" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Sin sala</SelectItem>
-                {rooms?.map((room: any) => (
-                  <SelectItem key={room.id} value={room.id}>{room.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Profesor</Label>
+              <Label>Profesor (opcional)</Label>
               <Select value={teacherId} onValueChange={setTeacherId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar profesor" />
@@ -265,7 +295,7 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
               </Select>
             </div>
             <div>
-              <Label>Tutor</Label>
+              <Label>Tutor (opcional)</Label>
               <Select value={tutorId} onValueChange={setTutorId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccionar tutor" />
@@ -280,11 +310,6 @@ export const EditScheduleEventDialog = ({ open, onOpenChange, event }: EditSched
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div>
-            <Label>Color</Label>
-            <Input type="color" value={color} onChange={(e) => setColor(e.target.value)} />
           </div>
         </div>
 

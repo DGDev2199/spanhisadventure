@@ -303,6 +303,14 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
     setMaterialTopicId(material.topic_id);
     setAddingMaterial(true);
     setActiveTab('materials');
+    
+    // Scroll to the form after tab change (especially for mobile)
+    setTimeout(() => {
+      document.getElementById('material-form')?.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      });
+    }, 150);
   };
 
   const resetMaterialForm = () => {

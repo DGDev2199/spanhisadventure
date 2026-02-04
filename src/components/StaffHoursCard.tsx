@@ -1,25 +1,35 @@
 import { useState, memo, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Clock, Calendar, TrendingUp, Plus, History } from 'lucide-react';
+import { Clock, Calendar, TrendingUp, Plus, History, BarChart3 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { AddExtraHoursDialog } from '@/components/AddExtraHoursDialog';
 import { ViewExtraHoursDialog } from '@/components/ViewExtraHoursDialog';
+import { StaffHoursDetailDialog } from '@/components/StaffHoursDetailDialog';
+import { format } from 'date-fns';
+import { es, enUS } from 'date-fns/locale';
 
 interface StaffHoursCardProps {
   userId: string;
 }
 
 function StaffHoursCardComponent({ userId }: StaffHoursCardProps) {
+  const { t, i18n } = useTranslation();
   const [showAddHours, setShowAddHours] = useState(false);
   const [showViewHours, setShowViewHours] = useState(false);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const locale = i18n.language === 'es' ? es : enUS;
+  const currentMonth = format(new Date(), 'MMMM yyyy', { locale });
 
   const handleOpenAddHours = useCallback(() => setShowAddHours(true), []);
   const handleCloseAddHours = useCallback((open: boolean) => setShowAddHours(open), []);
   const handleOpenViewHours = useCallback(() => setShowViewHours(true), []);
   const handleCloseViewHours = useCallback((open: boolean) => setShowViewHours(open), []);
+  const handleOpenDetailDialog = useCallback(() => setShowDetailDialog(true), []);
+  const handleCloseDetailDialog = useCallback((open: boolean) => setShowDetailDialog(open), []);
 
   const { data: hoursData, isLoading } = useQuery({
     queryKey: ['staff-hours', userId],
@@ -43,7 +53,7 @@ function StaffHoursCardComponent({ userId }: StaffHoursCardProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Mis Horas
+            {t('staffHours.myHours', 'Mis Horas')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -61,16 +71,16 @@ function StaffHoursCardComponent({ userId }: StaffHoursCardProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Mis Horas
+            {t('staffHours.myHours', 'Mis Horas')}
           </CardTitle>
           <CardDescription>
-            Horas semanales calculadas automáticamente desde el horario
+            {t('staffHours.monthlyHours', 'Horas mensuales')} - {currentMonth}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Alert>
             <AlertDescription>
-              No hay horas registradas aún. Las horas se calcularán automáticamente cuando se te asignen actividades en el horario semanal.
+              {t('staffHours.noHoursThisMonth', 'No hay horas registradas aún. Las horas se calcularán automáticamente cuando se te asignen actividades en el horario semanal.')}
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -82,86 +92,96 @@ function StaffHoursCardComponent({ userId }: StaffHoursCardProps) {
     <>
       <Card className="bg-gradient-to-br from-primary/5 to-primary/10">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
-                Mis Horas Semanales
+                {t('staffHours.monthlyHours', 'Mis Horas Mensuales')}
               </CardTitle>
-              <CardDescription>
-                Calculadas desde tus actividades en el horario semanal
+              <CardDescription className="capitalize">
+                {currentMonth}
               </CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleOpenDetailDialog}
+              >
+                <BarChart3 className="h-4 w-4 mr-2" />
+                {t('staffHours.viewBreakdown', 'Ver Desglose')}
+              </Button>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={handleOpenViewHours}
               >
                 <History className="h-4 w-4 mr-2" />
-                Ver Historial
+                {t('staffHours.history', 'Historial')}
               </Button>
               <Button
                 size="sm"
                 onClick={handleOpenAddHours}
               >
                 <Plus className="h-4 w-4 mr-2" />
-                Agregar Horas
+                {t('staffHours.addHours', 'Agregar')}
               </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white/80 dark:bg-gray-800/80 p-4 rounded-lg">
+            <div className="bg-card/80 border p-4 rounded-lg">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                 <Calendar className="h-4 w-4" />
-                Horas de Horario
+                {t('staffHours.scheduleHours', 'Horas de Horario')}
               </div>
               <div className="text-2xl font-bold text-primary">
                 {hoursData.calculated_hours.toFixed(2)}h
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                Calculadas automáticamente
+                {t('staffHours.calculatedFrom', 'Calculadas automáticamente')}
               </p>
             </div>
 
-            <div className="bg-white/80 dark:bg-gray-800/80 p-4 rounded-lg">
+            <div className="bg-card/80 border p-4 rounded-lg">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                 <TrendingUp className="h-4 w-4" />
-                Ajuste Manual
+                {t('staffHours.extraHours', 'Horas Extras')}
               </div>
               <div className={`text-2xl font-bold ${
                 hoursData.manual_adjustment_hours > 0 
-                  ? 'text-green-600' 
+                  ? 'text-green-600 dark:text-green-400' 
                   : hoursData.manual_adjustment_hours < 0 
-                  ? 'text-red-600' 
+                  ? 'text-red-600 dark:text-red-400' 
                   : 'text-muted-foreground'
               }`}>
                 {hoursData.manual_adjustment_hours > 0 ? '+' : ''}{hoursData.manual_adjustment_hours.toFixed(2)}h
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {hoursData.manual_adjustment_hours === 0 ? 'Sin ajustes' : 'Por admin'}
+                {hoursData.manual_adjustment_hours === 0 
+                  ? t('staffHours.noAdjustments', 'Sin ajustes') 
+                  : t('staffHours.byAdmin', 'Aprobadas')}
               </p>
             </div>
 
-            <div className="bg-gradient-to-br from-primary to-primary/80 p-4 rounded-lg text-white">
-              <div className="flex items-center gap-2 text-sm text-white/80 mb-1">
+            <div className="bg-primary p-4 rounded-lg text-primary-foreground">
+              <div className="flex items-center gap-2 text-sm text-primary-foreground/80 mb-1">
                 <Clock className="h-4 w-4" />
-                Total Semanal
+                {t('staffHours.totalMonth', 'Total del Mes')}
               </div>
               <div className="text-3xl font-bold">
                 {hoursData.total_hours.toFixed(2)}h
               </div>
-              <p className="text-xs text-white/80 mt-1">
-                Horas totales
+              <p className="text-xs text-primary-foreground/80 mt-1">
+                {t('staffHours.totalHours', 'Horas totales')}
               </p>
             </div>
           </div>
 
           {hoursData.last_calculated_at && (
             <div className="text-xs text-muted-foreground text-center pt-2 border-t">
-              Última actualización: {new Date(hoursData.last_calculated_at).toLocaleString('es-ES', {
+              {t('staffHours.lastUpdated', 'Última actualización')}: {new Date(hoursData.last_calculated_at).toLocaleString(i18n.language === 'es' ? 'es-ES' : 'en-US', {
                 day: '2-digit',
                 month: '2-digit',
                 year: 'numeric',
@@ -171,9 +191,9 @@ function StaffHoursCardComponent({ userId }: StaffHoursCardProps) {
             </div>
           )}
 
-          <Alert className="bg-blue-50 border-blue-200">
+          <Alert className="bg-muted/50 border-muted">
             <AlertDescription className="text-xs">
-              💡 Tus horas se actualizan automáticamente desde el horario. Las horas extras requieren aprobación del administrador.
+              💡 {t('staffHours.hoursInfo', 'Tus horas se actualizan automáticamente desde el horario. Las horas extras requieren aprobación del administrador.')}
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -188,6 +208,12 @@ function StaffHoursCardComponent({ userId }: StaffHoursCardProps) {
       <ViewExtraHoursDialog
         open={showViewHours}
         onOpenChange={handleCloseViewHours}
+        userId={userId}
+      />
+
+      <StaffHoursDetailDialog
+        open={showDetailDialog}
+        onOpenChange={handleCloseDetailDialog}
         userId={userId}
       />
     </>

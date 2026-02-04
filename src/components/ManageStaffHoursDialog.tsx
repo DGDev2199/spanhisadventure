@@ -1,15 +1,17 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Clock, RotateCcw, Save, TrendingUp, History, Check, X } from 'lucide-react';
+import { Clock, RotateCcw, TrendingUp, History, BarChart3 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ViewExtraHoursDialog } from '@/components/ViewExtraHoursDialog';
+import { StaffHoursDetailDialog } from '@/components/StaffHoursDetailDialog';
+import { format } from 'date-fns';
+import { es, enUS } from 'date-fns/locale';
 
 interface ManageStaffHoursDialogProps {
   open: boolean;
@@ -17,10 +19,15 @@ interface ManageStaffHoursDialogProps {
 }
 
 export function ManageStaffHoursDialog({ open, onOpenChange }: ManageStaffHoursDialogProps) {
+  const { t, i18n } = useTranslation();
   const queryClient = useQueryClient();
   const [adjustments, setAdjustments] = useState<Record<string, number>>({});
   const [viewExtraHoursUserId, setViewExtraHoursUserId] = useState<string | null>(null);
+  const [viewDetailUserId, setViewDetailUserId] = useState<string | null>(null);
+  const [viewDetailUserName, setViewDetailUserName] = useState<string>('');
   const [showPendingHours, setShowPendingHours] = useState(false);
+  const locale = i18n.language === 'es' ? es : enUS;
+  const currentMonth = format(new Date(), 'MMMM yyyy', { locale });
 
   // Fetch pending extra hours for admin
   const { data: pendingHours, isLoading: pendingLoading } = useQuery({
@@ -200,15 +207,17 @@ export function ManageStaffHoursDialog({ open, onOpenChange }: ManageStaffHoursD
     },
   });
 
-  // Mutation to recalculate all hours
+  // Mutation to recalculate all hours using the detailed function
   const recalculateAllMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.rpc('calculate_staff_hours');
+      // Use the new detailed calculation function
+      const { error } = await supabase.rpc('calculate_staff_hours_detailed');
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff-hours-management'] });
-      toast.success('Todas las horas han sido recalculadas desde el horario semanal');
+      queryClient.invalidateQueries({ queryKey: ['staff-hours-detail'] });
+      toast.success(t('staffHours.recalculatedSuccess', 'Todas las horas han sido recalculadas con desglose detallado'));
     },
     onError: (error: any) => {
       toast.error(`Error: ${error.message}`);
@@ -357,12 +366,12 @@ export function ManageStaffHoursDialog({ open, onOpenChange }: ManageStaffHoursD
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>Rol</TableHead>
-                  <TableHead className="text-right">Hrs. Horario</TableHead>
-                  <TableHead className="text-right">Hrs. Extras</TableHead>
+                  <TableHead>{t('common.name', 'Nombre')}</TableHead>
+                  <TableHead>{t('common.role', 'Rol')}</TableHead>
+                  <TableHead className="text-right">{t('staffHours.scheduleHours', 'Hrs. Horario')}</TableHead>
+                  <TableHead className="text-right">{t('staffHours.extraHours', 'Hrs. Extras')}</TableHead>
                   <TableHead className="text-right">Total</TableHead>
-                  <TableHead>Acciones</TableHead>
+                  <TableHead>{t('common.actions', 'Acciones')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -404,14 +413,28 @@ export function ManageStaffHoursDialog({ open, onOpenChange }: ManageStaffHoursD
                       </span>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => resetHoursMutation.mutate(staff.userId)}
-                        disabled={resetHoursMutation.isPending}
-                      >
-                        <RotateCcw className="h-4 w-4" />
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setViewDetailUserId(staff.userId);
+                            setViewDetailUserName(staff.name);
+                          }}
+                          title={t('staffHours.viewBreakdown', 'Ver Desglose')}
+                        >
+                          <BarChart3 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => resetHoursMutation.mutate(staff.userId)}
+                          disabled={resetHoursMutation.isPending}
+                          title={t('common.reset', 'Resetear')}
+                        >
+                          <RotateCcw className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -437,6 +460,15 @@ export function ManageStaffHoursDialog({ open, onOpenChange }: ManageStaffHoursD
           onOpenChange={(open) => !open && setViewExtraHoursUserId(null)}
           userId={viewExtraHoursUserId}
           isAdmin={true}
+        />
+      )}
+
+      {viewDetailUserId && (
+        <StaffHoursDetailDialog
+          open={!!viewDetailUserId}
+          onOpenChange={(open) => !open && setViewDetailUserId(null)}
+          userId={viewDetailUserId}
+          userName={viewDetailUserName}
         />
       )}
     </Dialog>

@@ -21,6 +21,8 @@ interface ScheduleEvent {
 const EVENT_TYPE_CONFIG: Record<string, { emoji: string }> = {
   class: { emoji: '📚' },
   tutoring: { emoji: '👨‍🏫' },
+  project: { emoji: '🎯' },
+  welcome: { emoji: '👋' },
   breakfast: { emoji: '🍳' },
   lunch: { emoji: '🍽️' },
   break: { emoji: '☕' },

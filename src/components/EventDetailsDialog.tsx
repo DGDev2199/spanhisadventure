@@ -34,6 +34,8 @@ const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const EVENT_TYPE_CONFIG: Record<string, { label: string; emoji: string }> = {
   class: { label: 'Clase', emoji: '📚' },
   tutoring: { label: 'Práctica', emoji: '👨‍🏫' },
+  project: { label: 'Proyecto', emoji: '🎯' },
+  welcome: { label: 'Bienvenida', emoji: '👋' },
   breakfast: { label: 'Desayuno', emoji: '🍳' },
   lunch: { label: 'Almuerzo', emoji: '🍽️' },
   break: { label: 'Descanso', emoji: '☕' },

@@ -274,22 +274,23 @@ export const TeacherMaterialsPanel = () => {
                                 </p>
                                 <div className="space-y-1">
                                   {topicGuides.map((material) => {
-                                    const isPdf = material.content_url?.toLowerCase().endsWith('.pdf');
+                                    const urlWithoutParams = material.content_url?.split('?')[0].toLowerCase() || '';
+                                    const isPdf = urlWithoutParams.endsWith('.pdf') || material.material_type === 'document';
                                     return (
                                       <Button
                                         key={material.id}
                                         variant="ghost"
                                         size="sm"
-                                        className="w-full justify-start h-auto py-1.5 px-2 text-left bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/30 dark:hover:bg-purple-950/50"
+                                        className="w-full justify-start h-auto min-h-[44px] py-2 px-2 text-left bg-purple-50 hover:bg-purple-100 dark:bg-purple-950/30 dark:hover:bg-purple-950/50"
                                         onClick={() => handleMaterialClick(material)}
                                       >
-                                        <span className="text-purple-600">{getMaterialIcon(material.material_type)}</span>
-                                        <span className="flex-1 ml-2 text-sm truncate">{material.title}</span>
+                                        <span className="text-purple-600 flex-shrink-0">{getMaterialIcon(material.material_type)}</span>
+                                        <span className="flex-1 ml-2 text-sm break-words whitespace-normal line-clamp-2">{material.title}</span>
                                         {material.content_url && (
                                           isPdf ? (
-                                            <Shield className="h-3 w-3 text-purple-600 flex-shrink-0" />
+                                            <Shield className="h-3 w-3 text-purple-600 flex-shrink-0 ml-1" />
                                           ) : (
-                                            <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                            <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0 ml-1" />
                                           )
                                         )}
                                       </Button>
@@ -311,13 +312,13 @@ export const TeacherMaterialsPanel = () => {
                                       key={material.id}
                                       variant="ghost"
                                       size="sm"
-                                      className="w-full justify-start h-auto py-1.5 px-2 text-left"
+                                      className="w-full justify-start h-auto min-h-[44px] py-2 px-2 text-left"
                                       onClick={() => handleMaterialClick(material)}
                                     >
-                                      {getMaterialIcon(material.material_type)}
-                                      <span className="flex-1 ml-2 text-sm truncate">{material.title}</span>
+                                      <span className="flex-shrink-0">{getMaterialIcon(material.material_type)}</span>
+                                      <span className="flex-1 ml-2 text-sm break-words whitespace-normal line-clamp-2">{material.title}</span>
                                       {material.content_url && (
-                                        <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                                        <ExternalLink className="h-3 w-3 text-muted-foreground flex-shrink-0 ml-1" />
                                       )}
                                     </Button>
                                   ))}

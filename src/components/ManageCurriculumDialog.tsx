@@ -99,6 +99,23 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
     }
   });
 
+  // Query to get all materials
+  const { data: allMaterials = [] } = useQuery({
+    queryKey: ['topic-materials'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('topic_materials')
+        .select('*')
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  const getMaterialsForTopic = (topicId: string) => {
+    return allMaterials.filter(m => m.topic_id === topicId);
+  };
+
   const hasReevaluationTest = (topicId: string) => {
     return topicTests.some(t => t.topic_id === topicId);
   };
@@ -221,8 +238,44 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
       setMaterialTopicId(null);
       setIsTeacherGuide(false);
       queryClient.invalidateQueries({ queryKey: ['topic-materials'] });
+      queryClient.invalidateQueries({ queryKey: ['all-topic-materials'] });
     } catch (error) {
       toast.error(t('errors.generic', 'Error al agregar material'));
+    }
+  };
+
+  const handleDeleteMaterial = async (materialId: string, contentUrl: string | null, isGuide: boolean) => {
+    try {
+      // Delete from storage if it's an uploaded file
+      if (contentUrl) {
+        if (contentUrl.startsWith('materials/')) {
+          const path = contentUrl.replace('materials/', '');
+          await supabase.storage.from('materials').remove([path]);
+        } else if (contentUrl.includes('task-attachments') && contentUrl.includes('materials/')) {
+          // Extract path from public URL
+          const pathMatch = contentUrl.match(/materials\/[^?]+/);
+          if (pathMatch) {
+            await supabase.storage.from('task-attachments').remove([pathMatch[0]]);
+          }
+        }
+      }
+
+      // Delete the database record
+      const { error } = await supabase
+        .from('topic_materials')
+        .delete()
+        .eq('id', materialId);
+      
+      if (error) throw error;
+      
+      toast.success(isGuide 
+        ? t('curriculum.guideDeleted', 'Guía del profesor eliminada')
+        : t('curriculum.materialDeleted', 'Material eliminado'));
+      queryClient.invalidateQueries({ queryKey: ['topic-materials'] });
+      queryClient.invalidateQueries({ queryKey: ['all-topic-materials'] });
+    } catch (error) {
+      console.error('Error deleting material:', error);
+      toast.error(t('errors.generic', 'Error al eliminar material'));
     }
   };
 
@@ -549,11 +602,11 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
             </div>
           </TabsContent>
 
-          <TabsContent value="materials" className="mt-4 flex-1 overflow-y-auto">
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
+          <TabsContent value="materials" className="mt-4 flex-1 overflow-hidden">
+            <div className="h-[calc(85vh-200px)] flex flex-col space-y-4">
+              <p className="text-sm text-muted-foreground flex-shrink-0">
                 Para agregar material, selecciona una semana en la pestaña anterior y usa los botones en cada tema:
-                <span className="flex items-center gap-4 mt-2">
+                <span className="flex items-center gap-4 mt-2 flex-wrap">
                   <span className="flex items-center gap-1 text-blue-600">
                     <GraduationCap className="h-4 w-4" /> Material del estudiante
                   </span>
@@ -564,7 +617,7 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
               </p>
 
               {addingMaterial && materialTopicId && (
-                <div className="p-4 border rounded-lg bg-muted/30 space-y-3">
+                <div className="p-4 border rounded-lg bg-muted/30 space-y-3 flex-shrink-0">
                   <h4 className="font-medium flex items-center gap-2">
                     {isTeacherGuide ? (
                       <>
@@ -592,7 +645,7 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
                     </Label>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-2">
                       <Label>Título</Label>
                       <Input
@@ -660,6 +713,81 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
                   </div>
                 </div>
               )}
+
+              {/* List of all materials grouped by week/topic */}
+              <div className="flex-1 min-h-0">
+                <h4 className="text-sm font-medium mb-2 flex-shrink-0">Materiales Existentes</h4>
+                <ScrollArea className="h-[calc(100%-28px)] border rounded-lg p-2">
+                  <div className="space-y-3">
+                    {weeks.map((week) => {
+                      const weekTopics = getTopicsForWeek(week.id);
+                      const weekMaterials = weekTopics.flatMap(t => getMaterialsForTopic(t.id));
+                      
+                      if (weekMaterials.length === 0) return null;
+                      
+                      return (
+                        <div key={week.id} className="space-y-2">
+                          <h5 className="text-xs font-medium text-muted-foreground">
+                            Semana {week.week_number}: {week.title}
+                          </h5>
+                          {weekTopics.map((topic) => {
+                            const materials = getMaterialsForTopic(topic.id);
+                            if (materials.length === 0) return null;
+                            
+                            return (
+                              <div key={topic.id} className="pl-3 border-l-2 border-muted space-y-1">
+                                <p className="text-xs font-medium">{topic.name}</p>
+                                {materials.map((material) => (
+                                  <div 
+                                    key={material.id} 
+                                    className={cn(
+                                      "flex items-center justify-between p-2 rounded-lg text-sm",
+                                      material.is_teacher_guide 
+                                        ? "bg-purple-50 dark:bg-purple-950/30" 
+                                        : "bg-muted/50"
+                                    )}
+                                  >
+                                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                                      {material.is_teacher_guide ? (
+                                        <BookMarked className="h-4 w-4 text-purple-500 flex-shrink-0" />
+                                      ) : (
+                                        getMaterialIcon(material.material_type)
+                                      )}
+                                      <span className="truncate">{material.title}</span>
+                                      {material.is_teacher_guide && (
+                                        <Badge variant="outline" className="text-xs text-purple-600 flex-shrink-0">
+                                          Guía
+                                        </Badge>
+                                      )}
+                                    </div>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-7 w-7 text-destructive flex-shrink-0"
+                                      onClick={() => handleDeleteMaterial(
+                                        material.id, 
+                                        material.content_url, 
+                                        material.is_teacher_guide
+                                      )}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                    {allMaterials.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No hay materiales. Agrega uno desde la pestaña "Semanas y Temas".
+                      </p>
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
             </div>
           </TabsContent>
         </Tabs>

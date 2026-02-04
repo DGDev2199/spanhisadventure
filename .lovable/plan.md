@@ -1,263 +1,266 @@
 
-# Plan: Rediseño Completo del Horario Semanal
+# Plan: Selección Multi-Día + Múltiple Staff en Eventos
 
-## Resumen de Cambios Solicitados
+## Problemas Identificados
 
-1. **Quitar Domingo** - No trabajan ese día
-2. **Colores funcionales** - Que los colores de eventos funcionen correctamente
-3. **Intervalos de 30 minutos** - Poder marcar 5:30, no solo horas completas
-4. **Asignar 2 staff** - Profesor + Tutor opcionales a cualquier actividad
-5. **Horas contables** - Las horas se cuentan para el staff asignado
-6. **Nuevos tipos de evento** - Reemplazar los actuales con los correctos
+### 1. Error en QuickEventDialog
+El dialog no puede crear eventos porque hay un problema con la validación o datos. Necesito agregar manejo de errores mejorado.
 
----
+### 2. Solo permite 1 profesor + 1 tutor
+La tabla `schedule_events` actualmente tiene:
+- `teacher_id` (UUID) - Solo 1 profesor
+- `tutor_id` (UUID) - Solo 1 tutor
 
-## Nuevos Tipos de Evento
+Pero el usuario necesita poder asignar:
+- 2 profesores
+- 2 tutores  
+- 1 profesor + 1 tutor
+- O cualquier combinación
 
-| Tipo | Código | Color | Emoji |
-|------|--------|-------|-------|
-| Clase | `class` | Azul | 📚 |
-| Práctica/Tutoría | `tutoring` | Verde | 👨‍🏫 |
-| Desayuno | `breakfast` | Amarillo | 🍳 |
-| Almuerzo | `lunch` | Naranja | 🍽️ |
-| Descanso | `break` | Gris | ☕ |
-| Actividad Cultural | `cultural` | Morado | 🎭 |
-| Actividad Deportiva | `sports` | Rojo | ⚽ |
-| Aventura | `adventure` | Cyan | 🏔️ |
-| Intercambio | `exchange` | Rosa | 🌎 |
-| Clase de Baile | `dance` | Fucsia | 💃 |
-| Electiva | `elective` | Índigo | 📖 |
+### 3. Selección solo vertical (mismo día)
+En `CalendarDragCreate.tsx` línea 102:
+```typescript
+if (day === selectionStart.day) {
+  setSelectionEnd({ day, hour });
+}
+```
+Esta condición impide la selección horizontal (multi-día).
 
 ---
 
-## Parte 1: Actualizar Configuración de Días (Sin Domingo)
+## Solución Completa
 
-**Archivo:** `src/components/WeeklyCalendar.tsx`
+### Parte 1: Migración SQL - Agregar campos para segundo staff
+
+```sql
+-- Agregar columnas para segundo profesor y segundo tutor
+ALTER TABLE public.schedule_events 
+ADD COLUMN teacher_id_2 UUID REFERENCES profiles(id),
+ADD COLUMN tutor_id_2 UUID REFERENCES profiles(id);
+
+-- Comentarios descriptivos
+COMMENT ON COLUMN schedule_events.teacher_id_2 IS 'Optional second teacher assigned to the event';
+COMMENT ON COLUMN schedule_events.tutor_id_2 IS 'Optional second tutor assigned to the event';
+```
+
+### Parte 2: Actualizar CalendarDragCreate.tsx
+
+**Eliminar restricción de mismo día:**
+
+```typescript
+// ANTES (línea 99-106)
+const handleMouseEnter = useCallback((day: number, hour: number) => {
+  if (isSelecting && selectionStart) {
+    if (day === selectionStart.day) { // <-- Esta línea causa el problema
+      setSelectionEnd({ day, hour });
+    }
+  }
+}, [isSelecting, selectionStart]);
+
+// DESPUÉS - Permitir cualquier día
+const handleMouseEnter = useCallback((day: number, hour: number) => {
+  if (isSelecting && selectionStart) {
+    setSelectionEnd({ day, hour }); // Sin restricción de día
+  }
+}, [isSelecting, selectionStart]);
+```
+
+**Actualizar isInSelection para rectángulo:**
+
+```typescript
+// ANTES (línea 34-42)
+const isInSelection = useCallback(() => {
+  if (!selectionStart || !selectionEnd) return false;
+  if (selectionStart.day !== day || selectionEnd.day !== day) return false;
+  // ...
+}, [...]);
+
+// DESPUÉS - Detectar rectángulo completo
+const isInSelection = useCallback(() => {
+  if (!selectionStart || !selectionEnd) return false;
+  
+  const minDay = Math.min(selectionStart.day, selectionEnd.day);
+  const maxDay = Math.max(selectionStart.day, selectionEnd.day);
+  const minHour = Math.min(selectionStart.hour, selectionEnd.hour);
+  const maxHour = Math.max(selectionStart.hour, selectionEnd.hour);
+  
+  return day >= minDay && day <= maxDay && hour >= minHour && hour <= maxHour;
+}, [selectionStart, selectionEnd, day, hour]);
+```
+
+**Actualizar callback para incluir rango de días:**
 
 ```typescript
 // ANTES
-const DAYS_CONFIG = [
-  { value: 0, label: "Lun", fullLabel: "Lunes", ... },
-  // ... hasta
-  { value: 6, label: "Dom", fullLabel: "Domingo", ... },
-];
-const DAYS = ['Lunes', ..., 'Domingo'];
+onCreateEvent: (day: number, startTime: string, endTime: string) => void;
 
 // DESPUÉS
-const DAYS_CONFIG = [
-  { value: 0, label: "Lun", fullLabel: "Lunes", color: "bg-blue-100 ..." },
-  { value: 1, label: "Mar", fullLabel: "Martes", color: "bg-green-100 ..." },
-  { value: 2, label: "Mié", fullLabel: "Miércoles", color: "bg-yellow-100 ..." },
-  { value: 3, label: "Jue", fullLabel: "Jueves", color: "bg-purple-100 ..." },
-  { value: 4, label: "Vie", fullLabel: "Viernes", color: "bg-pink-100 ..." },
-  { value: 5, label: "Sáb", fullLabel: "Sábado", color: "bg-orange-100 ..." },
-];
-const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+onCreateEvent: (startDay: number, endDay: number, startTime: string, endTime: string) => void;
+
+// En handleMouseUp
+onCreateEvent(
+  Math.min(selectionStart.day, selectionEnd.day),
+  Math.max(selectionStart.day, selectionEnd.day),
+  startTime,
+  endTime
+);
 ```
 
-Cambiar grid de 8 columnas a 7:
-```typescript
-// Desktop calendar
-<div className="grid grid-cols-7 gap-2"> // Era grid-cols-8
-```
+### Parte 3: Actualizar WeeklyCalendar.tsx
 
----
-
-## Parte 2: Intervalos de 30 Minutos
-
-**Archivo:** `src/components/WeeklyCalendar.tsx`
+**Cambiar handleDragCreate y quickEventData:**
 
 ```typescript
-// ANTES
-const HOURS = Array.from({ length: 13 }, (_, i) => i + 8); // 8-20
+// Nuevo estado
+const [quickEventData, setQuickEventData] = useState({ 
+  startDay: 0, 
+  endDay: 0, 
+  startTime: '09:00', 
+  endTime: '10:00' 
+});
 
-// DESPUÉS - Slots de 30 min
-const TIME_SLOTS = Array.from({ length: 26 }, (_, i) => {
-  const hour = Math.floor(i / 2) + 8;
-  const minutes = (i % 2) * 30;
-  return { hour, minutes, label: `${hour.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}` };
-}); // 8:00, 8:30, 9:00, ... hasta 20:30
-
-// Altura de cada slot: 30px (antes era 60px por hora)
-// Esto permite que un evento de 30 min ocupe 1 slot
-// Un evento de 1 hora ocupa 2 slots
+// Nuevo handler
+const handleDragCreate = useCallback((startDay: number, endDay: number, startTime: string, endTime: string) => {
+  setQuickEventData({ startDay, endDay, startTime, endTime });
+  setIsQuickEventOpen(true);
+}, []);
 ```
 
-**Posicionamiento dinámico de eventos:**
-```typescript
-const getEventPosition = (startTime: string) => {
-  const [h, m] = startTime.split(':').map(Number);
-  const slotsFromStart = (h - 8) * 2 + Math.floor(m / 30);
-  return slotsFromStart * 30; // 30px por slot
-};
+### Parte 4: Actualizar QuickEventDialog.tsx
 
-const getEventHeight = (startTime: string, endTime: string) => {
-  const [sh, sm] = startTime.split(':').map(Number);
-  const [eh, em] = endTime.split(':').map(Number);
-  const startMinutes = sh * 60 + sm;
-  const endMinutes = eh * 60 + em;
-  return ((endMinutes - startMinutes) / 30) * 30; // 30px por cada 30 min
-};
-```
-
----
-
-## Parte 3: Sistema de Colores por Tipo de Evento
-
-**Archivo:** `src/components/WeeklyCalendar.tsx`
+**Nuevas props y estados:**
 
 ```typescript
-const EVENT_TYPE_CONFIG = {
-  class: { 
-    label: 'Clase', 
-    emoji: '📚', 
-    bg: 'bg-blue-100 dark:bg-blue-900/40', 
-    border: 'border-blue-500',
-    text: 'text-blue-900 dark:text-blue-200' 
-  },
-  tutoring: { 
-    label: 'Práctica', 
-    emoji: '👨‍🏫', 
-    bg: 'bg-green-100 dark:bg-green-900/40', 
-    border: 'border-green-500',
-    text: 'text-green-900 dark:text-green-200' 
-  },
-  breakfast: { 
-    label: 'Desayuno', 
-    emoji: '🍳', 
-    bg: 'bg-yellow-100 dark:bg-yellow-900/40', 
-    border: 'border-yellow-500',
-    text: 'text-yellow-900 dark:text-yellow-200' 
-  },
-  lunch: { 
-    label: 'Almuerzo', 
-    emoji: '🍽️', 
-    bg: 'bg-orange-100 dark:bg-orange-900/40', 
-    border: 'border-orange-500',
-    text: 'text-orange-900 dark:text-orange-200' 
-  },
-  break: { 
-    label: 'Descanso', 
-    emoji: '☕', 
-    bg: 'bg-gray-100 dark:bg-gray-800/40', 
-    border: 'border-gray-400',
-    text: 'text-gray-800 dark:text-gray-200' 
-  },
-  cultural: { 
-    label: 'Act. Cultural', 
-    emoji: '🎭', 
-    bg: 'bg-purple-100 dark:bg-purple-900/40', 
-    border: 'border-purple-500',
-    text: 'text-purple-900 dark:text-purple-200' 
-  },
-  sports: { 
-    label: 'Act. Deportiva', 
-    emoji: '⚽', 
-    bg: 'bg-red-100 dark:bg-red-900/40', 
-    border: 'border-red-500',
-    text: 'text-red-900 dark:text-red-200' 
-  },
-  adventure: { 
-    label: 'Aventura', 
-    emoji: '🏔️', 
-    bg: 'bg-cyan-100 dark:bg-cyan-900/40', 
-    border: 'border-cyan-500',
-    text: 'text-cyan-900 dark:text-cyan-200' 
-  },
-  exchange: { 
-    label: 'Intercambio', 
-    emoji: '🌎', 
-    bg: 'bg-pink-100 dark:bg-pink-900/40', 
-    border: 'border-pink-500',
-    text: 'text-pink-900 dark:text-pink-200' 
-  },
-  dance: { 
-    label: 'Baile', 
-    emoji: '💃', 
-    bg: 'bg-fuchsia-100 dark:bg-fuchsia-900/40', 
-    border: 'border-fuchsia-500',
-    text: 'text-fuchsia-900 dark:text-fuchsia-200' 
-  },
-  elective: { 
-    label: 'Electiva', 
-    emoji: '📖', 
-    bg: 'bg-indigo-100 dark:bg-indigo-900/40', 
-    border: 'border-indigo-500',
-    text: 'text-indigo-900 dark:text-indigo-200' 
-  },
-};
+interface QuickEventDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  initialStartDay: number;  // Nuevo
+  initialEndDay: number;    // Nuevo
+  initialStartTime: string;
+  initialEndTime: string;
+}
+
+// Estados para múltiple staff
+const [teacher1, setTeacher1] = useState('none');
+const [teacher2, setTeacher2] = useState('none');
+const [tutor1, setTutor1] = useState('none');
+const [tutor2, setTutor2] = useState('none');
 ```
 
----
-
-## Parte 4: Actualizar Diálogos de Creación/Edición
-
-**Archivos:**
-- `src/components/calendar/QuickEventDialog.tsx`
-- `src/components/CreateScheduleEventDialog.tsx`
-- `src/components/EditScheduleEventDialog.tsx`
-
-### Cambios en todos:
-
-1. **Quitar Domingo de la lista de días**
-2. **Actualizar EVENT_TYPES con los nuevos tipos**
-3. **Mejorar selector de tipo con grid de emojis**
+**Crear eventos en múltiples días:**
 
 ```typescript
-const DAYS = [
-  { value: '0', label: 'Lunes' },
-  { value: '1', label: 'Martes' },
-  { value: '2', label: 'Miércoles' },
-  { value: '3', label: 'Jueves' },
-  { value: '4', label: 'Viernes' },
-  { value: '5', label: 'Sábado' },
-  // Sin Domingo
-];
+const createEventMutation = useMutation({
+  mutationFn: async () => {
+    if (!user?.id) throw new Error('No user');
+    if (!title.trim()) throw new Error('Ingresa un título');
 
-const EVENT_TYPES = [
-  { value: 'class', label: 'Clase', emoji: '📚' },
-  { value: 'tutoring', label: 'Práctica', emoji: '👨‍🏫' },
-  { value: 'breakfast', label: 'Desayuno', emoji: '🍳' },
-  { value: 'lunch', label: 'Almuerzo', emoji: '🍽️' },
-  { value: 'break', label: 'Descanso', emoji: '☕' },
-  { value: 'cultural', label: 'Cultural', emoji: '🎭' },
-  { value: 'sports', label: 'Deportiva', emoji: '⚽' },
-  { value: 'adventure', label: 'Aventura', emoji: '🏔️' },
-  { value: 'exchange', label: 'Intercambio', emoji: '🌎' },
-  { value: 'dance', label: 'Baile', emoji: '💃' },
-  { value: 'elective', label: 'Electiva', emoji: '📖' },
-];
+    const minDay = Math.min(initialStartDay, initialEndDay);
+    const maxDay = Math.max(initialStartDay, initialEndDay);
+    
+    // Crear un evento por cada día seleccionado
+    const events = [];
+    for (let day = minDay; day <= maxDay; day++) {
+      events.push({
+        title,
+        event_type: eventType,
+        day_of_week: day,
+        start_time: startTime,
+        end_time: endTime,
+        level: level === 'none' ? null : level,
+        room_id: roomId === 'none' ? null : roomId,
+        teacher_id: teacher1 === 'none' ? null : teacher1,
+        teacher_id_2: teacher2 === 'none' ? null : teacher2,
+        tutor_id: tutor1 === 'none' ? null : tutor1,
+        tutor_id_2: tutor2 === 'none' ? null : tutor2,
+        created_by: user.id,
+      });
+    }
+
+    const { error } = await supabase.from('schedule_events').insert(events);
+    if (error) throw error;
+  },
+  // ...
+});
 ```
 
-### Selector de tipo con grid visual:
+**Nueva UI para selección de staff:**
 
 ```tsx
-<div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-  {EVENT_TYPES.map((type) => (
-    <button
-      key={type.value}
-      onClick={() => setEventType(type.value)}
-      className={cn(
-        "flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all",
-        eventType === type.value
-          ? 'border-primary bg-primary/10'
-          : 'border-muted bg-muted/30 hover:bg-muted/50'
-      )}
-    >
-      <span className="text-xl">{type.emoji}</span>
-      <span className="text-[10px] font-medium leading-tight text-center">{type.label}</span>
-    </button>
-  ))}
+{/* Sección de Staff */}
+<div className="space-y-3">
+  <Label className="text-xs text-muted-foreground">Staff Asignado (opcional)</Label>
+  
+  {/* Profesores */}
+  <div className="grid grid-cols-2 gap-2">
+    <div>
+      <Label className="text-[10px] text-muted-foreground">Profesor 1</Label>
+      <Select value={teacher1} onValueChange={setTeacher1}>
+        <SelectTrigger className="h-8 text-xs">
+          <SelectValue placeholder="Profesor..." />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">Sin asignar</SelectItem>
+          {teachers?.map((t) => (
+            <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+    <div>
+      <Label className="text-[10px] text-muted-foreground">Profesor 2</Label>
+      <Select value={teacher2} onValueChange={setTeacher2}>
+        <SelectTrigger className="h-8 text-xs">
+          <SelectValue placeholder="Profesor..." />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">Sin asignar</SelectItem>
+          {teachers?.filter(t => t.id !== teacher1).map((t) => (
+            <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  </div>
+  
+  {/* Tutores */}
+  <div className="grid grid-cols-2 gap-2">
+    <div>
+      <Label className="text-[10px] text-muted-foreground">Tutor 1</Label>
+      <Select value={tutor1} onValueChange={setTutor1}>
+        ...
+      </Select>
+    </div>
+    <div>
+      <Label className="text-[10px] text-muted-foreground">Tutor 2</Label>
+      <Select value={tutor2} onValueChange={setTutor2}>
+        ...
+      </Select>
+    </div>
+  </div>
 </div>
 ```
 
----
+**Mostrar rango de días en header:**
 
-## Parte 5: Mostrar Staff Asignado en Eventos
+```tsx
+<DialogDescription>
+  {initialStartDay === initialEndDay ? (
+    <span className="font-medium">{DAYS[initialStartDay]}</span>
+  ) : (
+    <span className="font-medium">
+      {DAYS[Math.min(initialStartDay, initialEndDay)]} - {DAYS[Math.max(initialStartDay, initialEndDay)]}
+    </span>
+  )}
+  <span className="mx-1">•</span>
+  <Clock className="h-3.5 w-3.5 inline" />
+  <span className="ml-1">{startTime} - {endTime}</span>
+</DialogDescription>
+```
 
-**Archivo:** `src/components/WeeklyCalendar.tsx`
+### Parte 5: Actualizar visualización en WeeklyCalendar
 
-Actualizar la query para incluir nombres de profesor y tutor:
+**Query con múltiple staff:**
 
 ```typescript
 const { data: events } = useQuery({
@@ -269,11 +272,11 @@ const { data: events } = useQuery({
         *,
         rooms (name),
         teacher:profiles!schedule_events_teacher_id_fkey(full_name),
-        tutor:profiles!schedule_events_tutor_id_fkey(full_name)
+        teacher2:profiles!schedule_events_teacher_id_2_fkey(full_name),
+        tutor:profiles!schedule_events_tutor_id_fkey(full_name),
+        tutor2:profiles!schedule_events_tutor_id_2_fkey(full_name)
       `)
-      .eq('is_active', true)
-      .order('day_of_week')
-      .order('start_time');
+      .eq('is_active', true);
     
     if (error) throw error;
     return data;
@@ -281,46 +284,37 @@ const { data: events } = useQuery({
 });
 ```
 
-En la visualización del evento:
+**Mostrar múltiple staff en evento:**
+
 ```tsx
-<div className="event-card">
-  <div className="font-semibold">{event.title}</div>
-  <div className="text-xs">{formatTime(event.start_time)} - {formatTime(event.end_time)}</div>
-  
-  {/* Staff asignado */}
-  {(event.teacher || event.tutor) && (
-    <div className="flex gap-1 mt-1 flex-wrap">
-      {event.teacher && (
-        <span className="text-[10px] bg-blue-200/50 px-1.5 py-0.5 rounded">
-          👨‍🏫 {event.teacher.full_name?.split(' ')[0]}
-        </span>
-      )}
-      {event.tutor && (
-        <span className="text-[10px] bg-green-200/50 px-1.5 py-0.5 rounded">
-          🎓 {event.tutor.full_name?.split(' ')[0]}
-        </span>
-      )}
-    </div>
+{/* Staff badges */}
+<div className="flex flex-wrap gap-0.5 mt-1">
+  {event.teacher && (
+    <span className="text-[9px] bg-blue-200/50 px-1 rounded">
+      👨‍🏫 {event.teacher.full_name?.split(' ')[0]}
+    </span>
+  )}
+  {event.teacher2 && (
+    <span className="text-[9px] bg-blue-200/50 px-1 rounded">
+      👨‍🏫 {event.teacher2.full_name?.split(' ')[0]}
+    </span>
+  )}
+  {event.tutor && (
+    <span className="text-[9px] bg-green-200/50 px-1 rounded">
+      🎓 {event.tutor.full_name?.split(' ')[0]}
+    </span>
+  )}
+  {event.tutor2 && (
+    <span className="text-[9px] bg-green-200/50 px-1 rounded">
+      🎓 {event.tutor2.full_name?.split(' ')[0]}
+    </span>
   )}
 </div>
 ```
 
----
+### Parte 6: Actualizar EditScheduleEventDialog
 
-## Parte 6: Leyenda Actualizada
-
-```tsx
-const renderLegend = () => (
-  <div className="mt-4 flex flex-wrap gap-2 text-xs">
-    {Object.entries(EVENT_TYPE_CONFIG).map(([key, config]) => (
-      <div key={key} className="flex items-center gap-1.5">
-        <div className={cn("w-3 h-3 rounded border-l-2", config.bg, config.border)} />
-        <span>{config.emoji} {config.label}</span>
-      </div>
-    ))}
-  </div>
-);
-```
+Agregar los mismos campos para teacher_id_2 y tutor_id_2 en el diálogo de edición.
 
 ---
 
@@ -328,69 +322,45 @@ const renderLegend = () => (
 
 | Archivo | Cambios |
 |---------|---------|
-| `WeeklyCalendar.tsx` | -Domingo, +30min slots, +nuevos colores, +leyenda, +staff badges |
-| `QuickEventDialog.tsx` | -Domingo, +nuevos tipos, +grid selector |
-| `CreateScheduleEventDialog.tsx` | -Domingo, +nuevos tipos, +grid selector |
-| `EditScheduleEventDialog.tsx` | -Domingo, +nuevos tipos, +selector tipo, +color automático |
+| **Migración SQL** | +teacher_id_2, +tutor_id_2 en schedule_events |
+| `CalendarDragCreate.tsx` | Permitir selección multi-día, actualizar callback |
+| `WeeklyCalendar.tsx` | Actualizar quickEventData, handleDragCreate, query, visualización |
+| `QuickEventDialog.tsx` | +startDay/endDay props, +4 campos de staff, crear múltiples eventos |
+| `CreateScheduleEventDialog.tsx` | +4 campos de staff |
+| `EditScheduleEventDialog.tsx` | +4 campos de staff |
 
 ---
 
-## Diseño Visual Final
+## Flujo de Usuario
 
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│  📅 Calendario Semanal                    [PNG] [PDF] [◀ ▶]    │
-├─────────────────────────────────────────────────────────────────┤
-│ Hora  │  Lun   │  Mar   │  Mié   │  Jue   │  Vie   │  Sáb    │
-├───────┼────────┼────────┼────────┼────────┼────────┼─────────┤
-│ 08:00 │ ┌────────────┐                                        │
-│ 08:30 │ │ 📚 Clase   │                                        │
-│ 09:00 │ │ A1-A2      │ ┌────────────┐                         │
-│ 09:30 │ │ 👨‍🏫 María  │ │ 🍳 Desayuno │                         │
-│ 10:00 │ └────────────┘ └────────────┘                         │
-│ 10:30 │                                                        │
-│ ...   │                                                        │
-│ 14:00 │         ┌──────────────────────────────┐              │
-│ 14:30 │         │ 🏔️ Aventura - Río Celeste     │              │
-│ 15:00 │         │ 👨‍🏫 Pedro  🎓 Ana             │              │
-│ 15:30 │         └──────────────────────────────┘              │
-├───────┴────────────────────────────────────────────────────────┤
-│ Leyenda:                                                       │
-│ 📚 Clase  👨‍🏫 Práctica  🍳 Desayuno  🍽️ Almuerzo  ☕ Descanso   │
-│ 🎭 Cultural  ⚽ Deportiva  🏔️ Aventura  🌎 Intercambio          │
-│ 💃 Baile  📖 Electiva                                          │
-└─────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Flujo de Creación de Evento
-
-```text
-1. Usuario arrastra en calendario
+1. Admin arrastra en calendario de Martes 8:00 a Sábado 12:00
          ↓
-2. QuickEventDialog se abre
-   - Grid de 11 tipos con emojis
-   - Selector de hora con :00 y :30
-   - Selector de profesor (opcional)
-   - Selector de tutor (opcional)
+2. Se resalta rectángulo completo (Mar-Sáb, 8:00-12:00)
          ↓
-3. Evento creado con color automático por tipo
+3. Suelta mouse → QuickEventDialog se abre
+   Header: "Martes - Sábado • 08:00 - 12:00"
          ↓
-4. Evento visible con:
-   - Color de fondo según tipo
-   - Emoji del tipo
-   - Badges de staff asignado
-   - Altura proporcional a duración
+4. Usuario selecciona:
+   - Tipo: 📚 Clase
+   - Título: "Gramática Avanzada"
+   - Profesor 1: María
+   - Profesor 2: Pedro
+   - Tutor 1: (ninguno)
+   - Tutor 2: (ninguno)
+         ↓
+5. Click "Crear Evento"
+         ↓
+6. Se crean 5 eventos idénticos (Mar, Mié, Jue, Vie, Sáb)
+   Cada uno con 2 profesores asignados
 ```
 
 ---
 
 ## Beneficios
 
-1. **Más espacio** - Sin domingo, 6 columnas más anchas
-2. **Precisión** - Eventos de 30min, 45min, 1.5h bien representados
-3. **Claridad visual** - Colores únicos por tipo de actividad
-4. **Transparencia** - Staff asignado visible en cada evento
-5. **Tipos correctos** - 11 tipos que reflejan actividades reales de la escuela
-6. **Diseño limpio** - Grid con emojis para selección rápida de tipo
+1. **Selección rectangular**: Arrastrar en cualquier dirección
+2. **Múltiple staff**: 2 profesores + 2 tutores por evento
+3. **Creación masiva**: Un arrastre crea eventos en múltiples días
+4. **Flexibilidad**: Cualquier combinación de staff es válida
+5. **Horas contables**: Cada staff asignado recibirá crédito por sus horas

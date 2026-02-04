@@ -165,14 +165,14 @@ export default function PracticeSessionPanel({
                       Generar tu primer ejercicio
                     </Button>
                   </div>
-                ) : isMobile ? (
+                ) : (
                   <div className="space-y-3">
                     {exercises
                       ?.filter(e => tab === 'all' || e.exercise_type === tab)
                       .map((exercise) => (
                         <Card key={exercise.id} className="hover:bg-muted/50 transition-colors">
                           <CardContent className="p-4">
-                            <div className="flex flex-col gap-3">
+                            <div className={`flex ${isMobile ? 'flex-col gap-3' : 'items-start justify-between gap-4'}`}>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
                                   {getExerciseIcon(exercise.exercise_type)}
@@ -202,23 +202,23 @@ export default function PracticeSessionPanel({
                                   </p>
                                 )}
                               </div>
-                              <div className="flex gap-2 justify-end">
+                              <div className={`flex gap-2 ${isMobile ? 'justify-end' : 'gap-1'}`}>
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleAssign(exercise.id)}
                                   title="Asignar a estudiante"
                                 >
-                                  <Users className="h-4 w-4 mr-1" />
-                                  Asignar
+                                  <Users className="h-4 w-4" />
+                                  {isMobile && <span className="ml-1">Asignar</span>}
                                 </Button>
                                 <Button
                                   size="sm"
                                   onClick={() => setSelectedExercise(exercise)}
                                   title="Practicar"
                                 >
-                                  <Play className="h-4 w-4 mr-1" />
-                                  Practicar
+                                  <Play className="h-4 w-4" />
+                                  {isMobile && <span className="ml-1">Practicar</span>}
                                 </Button>
                                 <Button
                                   variant="ghost"
@@ -234,79 +234,7 @@ export default function PracticeSessionPanel({
                           </CardContent>
                         </Card>
                       ))}
-                    <div className="h-4" />
                   </div>
-                ) : (
-                  <ScrollArea className="h-auto max-h-[350px]">
-                    <div className="space-y-3">
-                      {exercises
-                        ?.filter(e => tab === 'all' || e.exercise_type === tab)
-                        .map((exercise) => (
-                          <Card key={exercise.id} className="hover:bg-muted/50 transition-colors">
-                            <CardContent className="p-4">
-                              <div className="flex items-start justify-between gap-4">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    {getExerciseIcon(exercise.exercise_type)}
-                                    <h4 className="font-medium truncate">{exercise.title}</h4>
-                                  </div>
-                                  <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                                    <Badge variant="outline" className="text-xs">
-                                      {getExerciseLabel(exercise.exercise_type)}
-                                    </Badge>
-                                    <span className="flex items-center gap-1">
-                                      <Clock className="h-3 w-3" />
-                                      {formatDistanceToNow(new Date(exercise.created_at), {
-                                        addSuffix: true,
-                                        locale: es,
-                                      })}
-                                    </span>
-                                    <span>{getExerciseCount(exercise)} items</span>
-                                    {exercise.level && (
-                                      <Badge variant="secondary" className="text-xs">
-                                        {exercise.level}
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  {exercise.topic_context && (
-                                    <p className="text-xs text-muted-foreground mt-1 truncate">
-                                      Tema: {exercise.topic_context}
-                                    </p>
-                                  )}
-                                </div>
-                                <div className="flex gap-1">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleAssign(exercise.id)}
-                                    title="Asignar a estudiante"
-                                  >
-                                    <Users className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    onClick={() => setSelectedExercise(exercise)}
-                                    title="Practicar"
-                                  >
-                                    <Play className="h-4 w-4" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDelete(exercise)}
-                                    title="Eliminar ejercicio"
-                                    className="text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      <div className="h-2" />
-                    </div>
-                  </ScrollArea>
                 )}
               </TabsContent>
             ))}

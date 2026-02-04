@@ -55,8 +55,12 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
   const [endTime, setEndTime] = useState('10:00');
   const [level, setLevel] = useState('none');
   const [roomId, setRoomId] = useState('none');
-  const [teacherId, setTeacherId] = useState('none');
-  const [tutorId, setTutorId] = useState('none');
+  
+  // 4 campos de staff (2 profesores + 2 tutores)
+  const [teacher1, setTeacher1] = useState('none');
+  const [teacher2, setTeacher2] = useState('none');
+  const [tutor1, setTutor1] = useState('none');
+  const [tutor2, setTutor2] = useState('none');
 
   const { data: rooms } = useQuery({
     queryKey: ['rooms'],
@@ -132,8 +136,10 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
         end_time: endTime,
         level: (level === 'none' ? null : level) as any,
         room_id: roomId === 'none' ? null : roomId,
-        teacher_id: teacherId === 'none' ? null : teacherId,
-        tutor_id: tutorId === 'none' ? null : tutorId,
+        teacher_id: teacher1 === 'none' ? null : teacher1,
+        teacher_id_2: teacher2 === 'none' ? null : teacher2,
+        tutor_id: tutor1 === 'none' ? null : tutor1,
+        tutor_id_2: tutor2 === 'none' ? null : tutor2,
         created_by: user.id,
       }));
 
@@ -161,8 +167,10 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
     setEndTime('10:00');
     setLevel('none');
     setRoomId('none');
-    setTeacherId('none');
-    setTutorId('none');
+    setTeacher1('none');
+    setTeacher2('none');
+    setTutor1('none');
+    setTutor2('none');
   };
 
   const toggleDay = (dayValue: string) => {
@@ -309,39 +317,81 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Profesor (opcional)</Label>
-              <Select value={teacherId} onValueChange={setTeacherId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona profesor..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sin profesor asignado</SelectItem>
-                  {teachers?.map((teacher) => (
-                    <SelectItem key={teacher.id} value={teacher.id}>
-                      {teacher.full_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Staff - 2 Profesores */}
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Profesores (opcional)</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-[10px] text-muted-foreground">Profesor 1</Label>
+                <Select value={teacher1} onValueChange={setTeacher1}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona profesor..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin profesor asignado</SelectItem>
+                    {teachers?.map((teacher) => (
+                      <SelectItem key={teacher.id} value={teacher.id}>
+                        {teacher.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-[10px] text-muted-foreground">Profesor 2</Label>
+                <Select value={teacher2} onValueChange={setTeacher2}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona profesor..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin profesor asignado</SelectItem>
+                    {teachers?.filter(t => t.id !== teacher1 || teacher1 === 'none').map((teacher) => (
+                      <SelectItem key={teacher.id} value={teacher.id}>
+                        {teacher.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+          </div>
 
-            <div>
-              <Label>Tutor (opcional)</Label>
-              <Select value={tutorId} onValueChange={setTutorId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona tutor..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sin tutor asignado</SelectItem>
-                  {tutors?.map((tutor) => (
-                    <SelectItem key={tutor.id} value={tutor.id}>
-                      {tutor.full_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Staff - 2 Tutores */}
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Tutores (opcional)</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-[10px] text-muted-foreground">Tutor 1</Label>
+                <Select value={tutor1} onValueChange={setTutor1}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona tutor..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin tutor asignado</SelectItem>
+                    {tutors?.map((tutor) => (
+                      <SelectItem key={tutor.id} value={tutor.id}>
+                        {tutor.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-[10px] text-muted-foreground">Tutor 2</Label>
+                <Select value={tutor2} onValueChange={setTutor2}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona tutor..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin tutor asignado</SelectItem>
+                    {tutors?.filter(t => t.id !== tutor1 || tutor1 === 'none').map((tutor) => (
+                      <SelectItem key={tutor.id} value={tutor.id}>
+                        {tutor.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 

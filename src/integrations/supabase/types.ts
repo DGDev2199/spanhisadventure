@@ -1487,9 +1487,11 @@ export type Database = {
           room_id: string | null
           start_time: string
           teacher_id: string | null
+          teacher_id_2: string | null
           title: string
           topic_id: string | null
           tutor_id: string | null
+          tutor_id_2: string | null
           updated_at: string
         }
         Insert: {
@@ -1506,9 +1508,11 @@ export type Database = {
           room_id?: string | null
           start_time: string
           teacher_id?: string | null
+          teacher_id_2?: string | null
           title: string
           topic_id?: string | null
           tutor_id?: string | null
+          tutor_id_2?: string | null
           updated_at?: string
         }
         Update: {
@@ -1525,9 +1529,11 @@ export type Database = {
           room_id?: string | null
           start_time?: string
           teacher_id?: string | null
+          teacher_id_2?: string | null
           title?: string
           topic_id?: string | null
           tutor_id?: string | null
+          tutor_id_2?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1536,6 +1542,34 @@ export type Database = {
             columns: ["room_id"]
             isOneToOne: false
             referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_events_teacher_id_2_fkey"
+            columns: ["teacher_id_2"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_events_teacher_id_2_fkey"
+            columns: ["teacher_id_2"]
+            isOneToOne: false
+            referencedRelation: "public_staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_events_teacher_id_2_fkey"
+            columns: ["teacher_id_2"]
+            isOneToOne: false
+            referencedRelation: "safe_profiles_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_events_teacher_id_2_fkey"
+            columns: ["teacher_id_2"]
+            isOneToOne: false
+            referencedRelation: "user_rankings"
             referencedColumns: ["id"]
           },
           {
@@ -1571,6 +1605,34 @@ export type Database = {
             columns: ["topic_id"]
             isOneToOne: false
             referencedRelation: "week_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_events_tutor_id_2_fkey"
+            columns: ["tutor_id_2"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_events_tutor_id_2_fkey"
+            columns: ["tutor_id_2"]
+            isOneToOne: false
+            referencedRelation: "public_staff_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_events_tutor_id_2_fkey"
+            columns: ["tutor_id_2"]
+            isOneToOne: false
+            referencedRelation: "safe_profiles_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_events_tutor_id_2_fkey"
+            columns: ["tutor_id_2"]
+            isOneToOne: false
+            referencedRelation: "user_rankings"
             referencedColumns: ["id"]
           },
           {

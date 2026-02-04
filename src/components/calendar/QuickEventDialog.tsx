@@ -14,7 +14,8 @@ import { cn } from '@/lib/utils';
 interface QuickEventDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  initialDay: number;
+  initialStartDay: number;
+  initialEndDay: number;
   initialStartTime: string;
   initialEndTime: string;
 }
@@ -41,7 +42,8 @@ const LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
 export const QuickEventDialog = ({
   open,
   onOpenChange,
-  initialDay,
+  initialStartDay,
+  initialEndDay,
   initialStartTime,
   initialEndTime,
 }: QuickEventDialogProps) => {
@@ -54,8 +56,12 @@ export const QuickEventDialog = ({
   const [endTime, setEndTime] = useState(initialEndTime);
   const [level, setLevel] = useState('none');
   const [roomId, setRoomId] = useState('none');
-  const [teacherId, setTeacherId] = useState('none');
-  const [tutorId, setTutorId] = useState('none');
+  
+  // 4 campos de staff (2 profesores + 2 tutores)
+  const [teacher1, setTeacher1] = useState('none');
+  const [teacher2, setTeacher2] = useState('none');
+  const [tutor1, setTutor1] = useState('none');
+  const [tutor2, setTutor2] = useState('none');
 
   useEffect(() => {
     if (open) {
@@ -65,8 +71,10 @@ export const QuickEventDialog = ({
       setEventType('class');
       setLevel('none');
       setRoomId('none');
-      setTeacherId('none');
-      setTutorId('none');
+      setTeacher1('none');
+      setTeacher2('none');
+      setTutor1('none');
+      setTutor2('none');
     }
   }, [open, initialStartTime, initialEndTime]);
 
@@ -131,49 +139,74 @@ export const QuickEventDialog = ({
 
   const createEventMutation = useMutation({
     mutationFn: async () => {
-      if (!user?.id) throw new Error('No user');
-      if (!title) throw new Error('Ingresa un título');
+      if (!user?.id) throw new Error('No hay usuario autenticado');
+      if (!title.trim()) throw new Error('Ingresa un título');
 
-      const { error } = await supabase.from('schedule_events').insert({
-        title,
-        event_type: eventType,
-        day_of_week: initialDay,
-        start_time: startTime,
-        end_time: endTime,
-        level: (level === 'none' ? null : level) as any,
-        room_id: roomId === 'none' ? null : roomId,
-        teacher_id: teacherId === 'none' ? null : teacherId,
-        tutor_id: tutorId === 'none' ? null : tutorId,
-        created_by: user.id,
-      });
+      const minDay = Math.min(initialStartDay, initialEndDay);
+      const maxDay = Math.max(initialStartDay, initialEndDay);
+      
+      // Crear un evento por cada día seleccionado
+      const events = [];
+      for (let day = minDay; day <= maxDay; day++) {
+        events.push({
+          title: title.trim(),
+          event_type: eventType,
+          day_of_week: day,
+          start_time: startTime,
+          end_time: endTime,
+          level: (level === 'none' ? null : level) as any,
+          room_id: roomId === 'none' ? null : roomId,
+          teacher_id: teacher1 === 'none' ? null : teacher1,
+          teacher_id_2: teacher2 === 'none' ? null : teacher2,
+          tutor_id: tutor1 === 'none' ? null : tutor1,
+          tutor_id_2: tutor2 === 'none' ? null : tutor2,
+          created_by: user.id,
+        });
+      }
 
+      const { error } = await supabase.from('schedule_events').insert(events);
       if (error) throw error;
+      
+      return events.length;
     },
-    onSuccess: () => {
+    onSuccess: (count) => {
       queryClient.invalidateQueries({ queryKey: ['schedule-events'] });
-      toast.success('Evento creado exitosamente');
+      toast.success(`${count} evento${count > 1 ? 's' : ''} creado${count > 1 ? 's' : ''} exitosamente`);
       onOpenChange(false);
     },
     onError: (error: any) => {
+      console.error('Error creating event:', error);
       toast.error(error.message || 'Error al crear evento');
     },
   });
 
   const selectedEventType = EVENT_TYPES.find(t => t.value === eventType);
+  const isMultipleDays = initialStartDay !== initialEndDay;
+  const minDay = Math.min(initialStartDay, initialEndDay);
+  const maxDay = Math.max(initialStartDay, initialEndDay);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
             Crear Evento Rápido
           </DialogTitle>
-          <DialogDescription className="flex items-center gap-2 text-sm">
-            <span className="font-medium">{DAYS[initialDay]}</span>
+          <DialogDescription className="flex items-center gap-2 text-sm flex-wrap">
+            {isMultipleDays ? (
+              <span className="font-medium text-primary">{DAYS[minDay]} - {DAYS[maxDay]}</span>
+            ) : (
+              <span className="font-medium">{DAYS[initialStartDay]}</span>
+            )}
             <span>•</span>
             <Clock className="h-3.5 w-3.5" />
             <span>{startTime} - {endTime}</span>
+            {isMultipleDays && (
+              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                {maxDay - minDay + 1} días
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -203,7 +236,7 @@ export const QuickEventDialog = ({
 
           {/* Título */}
           <div>
-            <Label htmlFor="title">Título</Label>
+            <Label htmlFor="title">Título *</Label>
             <Input
               id="title"
               value={title}
@@ -269,35 +302,73 @@ export const QuickEventDialog = ({
             </div>
           </div>
 
-          {/* Profesor y Tutor (ambos opcionales) */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">Profesor (opcional)</Label>
-              <Select value={teacherId} onValueChange={setTeacherId}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Profesor..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sin asignar</SelectItem>
-                  {teachers?.map((teacher) => (
-                    <SelectItem key={teacher.id} value={teacher.id}>{teacher.full_name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Staff - 2 Profesores */}
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Profesores (opcional)</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-[10px] text-muted-foreground">Profesor 1</Label>
+                <Select value={teacher1} onValueChange={setTeacher1}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Profesor..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin asignar</SelectItem>
+                    {teachers?.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-[10px] text-muted-foreground">Profesor 2</Label>
+                <Select value={teacher2} onValueChange={setTeacher2}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Profesor..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin asignar</SelectItem>
+                    {teachers?.filter(t => t.id !== teacher1 || teacher1 === 'none').map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div>
-              <Label className="text-xs">Tutor (opcional)</Label>
-              <Select value={tutorId} onValueChange={setTutorId}>
-                <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Tutor..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sin asignar</SelectItem>
-                  {tutors?.map((tutor) => (
-                    <SelectItem key={tutor.id} value={tutor.id}>{tutor.full_name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          </div>
+
+          {/* Staff - 2 Tutores */}
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Tutores (opcional)</Label>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-[10px] text-muted-foreground">Tutor 1</Label>
+                <Select value={tutor1} onValueChange={setTutor1}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Tutor..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin asignar</SelectItem>
+                    {tutors?.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-[10px] text-muted-foreground">Tutor 2</Label>
+                <Select value={tutor2} onValueChange={setTutor2}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Tutor..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin asignar</SelectItem>
+                    {tutors?.filter(t => t.id !== tutor1 || tutor1 === 'none').map((t) => (
+                      <SelectItem key={t.id} value={t.id}>{t.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
@@ -312,10 +383,15 @@ export const QuickEventDialog = ({
             </Button>
             <Button
               onClick={() => createEventMutation.mutate()}
-              disabled={!title || createEventMutation.isPending}
+              disabled={!title.trim() || createEventMutation.isPending}
               className="flex-1"
             >
-              {createEventMutation.isPending ? 'Creando...' : 'Crear Evento'}
+              {createEventMutation.isPending 
+                ? 'Creando...' 
+                : isMultipleDays 
+                  ? `Crear ${maxDay - minDay + 1} Eventos` 
+                  : 'Crear Evento'
+              }
             </Button>
           </div>
         </div>

@@ -28,9 +28,13 @@ interface ScheduleEvent {
   room_id: string | null;
   rooms?: { name: string } | null;
   teacher_id: string | null;
+  teacher_id_2: string | null;
   tutor_id: string | null;
+  tutor_id_2: string | null;
   teacher?: { full_name: string } | null;
+  teacher2?: { full_name: string } | null;
   tutor?: { full_name: string } | null;
+  tutor2?: { full_name: string } | null;
 }
 
 // Sin Domingo - Solo Lunes a Sábado
@@ -165,10 +169,15 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
   const calendarRef = useRef<HTMLDivElement>(null);
   
   const [isQuickEventOpen, setIsQuickEventOpen] = useState(false);
-  const [quickEventData, setQuickEventData] = useState({ day: 0, startTime: '09:00', endTime: '10:00' });
+  const [quickEventData, setQuickEventData] = useState({ 
+    startDay: 0, 
+    endDay: 0, 
+    startTime: '09:00', 
+    endTime: '10:00' 
+  });
 
-  const handleDragCreate = useCallback((day: number, startTime: string, endTime: string) => {
-    setQuickEventData({ day, startTime, endTime });
+  const handleDragCreate = useCallback((startDay: number, endDay: number, startTime: string, endTime: string) => {
+    setQuickEventData({ startDay, endDay, startTime, endTime });
     setIsQuickEventOpen(true);
   }, []);
 
@@ -262,7 +271,9 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
           *,
           rooms (name),
           teacher:profiles!schedule_events_teacher_id_fkey(full_name),
-          tutor:profiles!schedule_events_tutor_id_fkey(full_name)
+          teacher2:profiles!schedule_events_teacher_id_2_fkey(full_name),
+          tutor:profiles!schedule_events_tutor_id_fkey(full_name),
+          tutor2:profiles!schedule_events_tutor_id_2_fkey(full_name)
         `)
         .eq('is_active', true)
         .order('day_of_week', { ascending: true })
@@ -389,16 +400,26 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
                   {event.level && (
                     <div className="text-xs font-medium mt-1">Nivel: {event.level}</div>
                   )}
-                  {(event.teacher || event.tutor) && (
+                  {(event.teacher || event.teacher2 || event.tutor || event.tutor2) && (
                     <div className="flex gap-2 mt-2 flex-wrap">
                       {event.teacher && (
                         <span className="text-[10px] bg-blue-200/50 dark:bg-blue-800/30 px-1.5 py-0.5 rounded">
                           👨‍🏫 {event.teacher.full_name?.split(' ')[0]}
                         </span>
                       )}
+                      {event.teacher2 && (
+                        <span className="text-[10px] bg-blue-200/50 dark:bg-blue-800/30 px-1.5 py-0.5 rounded">
+                          👨‍🏫 {event.teacher2.full_name?.split(' ')[0]}
+                        </span>
+                      )}
                       {event.tutor && (
                         <span className="text-[10px] bg-green-200/50 dark:bg-green-800/30 px-1.5 py-0.5 rounded">
                           🎓 {event.tutor.full_name?.split(' ')[0]}
+                        </span>
+                      )}
+                      {event.tutor2 && (
+                        <span className="text-[10px] bg-green-200/50 dark:bg-green-800/30 px-1.5 py-0.5 rounded">
+                          🎓 {event.tutor2.full_name?.split(' ')[0]}
                         </span>
                       )}
                     </div>
@@ -442,12 +463,14 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
 
               {/* Days - 6 columnas para Lun-Sáb */}
               {[0, 1, 2, 3, 4, 5].map((day) => {
+                // Detectar selección rectangular (multi-día)
                 const isInSelection = () => {
                   if (!selectionStart || !selectionEnd) return false;
-                  if (selectionStart.day !== day || selectionEnd.day !== day) return false;
+                  const minDay = Math.min(selectionStart.day, selectionEnd.day);
+                  const maxDay = Math.max(selectionStart.day, selectionEnd.day);
                   const minHour = Math.min(selectionStart.hour, selectionEnd.hour);
                   const maxHour = Math.max(selectionStart.hour, selectionEnd.hour);
-                  return slot.hour >= minHour && slot.hour <= maxHour;
+                  return day >= minDay && day <= maxDay && slot.hour >= minHour && slot.hour <= maxHour;
                 };
                 
                 const inSelection = canEdit && isInSelection();
@@ -558,16 +581,26 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
                     {event.level}
                   </div>
                 )}
-                {height > 90 && (event.teacher || event.tutor) && (
+                {height > 90 && (event.teacher || event.teacher2 || event.tutor || event.tutor2) && (
                   <div className="flex gap-1 mt-0.5 flex-wrap">
                     {event.teacher && (
                       <span className="text-[9px] bg-blue-200/50 dark:bg-blue-800/30 px-1 py-0.5 rounded truncate max-w-[60px]">
                         👨‍🏫 {event.teacher.full_name?.split(' ')[0]}
                       </span>
                     )}
+                    {event.teacher2 && (
+                      <span className="text-[9px] bg-blue-200/50 dark:bg-blue-800/30 px-1 py-0.5 rounded truncate max-w-[60px]">
+                        👨‍🏫 {event.teacher2.full_name?.split(' ')[0]}
+                      </span>
+                    )}
                     {event.tutor && (
                       <span className="text-[9px] bg-green-200/50 dark:bg-green-800/30 px-1 py-0.5 rounded truncate max-w-[60px]">
                         🎓 {event.tutor.full_name?.split(' ')[0]}
+                      </span>
+                    )}
+                    {event.tutor2 && (
+                      <span className="text-[9px] bg-green-200/50 dark:bg-green-800/30 px-1 py-0.5 rounded truncate max-w-[60px]">
+                        🎓 {event.tutor2.full_name?.split(' ')[0]}
                       </span>
                     )}
                   </div>
@@ -674,7 +707,8 @@ export const WeeklyCalendar = ({ canEdit = false }: WeeklyCalendarProps) => {
       <QuickEventDialog
         open={isQuickEventOpen}
         onOpenChange={setIsQuickEventOpen}
-        initialDay={quickEventData.day}
+        initialStartDay={quickEventData.startDay}
+        initialEndDay={quickEventData.endDay}
         initialStartTime={quickEventData.startTime}
         initialEndTime={quickEventData.endTime}
       />

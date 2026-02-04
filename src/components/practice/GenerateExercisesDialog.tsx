@@ -158,13 +158,13 @@ export default function GenerateExercisesDialog({
             return null;
           }
 
-          // Get latest progress weeks for this student
+          // Get only the most recent progress week for this student
           const { data: progressWeeks } = await supabase
             .from('student_progress_weeks')
             .select('id, week_number')
             .eq('student_id', sp.user_id)
             .order('week_number', { ascending: false })
-            .limit(3);
+            .limit(1);
 
           let latestClassTopics: string | null = null;
           let latestVocabulary: string | null = null;
@@ -172,29 +172,20 @@ export default function GenerateExercisesDialog({
 
           if (progressWeeks && progressWeeks.length > 0) {
             currentWeek = progressWeeks[0].week_number;
-            const weekIds = progressWeeks.map(w => w.id);
-            const { data: notes } = await supabase
+            
+            // Get ONLY the most recent note with class_topics (last class day)
+            const { data: latestNote } = await supabase
               .from('student_progress_notes')
               .select('class_topics, vocabulary')
-              .in('week_id', weekIds)
+              .eq('week_id', progressWeeks[0].id)
               .not('class_topics', 'is', null)
               .order('created_at', { ascending: false })
-              .limit(5);
+              .limit(1);
 
-            if (notes && notes.length > 0) {
-              // Combine all recent class topics
-              const allTopics = notes
-                .filter(n => n.class_topics)
-                .map(n => n.class_topics)
-                .join(', ');
-              latestClassTopics = allTopics || null;
-
-              // Combine all recent vocabulary
-              const allVocab = notes
-                .filter(n => n.vocabulary)
-                .map(n => n.vocabulary)
-                .join(', ');
-              latestVocabulary = allVocab || null;
+            if (latestNote && latestNote.length > 0) {
+              // Use only the topics and vocabulary from the most recent class day
+              latestClassTopics = latestNote[0].class_topics || null;
+              latestVocabulary = latestNote[0].vocabulary || null;
             }
           }
 

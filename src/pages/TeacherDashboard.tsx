@@ -32,7 +32,7 @@ import { StudentProgressView } from '@/components/StudentProgressView';
 import { WeeklyProgressGrid } from '@/components/gamification/WeeklyProgressGrid';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { MyScheduleDialog } from '@/components/MyScheduleDialog';
-import { AssignMultipleStudentsDialog } from '@/components/AssignMultipleStudentsDialog';
+
 import { NotificationBell } from '@/components/NotificationBell';
 import { RoleBasedEditProfileDialog } from '@/components/RoleBasedEditProfileDialog';
 import { ClassRequestsPanel } from '@/components/ClassRequestsPanel';
@@ -170,7 +170,7 @@ const TeacherDashboard = () => {
   const [progressDialogOpen, setProgressDialogOpen] = useState(false);
   const [progressStudent, setProgressStudent] = useState<{ id: string; name: string; level: string | null } | null>(null);
   const [myScheduleOpen, setMyScheduleOpen] = useState(false);
-  const [assignMultipleOpen, setAssignMultipleOpen] = useState(false);
+  
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [videoCallOpen, setVideoCallOpen] = useState(false);
   const [videoCallStudent, setVideoCallStudent] = useState<{ id: string; name: string } | null>(null);
@@ -390,15 +390,6 @@ const TeacherDashboard = () => {
             )}
             <LanguageSwitcher />
             <NotificationBell />
-            <Button
-              onClick={() => setAssignMultipleOpen(true)}
-              variant="outline"
-              size="sm"
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
-            >
-              <Users className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Grupo</span>
-            </Button>
             <Button
               onClick={() => setMyScheduleOpen(true)}
               variant="outline"
@@ -1283,14 +1274,6 @@ const TeacherDashboard = () => {
         />
       )}
 
-      {/* Assign Multiple Students Dialog */}
-      {user?.id && (
-        <AssignMultipleStudentsDialog
-          open={assignMultipleOpen}
-          onOpenChange={setAssignMultipleOpen}
-          teacherId={user.id}
-        />
-      )}
 
       {/* Edit Profile Dialog */}
       <RoleBasedEditProfileDialog

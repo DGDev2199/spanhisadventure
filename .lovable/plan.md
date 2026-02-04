@@ -1,80 +1,219 @@
 
-# Plan: Corregir Permisos de Grupo y Cálculo de Horas
+# Plan: Mejoras en Gestionar Curriculo - CRUD de Materiales, Mobile y i18n
 
 ## Problemas Identificados
 
-### 1. Botón "Grupo" en Dashboard de Profesor
-El botón de "Grupo" para asignar horarios múltiples está disponible para profesores y tutores, pero según las reglas del sistema, esta funcionalidad debería ser **exclusiva de Admin y Coordinator**.
+1. **Falta CRUD completo de materiales**: Actualmente solo se puede agregar y eliminar. No hay opcion para **editar** (modificar titulo, tipo, URL, o cambiar si es guia del profesor).
 
-**Ubicación:** `TeacherDashboard.tsx` líneas 394-401 y `TutorDashboard.tsx`
+2. **Modal de PDF no abre en movil**: El `SecurePDFViewer` usa un `Dialog` de escritorio que no funciona bien en pantallas pequenas.
 
-### 2. Falta `group_session_id` en Asignaciones
-El componente `AssignMultipleStudentsDialog` (usado por profesores) **NO genera `group_session_id`**, lo que causa que el cálculo de horas sea incorrecto.
+3. **ManageCurriculumDialog no es responsive**: Layout de dos columnas fijo, campos pequenos, botones dificiles de tocar.
 
-**Ejemplo del problema actual:**
-- Profesor asigna 3 estudiantes a clase de 2 horas → Sistema suma 6 horas (incorrecto)
-- Debería sumar solo 2 horas (es la misma clase grupal)
-
-**Comparación:**
-| Componente | Usa `group_session_id` |
-|------------|------------------------|
-| `AdminAssignMultipleSchedulesDialog` | ✅ Sí (línea 120) |
-| `AssignMultipleStudentsDialog` | ❌ No |
+4. **Falta i18n**: Todas las cadenas del curriculo estan en espanol sin soporte para ingles.
 
 ---
 
-## Solución Propuesta
+## Solucion Propuesta
 
-### Opción A: Remover botón de Profesor/Tutor (Recomendada)
-Eliminar el botón "Grupo" del dashboard de profesores y tutores, dejando esta funcionalidad solo para administradores.
+### 1. Agregar Edicion de Materiales
 
-### Opción B: Agregar `group_session_id` al componente
-Si quieres mantener la funcionalidad para profesores, agregar la lógica de `group_session_id`.
+**Archivo:** `src/components/ManageCurriculumDialog.tsx`
 
----
+Cambios:
+- Agregar estado `editingMaterial` para almacenar el material en edicion
+- Crear boton de editar (icono lapiz) junto al boton de eliminar en cada material
+- Reutilizar el formulario de agregar material pero con datos precargados
+- Agregar funcion `handleUpdateMaterial` que haga `UPDATE` en `topic_materials`
 
-## Cambios Técnicos (Opción A)
+```typescript
+// Nuevo estado
+const [editingMaterial, setEditingMaterial] = useState<MaterialType | null>(null);
 
-### Archivo: `src/pages/TeacherDashboard.tsx`
-
-**Eliminar líneas 392-401:**
-```tsx
-// ELIMINAR este bloque
-<Button
-  onClick={() => setAssignMultipleOpen(true)}
-  variant="outline"
-  size="sm"
-  className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
->
-  <Users className="h-4 w-4 sm:mr-2" />
-  <span className="hidden sm:inline">Grupo</span>
-</Button>
+// Funcion para editar
+const handleUpdateMaterial = async () => {
+  await supabase
+    .from('topic_materials')
+    .update({
+      title: materialTitle,
+      material_type: materialType,
+      content_url: materialUrl,
+      is_teacher_guide: isTeacherGuide,
+    })
+    .eq('id', editingMaterial.id);
+};
 ```
 
-**Eliminar estado y diálogo:**
-- Línea 173: `const [assignMultipleOpen, setAssignMultipleOpen] = useState(false);`
-- Líneas 1287-1292: El componente `<AssignMultipleStudentsDialog />`
-- Línea 35: El import de `AssignMultipleStudentsDialog`
+### 2. Hacer SecurePDFViewer Responsive (Mobile Drawer)
 
-### Archivo: `src/pages/TutorDashboard.tsx`
-Aplicar los mismos cambios (eliminar botón, estado, import y diálogo).
+**Archivo:** `src/components/curriculum/SecurePDFViewer.tsx`
+
+Cambios:
+- Importar `useIsMobile` hook
+- Importar `Drawer` components de vaul
+- Renderizar `Drawer` en movil, `Dialog` en escritorio
+- El drawer abre desde abajo y ocupa toda la pantalla
+
+```typescript
+// Logica condicional
+const isMobile = useIsMobile();
+
+if (isMobile) {
+  return (
+    <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
+      <DrawerContent className="h-[95vh]">
+        {/* Contenido del visor PDF */}
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
+return (
+  <Dialog>...</Dialog>
+);
+```
+
+### 3. Hacer ManageCurriculumDialog Responsive
+
+**Archivo:** `src/components/ManageCurriculumDialog.tsx`
+
+Cambios:
+- En movil: layout de una columna con tabs para alternar entre semanas y temas
+- Botones con `min-h-[44px]` para area tactil adecuada
+- Usar `Sheet` (desde el lateral) en lugar de `Dialog` en movil para mejor UX
+- Ajustar `ScrollArea` para alturas dinamicas
+
+```typescript
+// Layout responsive
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  {/* En movil se apilan, en desktop lado a lado */}
+</div>
+```
+
+### 4. Agregar Traducciones i18n para Curriculo
+
+**Archivos:** 
+- `src/i18n/locales/en.json`
+- `src/i18n/locales/es.json`
+
+Nueva seccion `curriculum`:
+
+```json
+// en.json
+"curriculum": {
+  "manage": "Manage Curriculum",
+  "weeksAndTopics": "Weeks and Topics",
+  "extraMaterials": "Extra Materials",
+  "programWeeks": "Program Weeks",
+  "selectWeek": "Select a week",
+  "topicsFor": "Topics - Week",
+  "addTopic": "Add Topic",
+  "topicName": "Topic name",
+  "topicDescription": "Description (optional)",
+  "noTopics": "No topics. Add one below.",
+  "studentMaterial": "Student Material",
+  "teacherGuide": "Teacher Guide",
+  "addMaterial": "Add Material",
+  "editMaterial": "Edit Material",
+  "materialTitle": "Material title",
+  "materialType": "Type",
+  "document": "Document",
+  "video": "Video",
+  "link": "Link",
+  "exercise": "Exercise",
+  "contentUrl": "Content (URL or upload file)",
+  "save": "Save",
+  "cancel": "Cancel",
+  "existingMaterials": "Existing Materials",
+  "noMaterials": "No materials. Add one from the Weeks and Topics tab.",
+  "guide": "Guide",
+  "visibleToStudents": "Visible to students",
+  "hiddenFromStudents": "Hidden from students (teacher only)",
+  "topicAdded": "Topic added",
+  "topicDeleted": "Topic deleted",
+  "weekUpdated": "Week updated",
+  "materialAdded": "Material added",
+  "guideAdded": "Teacher guide added",
+  "materialDeleted": "Material deleted",
+  "guideDeleted": "Teacher guide deleted",
+  "materialUpdated": "Material updated",
+  "guideUpdated": "Teacher guide updated",
+  "createReevaluation": "Create re-evaluation test",
+  "reevaluationCreated": "Re-evaluation test created"
+}
+```
+
+```json
+// es.json
+"curriculum": {
+  "manage": "Gestionar Curriculo",
+  "weeksAndTopics": "Semanas y Temas",
+  "extraMaterials": "Material Extra",
+  "programWeeks": "Semanas del Programa",
+  "selectWeek": "Selecciona una semana",
+  "topicsFor": "Temas - Semana",
+  "addTopic": "Agregar Tema",
+  "topicName": "Nombre del tema",
+  "topicDescription": "Descripcion (opcional)",
+  "noTopics": "No hay temas. Agrega uno abajo.",
+  "studentMaterial": "Material del Estudiante",
+  "teacherGuide": "Guia del Profesor",
+  "addMaterial": "Agregar Material",
+  "editMaterial": "Editar Material",
+  "materialTitle": "Titulo del material",
+  "materialType": "Tipo",
+  "document": "Documento",
+  "video": "Video",
+  "link": "Enlace",
+  "exercise": "Ejercicio",
+  "contentUrl": "Contenido (URL o subir archivo)",
+  "save": "Guardar",
+  "cancel": "Cancelar",
+  "existingMaterials": "Materiales Existentes",
+  "noMaterials": "No hay materiales. Agrega uno desde la pestana Semanas y Temas.",
+  "guide": "Guia",
+  "visibleToStudents": "Visible para estudiantes",
+  "hiddenFromStudents": "Oculto para estudiantes (solo profesores)",
+  "topicAdded": "Tema agregado",
+  "topicDeleted": "Tema eliminado",
+  "weekUpdated": "Semana actualizada",
+  "materialAdded": "Material agregado",
+  "guideAdded": "Guia del profesor agregada",
+  "materialDeleted": "Material eliminado",
+  "guideDeleted": "Guia del profesor eliminada",
+  "materialUpdated": "Material actualizado",
+  "guideUpdated": "Guia del profesor actualizada",
+  "createReevaluation": "Crear examen de reevaluacion",
+  "reevaluationCreated": "Examen de reevaluacion creado"
+}
+```
 
 ---
 
-## Resumen
+## Resumen de Cambios por Archivo
 
-| Cambio | Impacto |
-|--------|---------|
-| Remover botón "Grupo" de profesores | Permisos correctos según arquitectura |
-| Remover botón "Grupo" de tutores | Permisos correctos según arquitectura |
-| Admin mantiene funcionalidad completa | ✅ Ya usa `group_session_id` |
-| Cálculo de horas | ✅ Funciona correctamente con admin |
+| Archivo | Cambios |
+|---------|---------|
+| `ManageCurriculumDialog.tsx` | +Edicion de materiales, +Responsive layout, +i18n |
+| `SecurePDFViewer.tsx` | +Drawer para movil, +useIsMobile |
+| `TeacherMaterialsPanel.tsx` | +Responsive mejorado, +i18n |
+| `en.json` | +Seccion curriculum (30+ claves) |
+| `es.json` | +Seccion curriculum (30+ claves) |
 
 ---
 
-## Verificación Post-Cambio
+## Flujo de Usuario Mejorado
 
-1. El botón "Grupo" solo aparecerá en **AdminDashboard**
-2. Las clases grupales asignadas por admin usarán `group_session_id`
-3. El cálculo de horas sumará 2 horas por clase (no 2 × número de estudiantes)
-4. La función SQL `calculate_staff_hours()` ya está lista para manejar esto correctamente
+1. **En movil**: El modal de curriculo abre como Sheet lateral o drawer desde abajo
+2. **Editar material**: Click en icono de lapiz, se carga el formulario con datos existentes
+3. **Cambiar tipo de guia**: Switch para alternar entre material de estudiante y guia del profesor
+4. **Ver PDF en movil**: Drawer de pantalla completa con visor de PDF
+
+---
+
+## Beneficios
+
+- CRUD completo para materiales (Crear, Leer, Actualizar, Eliminar)
+- Experiencia movil nativa con drawers/sheets
+- Traducciones completas para usuarios de habla inglesa
+- Botones con area tactil adecuada (44px minimo)
+- Consistencia con el resto de la aplicacion

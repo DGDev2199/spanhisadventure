@@ -8,7 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { LogOut, Users, GraduationCap, UserCheck, BookOpen, Settings, Home, Calendar, Plus, FileCheck, Clock, TrendingUp, Trash2, RotateCcw, UsersRound, Trophy as TrophyIcon } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LogOut, Users, GraduationCap, UserCheck, BookOpen, Settings, Home, Calendar, Plus, FileCheck, Clock, TrendingUp, Trash2, RotateCcw, UsersRound, Trophy } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -32,9 +33,86 @@ import { ModalityRequestsPanel } from '@/components/ModalityRequestsPanel';
 import { ManageCurriculumDialog } from '@/components/ManageCurriculumDialog';
 import { ManageAchievementsDialog } from '@/components/ManageAchievementsDialog';
 import { ManualLevelAssignDialog } from '@/components/ManualLevelAssignDialog';
+import { WeeklyProgressGrid } from '@/components/gamification/WeeklyProgressGrid';
+import { CreateAchievementDialog } from '@/components/CreateAchievementDialog';
+import { AwardAchievementDialog } from '@/components/AwardAchievementDialog';
+import { useStudentAchievements } from '@/hooks/useGamification';
 import { useSwipeable } from 'react-swipeable';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useNavigate } from 'react-router-dom';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+
+// Student Achievements Tab Component
+const StudentAchievementsTab = ({ 
+  studentId, 
+  onCreateAchievement,
+  onAwardAchievement 
+}: { 
+  studentId: string; 
+  onCreateAchievement: () => void;
+  onAwardAchievement: () => void;
+}) => {
+  const { data: achievements = [], isLoading } = useStudentAchievements(studentId);
+  
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="font-medium flex items-center gap-2">
+          <Trophy className="h-4 w-4 text-yellow-500" />
+          Logros del estudiante
+        </h3>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={onCreateAchievement}>
+            <Plus className="h-4 w-4 mr-1" />
+            Crear
+          </Button>
+          <Button size="sm" onClick={onAwardAchievement}>
+            <Trophy className="h-4 w-4 mr-1" />
+            Otorgar
+          </Button>
+        </div>
+      </div>
+      
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground text-center py-4">Cargando...</p>
+      ) : achievements.length === 0 ? (
+        <div className="text-center py-8 text-muted-foreground">
+          <Trophy className="h-12 w-12 mx-auto mb-2 opacity-20" />
+          <p>Este estudiante aún no tiene logros</p>
+          <p className="text-sm mt-1">Otorga un logro para motivarlo</p>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {achievements.map((sa) => sa.achievement && (
+            <div 
+              key={sa.id}
+              className="flex items-start gap-3 p-3 rounded-lg bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20"
+            >
+              <span className="text-2xl">{sa.achievement.icon}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-medium">{sa.achievement.name}</span>
+                  {sa.achievement.points_reward > 0 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{sa.achievement.points_reward} pts
+                    </Badge>
+                  )}
+                </div>
+                {sa.notes && (
+                  <p className="text-sm text-muted-foreground mt-1">"{sa.notes}"</p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  Por: {(sa.awarder as any)?.full_name || 'Staff'} • {new Date(sa.awarded_at).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
@@ -57,7 +135,7 @@ const AdminDashboard = () => {
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [progressDialogOpen, setProgressDialogOpen] = useState(false);
-  const [progressStudent, setProgressStudent] = useState<{ id: string; name: string } | null>(null);
+  const [progressStudent, setProgressStudent] = useState<{ id: string; name: string; level: string | null } | null>(null);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [scheduleStudent, setScheduleStudent] = useState<{ id: string; name: string } | null>(null);
   const [resetScheduleDialogOpen, setResetScheduleDialogOpen] = useState(false);
@@ -67,6 +145,8 @@ const AdminDashboard = () => {
   const [achievementsDialogOpen, setAchievementsDialogOpen] = useState(false);
   const [manualLevelDialogOpen, setManualLevelDialogOpen] = useState(false);
   const [manualLevelStudent, setManualLevelStudent] = useState<any>(null);
+  const [createAchievementOpen, setCreateAchievementOpen] = useState(false);
+  const [awardAchievementOpen, setAwardAchievementOpen] = useState(false);
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
@@ -407,7 +487,7 @@ const AdminDashboard = () => {
               variant="outline"
               className="flex flex-col items-center justify-center h-20 sm:h-24 gap-1.5 sm:gap-2 bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30 hover:border-purple-500/50 transition-all hover:shadow-lg hover:-translate-y-0.5 group"
             >
-              <TrophyIcon className="h-6 w-6 sm:h-7 sm:w-7 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform" />
+              <Trophy className="h-6 w-6 sm:h-7 sm:w-7 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform" />
               <span className="text-[10px] sm:text-xs font-medium text-center leading-tight text-purple-700 dark:text-purple-300">
                 Gestionar Logros
               </span>
@@ -618,7 +698,11 @@ const AdminDashboard = () => {
                               size="sm"
                               variant="outline"
                               onClick={() => {
-                                setProgressStudent({ id: student.user_id, name: student.profiles?.full_name });
+                                setProgressStudent({ 
+                                  id: student.user_id, 
+                                  name: student.profiles?.full_name || 'Estudiante',
+                                  level: student.level 
+                                });
                                 setProgressDialogOpen(true);
                               }}
                               className="flex-1 min-w-[100px]"
@@ -725,7 +809,11 @@ const AdminDashboard = () => {
                               size="sm"
                               variant="outline"
                               onClick={() => {
-                                setProgressStudent({ id: student.user_id, name: student.profiles?.full_name });
+                                setProgressStudent({ 
+                                  id: student.user_id, 
+                                  name: student.profiles?.full_name || 'Estudiante',
+                                  level: student.level 
+                                });
                                 setProgressDialogOpen(true);
                               }}
                             >
@@ -929,19 +1017,61 @@ const AdminDashboard = () => {
         onOpenChange={setStaffHoursDialogOpen}
       />
 
-      {/* Progress Dialog */}
+      {/* Progress Dialog with Tabs */}
       {progressStudent && (
         <Dialog open={progressDialogOpen} onOpenChange={setProgressDialogOpen}>
-          <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
+          <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle>Progreso del Estudiante - {progressStudent.name}</DialogTitle>
               <DialogDescription>
-                Seguimiento semanal del aprendizaje y desarrollo
+                Seguimiento completo del currículo, logros y notas semanales
               </DialogDescription>
             </DialogHeader>
-            <StudentProgressView studentId={progressStudent.id} isEditable={true} />
+            <Tabs defaultValue="curriculum" className="flex-1 flex flex-col min-h-0">
+              <TabsList className="grid w-full grid-cols-3 flex-shrink-0">
+                <TabsTrigger value="curriculum">📊 Currículo</TabsTrigger>
+                <TabsTrigger value="achievements">🏆 Logros</TabsTrigger>
+                <TabsTrigger value="notes">📝 Notas</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="curriculum" className="flex-1 overflow-y-auto mt-4">
+                <WeeklyProgressGrid 
+                  studentId={progressStudent.id} 
+                  studentLevel={progressStudent.level}
+                  isEditable={true}
+                />
+              </TabsContent>
+              
+              <TabsContent value="achievements" className="flex-1 overflow-y-auto mt-4">
+                <StudentAchievementsTab 
+                  studentId={progressStudent.id}
+                  onCreateAchievement={() => setCreateAchievementOpen(true)}
+                  onAwardAchievement={() => setAwardAchievementOpen(true)}
+                />
+              </TabsContent>
+              
+              <TabsContent value="notes" className="flex-1 overflow-y-auto mt-4">
+                <StudentProgressView studentId={progressStudent.id} isEditable={true} />
+              </TabsContent>
+            </Tabs>
           </DialogContent>
         </Dialog>
+      )}
+
+      {/* Achievement Dialogs */}
+      {progressStudent && (
+        <>
+          <CreateAchievementDialog
+            open={createAchievementOpen}
+            onOpenChange={setCreateAchievementOpen}
+          />
+          <AwardAchievementDialog
+            open={awardAchievementOpen}
+            onOpenChange={setAwardAchievementOpen}
+            studentId={progressStudent.id}
+            studentName={progressStudent.name}
+          />
+        </>
       )}
 
       {/* Schedule Dialog */}

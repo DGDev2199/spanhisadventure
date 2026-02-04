@@ -68,7 +68,7 @@ export interface StudentTopicProgress {
   student_id: string;
   topic_id: string;
   status: 'not_started' | 'in_progress' | 'needs_review' | 'completed';
-  color?: 'green' | 'yellow' | 'red' | 'blue' | null;
+  color?: 'green' | 'yellow' | 'red' | 'blue' | 'purple' | 'orange' | 'gray' | null;
   updated_at: string;
 }
 
@@ -338,7 +338,7 @@ export const useUpdateTopicProgress = () => {
       studentId: string; 
       topicId: string; 
       status?: 'not_started' | 'in_progress' | 'needs_review' | 'completed';
-      color?: 'green' | 'yellow' | 'red' | 'blue' | null;
+      color?: 'green' | 'yellow' | 'red' | 'blue' | 'purple' | 'orange' | 'gray' | null;
       updatedBy: string;
     }) => {
       const updateData: Record<string, unknown> = {

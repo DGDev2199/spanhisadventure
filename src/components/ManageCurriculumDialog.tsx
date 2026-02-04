@@ -105,6 +105,9 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
   const [isTeacherGuide, setIsTeacherGuide] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [materialTab, setMaterialTab] = useState<'student' | 'teacher'>('student');
+
+  // Tabs (controlled) so edit/add actions can navigate to the right pane
+  const [activeTab, setActiveTab] = useState<'weeks' | 'materials'>('weeks');
   
   // Mobile navigation state
   const [mobileView, setMobileView] = useState<'weeks' | 'topics'>('weeks');
@@ -299,6 +302,7 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
     setIsTeacherGuide(material.is_teacher_guide);
     setMaterialTopicId(material.topic_id);
     setAddingMaterial(true);
+    setActiveTab('materials');
   };
 
   const resetMaterialForm = () => {
@@ -421,7 +425,7 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
 
   // Render content shared by both Dialog and Sheet
   const renderContent = () => (
-    <Tabs defaultValue="weeks" className="w-full flex-1 flex flex-col overflow-hidden">
+    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'weeks' | 'materials')} className="w-full flex-1 flex flex-col overflow-hidden">
       <TabsList className={cn(
         "grid w-full grid-cols-2 flex-shrink-0",
         isMobile && "h-12"
@@ -640,6 +644,7 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
                                 setMaterialTopicId(topic.id);
                                 setIsTeacherGuide(false);
                                 setAddingMaterial(true);
+                                setActiveTab('materials');
                               }}
                             >
                               <GraduationCap className="h-4 w-4 mr-2 text-blue-500" />
@@ -653,6 +658,7 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
                                 setMaterialTopicId(topic.id);
                                 setIsTeacherGuide(true);
                                 setAddingMaterial(true);
+                                setActiveTab('materials');
                               }}
                             >
                               <BookMarked className="h-4 w-4 mr-2 text-purple-500" />

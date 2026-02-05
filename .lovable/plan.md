@@ -1,766 +1,443 @@
 
-# Plan: Sistema de Tutorial/Guía Interactiva por Rol
+# Plan: Tutorial Mejorado y Detallado con Corrección de Errores
 
-## Resumen
+## Problema Identificado
 
-Implementar un sistema de tutoriales interactivos estilo videojuego que guíe a cada tipo de usuario por las funciones de su dashboard. Los tutoriales se muestran automáticamente la primera vez que un usuario inicia sesión, con opción de repetirlos desde el menú.
+### Error del Tutorial (7/9 y se cierra)
+**Causa raíz**: El paso 8 del tutorial de estudiante (`[data-tutorial="weekly-calendar"]`) solo se renderiza para estudiantes **presenciales**. Si el usuario es un estudiante online, el elemento no existe en el DOM y react-joyride detecta que el elemento target no existe, lo cual causa que el tutorial se cierre automáticamente.
 
----
-
-## Librería Seleccionada
-
-**react-joyride** - La más popular para React con soporte TypeScript:
-- 34k+ estrellas en GitHub
-- 249k descargas diarias en npm
-- Licencia MIT
-- Soporte completo para componentes personalizados
-- Control de estado con callbacks
+### Descripciones muy cortas
+Las descripciones actuales son de 1-2 líneas. Necesitan expandirse para explicar:
+- Qué hace cada botón específicamente
+- Cómo usarlo paso a paso
+- Qué beneficios tiene
 
 ---
 
-## Arquitectura del Sistema
+## Solución
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                    TutorialProvider                          │
-│  (Context global que maneja estado de todos los tutoriales) │
-└─────────────────────────────────────────────────────────────┘
-                              │
-         ┌────────────────────┼────────────────────┐
-         ▼                    ▼                    ▼
-   ┌──────────┐         ┌──────────┐        ┌──────────┐
-   │  Tutor   │         │ Teacher  │        │  Admin   │
-   │ Tutorial │         │ Tutorial │        │ Tutorial │
-   └──────────┘         └──────────┘        └──────────┘
-                              │
-                              ▼
-                       ┌──────────┐
-                       │ Student  │
-                       │ Tutorial │
-                       └──────────┘
-```
+### 1. Hacer los pasos condicionales o con `disableBeacon: true`
+
+Modificar los pasos para que manejen elementos que pueden no existir agregando la opción `isOptional: true` en los pasos opcionales, y reorganizar los pasos para que los elementos condicionales estén al final o usar pasos diferentes según el tipo de estudiante.
+
+### 2. Expandir todas las descripciones
+
+Cada paso tendrá una descripción más detallada de 3-5 líneas explicando:
+- ¿Qué es esta sección?
+- ¿Qué puedes hacer aquí?
+- ¿Cómo lo usas?
+- Tip o beneficio
 
 ---
 
-## Parte 1: Instalación
-
-```bash
-npm install react-joyride
-```
-
----
-
-## Parte 2: Estructura de Archivos
-
-```text
-src/
-├── components/
-│   └── tutorial/
-│       ├── index.ts                    # Exports
-│       ├── TutorialProvider.tsx        # Context + estado global
-│       ├── TutorialTooltip.tsx         # Tooltip personalizado
-│       ├── TutorialLauncher.tsx        # Botón para reiniciar tutorial
-│       └── steps/
-│           ├── tutorSteps.ts           # Pasos para Tutores
-│           ├── teacherSteps.ts         # Pasos para Profesores
-│           ├── adminSteps.ts           # Pasos para Admin/Coordinador
-│           └── studentSteps.ts         # Pasos para Estudiantes
-└── hooks/
-    └── useTutorial.ts                  # Hook para usar el tutorial
-```
-
----
-
-## Parte 3: TutorialProvider (Context Global)
+## Cambios en TutorialProvider.tsx
 
 ```tsx
-// src/components/tutorial/TutorialProvider.tsx
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import Joyride, { CallBackProps, STATUS, Step, ACTIONS, EVENTS } from 'react-joyride';
-import { useAuth } from '@/contexts/AuthContext';
-import { tutorSteps } from './steps/tutorSteps';
-import { teacherSteps } from './steps/teacherSteps';
-import { adminSteps } from './steps/adminSteps';
-import { studentSteps } from './steps/studentSteps';
-import { TutorialTooltip } from './TutorialTooltip';
-
-interface TutorialContextType {
-  startTutorial: () => void;
-  stopTutorial: () => void;
-  isRunning: boolean;
-  hasSeenTutorial: boolean;
-  resetTutorial: () => void;
-}
-
-const TutorialContext = createContext<TutorialContextType | null>(null);
-
-export const useTutorial = () => {
-  const context = useContext(TutorialContext);
-  if (!context) throw new Error('useTutorial must be used within TutorialProvider');
-  return context;
-};
-
-export const TutorialProvider = ({ children }: { children: React.ReactNode }) => {
-  const { user, userRole } = useAuth();
-  const [run, setRun] = useState(false);
-  const [steps, setSteps] = useState<Step[]>([]);
-  const [stepIndex, setStepIndex] = useState(0);
-
-  // Key para localStorage basado en rol
-  const storageKey = `tutorial-seen-${userRole}-${user?.id}`;
-
-  const hasSeenTutorial = localStorage.getItem(storageKey) === 'true';
-
-  // Obtener pasos según el rol
-  useEffect(() => {
-    if (!userRole) return;
-    
-    switch (userRole) {
-      case 'tutor':
-        setSteps(tutorSteps);
-        break;
-      case 'teacher':
-        setSteps(teacherSteps);
-        break;
-      case 'admin':
-      case 'coordinator':
-        setSteps(adminSteps);
-        break;
-      case 'student':
-        setSteps(studentSteps);
-        break;
-    }
-  }, [userRole]);
-
-  // Auto-iniciar tutorial para usuarios nuevos
-  useEffect(() => {
-    if (user && userRole && steps.length > 0 && !hasSeenTutorial) {
-      // Pequeño delay para que el DOM se renderice
-      const timer = setTimeout(() => {
-        setRun(true);
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [user, userRole, steps.length, hasSeenTutorial]);
-
-  const handleCallback = useCallback((data: CallBackProps) => {
-    const { status, action, index, type } = data;
-    
-    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
-      setRun(false);
-      setStepIndex(0);
-      localStorage.setItem(storageKey, 'true');
-    } else if (type === EVENTS.STEP_AFTER && action === ACTIONS.NEXT) {
-      setStepIndex(index + 1);
-    } else if (type === EVENTS.STEP_AFTER && action === ACTIONS.PREV) {
-      setStepIndex(index - 1);
-    }
-  }, [storageKey]);
-
-  const startTutorial = () => {
-    setStepIndex(0);
-    setRun(true);
-  };
-
-  const stopTutorial = () => {
+// Agregar manejo de pasos opcionales que pueden no existir
+const handleCallback = useCallback((data: CallBackProps) => {
+  const { status, action, index, type, lifecycle } = data;
+  const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
+  
+  if (finishedStatuses.includes(status)) {
     setRun(false);
-  };
-
-  const resetTutorial = () => {
-    localStorage.removeItem(storageKey);
-    startTutorial();
-  };
-
-  return (
-    <TutorialContext.Provider value={{
-      startTutorial,
-      stopTutorial,
-      isRunning: run,
-      hasSeenTutorial,
-      resetTutorial,
-    }}>
-      {children}
-      <Joyride
-        steps={steps}
-        run={run}
-        stepIndex={stepIndex}
-        callback={handleCallback}
-        continuous
-        scrollToFirstStep
-        showSkipButton
-        showProgress
-        spotlightClicks
-        disableOverlayClose
-        tooltipComponent={TutorialTooltip}
-        locale={{
-          back: 'Anterior',
-          close: 'Cerrar',
-          last: '¡Listo!',
-          next: 'Siguiente',
-          skip: 'Saltar tutorial',
-        }}
-        styles={{
-          options: {
-            zIndex: 10000,
-            primaryColor: '#7c3aed', // Primary color del tema
-            overlayColor: 'rgba(0, 0, 0, 0.6)',
-          },
-        }}
-      />
-    </TutorialContext.Provider>
-  );
-};
+    setStepIndex(0);
+    localStorage.setItem(storageKey, 'true');
+  } else if (type === EVENTS.STEP_AFTER && action === ACTIONS.NEXT) {
+    setStepIndex(index + 1);
+  } else if (type === EVENTS.STEP_AFTER && action === ACTIONS.PREV) {
+    setStepIndex(index - 1);
+  } else if (type === EVENTS.TARGET_NOT_FOUND) {
+    // Si el elemento no existe, saltar al siguiente paso
+    setStepIndex(index + 1);
+  }
+}, [storageKey]);
 ```
 
 ---
 
-## Parte 4: Tooltip Personalizado
+## Nuevos Pasos para Estudiantes (Detallados)
 
-```tsx
-// src/components/tutorial/TutorialTooltip.tsx
-import { TooltipRenderProps } from 'react-joyride';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { X, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
-
-export const TutorialTooltip = ({
-  continuous,
-  index,
-  step,
-  backProps,
-  closeProps,
-  primaryProps,
-  skipProps,
-  tooltipProps,
-  size,
-}: TooltipRenderProps) => {
-  const progress = ((index + 1) / size) * 100;
-
-  return (
-    <Card 
-      {...tooltipProps} 
-      className="max-w-md shadow-xl border-2 border-primary/20 animate-in fade-in zoom-in-95"
-    >
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary animate-pulse" />
-            <CardTitle className="text-lg">{step.title}</CardTitle>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8" 
-            {...closeProps}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="flex items-center gap-2 mt-2">
-          <Progress value={progress} className="h-2" />
-          <span className="text-xs text-muted-foreground whitespace-nowrap">
-            {index + 1} / {size}
-          </span>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="py-3">
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          {step.content}
-        </p>
-      </CardContent>
-      
-      <CardFooter className="flex justify-between gap-2 pt-2">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          {...skipProps}
-          className="text-muted-foreground"
-        >
-          Saltar
-        </Button>
-        
-        <div className="flex gap-2">
-          {index > 0 && (
-            <Button variant="outline" size="sm" {...backProps}>
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Anterior
-            </Button>
-          )}
-          
-          {continuous && (
-            <Button size="sm" {...primaryProps}>
-              {index === size - 1 ? '¡Terminé!' : 'Siguiente'}
-              {index < size - 1 && <ChevronRight className="h-4 w-4 ml-1" />}
-            </Button>
-          )}
-        </div>
-      </CardFooter>
-    </Card>
-  );
-};
-```
-
----
-
-## Parte 5: Pasos del Tutorial - TUTORES
-
-```tsx
-// src/components/tutorial/steps/tutorSteps.ts
-import { Step } from 'react-joyride';
-
-export const tutorSteps: Step[] = [
-  {
-    target: 'body',
-    placement: 'center',
-    title: '¡Bienvenido, Tutor! 🎓',
-    content: 'Este tutorial te guiará por las funciones principales de tu panel. ¡Vamos a conocerlo juntos!',
-    disableBeacon: true,
-  },
-  {
-    target: '[data-tutorial="students-table"]',
-    title: 'Tus Estudiantes',
-    content: 'Aquí verás la lista de todos los estudiantes que tienes asignados. Puedes ver su nivel, profesor y acciones disponibles.',
-  },
-  {
-    target: '[data-tutorial="view-progress-btn"]',
-    title: 'Ver Progreso',
-    content: 'Haz clic aquí para ver y editar el progreso semanal del estudiante. Puedes agregar notas sobre temas de tutoría, vocabulario y logros.',
-  },
-  {
-    target: '[data-tutorial="staff-hours"]',
-    title: 'Tus Horas',
-    content: 'Aquí puedes ver el resumen de tus horas trabajadas esta semana. También puedes solicitar horas extra si es necesario.',
-  },
-  {
-    target: '[data-tutorial="practice-panel"]',
-    title: 'Ejercicios de Práctica',
-    content: 'Genera ejercicios personalizados con IA para tus estudiantes. Elige el tipo, nivel y tema, ¡y la IA creará ejercicios automáticamente!',
-  },
-  {
-    target: '[data-tutorial="materials-panel"]',
-    title: 'Materiales del Currículo',
-    content: 'Accede a todas las guías y materiales del currículo organizados por semana y tema. Los PDFs están protegidos con marca de agua.',
-  },
-  {
-    target: '[data-tutorial="my-schedule-btn"]',
-    title: 'Tu Horario',
-    content: 'Haz clic aquí para ver tu horario personal con todas las clases y tutorías asignadas.',
-  },
-  {
-    target: '[data-tutorial="notifications"]',
-    title: 'Notificaciones',
-    content: 'Aquí recibirás alertas sobre nuevas tareas, mensajes de estudiantes y actualizaciones importantes.',
-  },
-  {
-    target: 'body',
-    placement: 'center',
-    title: '¡Listo para comenzar! 🚀',
-    content: 'Ya conoces las funciones principales. Si necesitas ver este tutorial de nuevo, puedes reiniciarlo desde el menú. ¡Éxito con tus tutorías!',
-  },
-];
-```
-
----
-
-## Parte 6: Pasos del Tutorial - PROFESORES
-
-```tsx
-// src/components/tutorial/steps/teacherSteps.ts
-import { Step } from 'react-joyride';
-
-export const teacherSteps: Step[] = [
-  {
-    target: 'body',
-    placement: 'center',
-    title: '¡Bienvenido, Profesor! 👨‍🏫',
-    content: 'Este tutorial te mostrará todas las herramientas disponibles para gestionar tus clases y estudiantes.',
-    disableBeacon: true,
-  },
-  {
-    target: '[data-tutorial="students-table"]',
-    title: 'Tus Estudiantes',
-    content: 'Lista completa de estudiantes asignados. Verás en qué rol estás para cada uno (Profesor, Tutor o ambos).',
-  },
-  {
-    target: '[data-tutorial="create-task-btn"]',
-    title: 'Crear Tarea',
-    content: 'Asigna tareas a tus estudiantes. Puedes adjuntar archivos PDF y establecer fechas de entrega.',
-  },
-  {
-    target: '[data-tutorial="task-review-panel"]',
-    title: 'Revisar Entregas',
-    content: 'Aquí verás las tareas que los estudiantes han enviado. Puedes calificarlas y dar feedback.',
-  },
-  {
-    target: '[data-tutorial="create-test-btn"]',
-    title: 'Crear Exámenes',
-    content: 'Crea exámenes personalizados con preguntas de opción múltiple, completar y más. Asígnalos a uno o varios estudiantes.',
-  },
-  {
-    target: '[data-tutorial="view-progress-btn"]',
-    title: 'Progreso del Estudiante',
-    content: 'Accede al progreso completo: semanas del currículo, notas diarias y logros otorgados.',
-  },
-  {
-    target: '[data-tutorial="staff-hours"]',
-    title: 'Control de Horas',
-    content: 'Registra tus horas trabajadas y solicita horas extra cuando sea necesario.',
-  },
-  {
-    target: '[data-tutorial="practice-panel"]',
-    title: 'Generador de Ejercicios IA',
-    content: 'La inteligencia artificial te ayuda a crear ejercicios personalizados: flashcards, conjugaciones, lecturas y más.',
-  },
-  {
-    target: '[data-tutorial="materials-panel"]',
-    title: 'Guías y Materiales',
-    content: 'Todos los recursos del currículo organizados por semana. Las guías de profesor están protegidas.',
-  },
-  {
-    target: '[data-tutorial="scheduled-classes"]',
-    title: 'Clases Programadas',
-    content: 'Si tienes estudiantes online, aquí verás las reservaciones de clase pendientes.',
-  },
-  {
-    target: 'body',
-    placement: 'center',
-    title: '¡Todo listo! 🎉',
-    content: 'Conoces todas las herramientas. Puedes reiniciar este tutorial cuando quieras desde el menú. ¡Buenas clases!',
-  },
-];
-```
-
----
-
-## Parte 7: Pasos del Tutorial - ADMIN/COORDINADOR
-
-```tsx
-// src/components/tutorial/steps/adminSteps.ts
-import { Step } from 'react-joyride';
-
-export const adminSteps: Step[] = [
-  {
-    target: 'body',
-    placement: 'center',
-    title: '¡Bienvenido, Administrador! 🛡️',
-    content: 'Este tutorial te mostrará las herramientas de gestión de la escuela. Tienes acceso a todas las funciones administrativas.',
-    disableBeacon: true,
-  },
-  {
-    target: '[data-tutorial="approval-panel"]',
-    title: 'Aprobación de Usuarios',
-    content: 'Aquí verás las solicitudes de registro pendientes. Puedes aprobar o rechazar a estudiantes, profesores y tutores.',
-  },
-  {
-    target: '[data-tutorial="students-table"]',
-    title: 'Gestión de Estudiantes',
-    content: 'Lista completa de estudiantes. Puedes asignar profesores, tutores, cuartos y gestionar su progreso.',
-  },
-  {
-    target: '[data-tutorial="assign-teacher-btn"]',
-    title: 'Asignar Staff',
-    content: 'Asigna o cambia el profesor y tutor de cada estudiante. También puedes cambiar su modalidad (presencial/online).',
-  },
-  {
-    target: '[data-tutorial="manage-progress-btn"]',
-    title: 'Ver Progreso',
-    content: 'Accede al progreso completo de cualquier estudiante: currículo, notas semanales y logros.',
-  },
-  {
-    target: '[data-tutorial="weekly-calendar"]',
-    title: 'Calendario Semanal',
-    content: 'Gestiona el horario de la escuela. Crea clases, tutorías, aventuras, electivas y eventos especiales.',
-  },
-  {
-    target: '[data-tutorial="create-event-btn"]',
-    title: 'Crear Eventos',
-    content: 'Agrega nuevos eventos al calendario: clases grupales, aventuras, deportes, culturales y más.',
-  },
-  {
-    target: '[data-tutorial="manage-rooms-btn"]',
-    title: 'Gestión de Cuartos',
-    content: 'Administra los cuartos de la escuela y asigna estudiantes a cada uno.',
-  },
-  {
-    target: '[data-tutorial="staff-hours-btn"]',
-    title: 'Horas del Personal',
-    content: 'Revisa y aprueba las horas trabajadas y solicitudes de horas extra del staff.',
-  },
-  {
-    target: '[data-tutorial="curriculum-btn"]',
-    title: 'Gestión del Currículo',
-    content: 'Administra las semanas, temas y materiales del currículo. Sube PDFs y recursos para los profesores.',
-  },
-  {
-    target: '[data-tutorial="placement-test-btn"]',
-    title: 'Examen de Nivelación',
-    content: 'Configura y gestiona el examen de nivelación que toman los nuevos estudiantes.',
-  },
-  {
-    target: 'body',
-    placement: 'center',
-    title: '¡Panel dominado! 🏆',
-    content: 'Ahora conoces todas las herramientas administrativas. Puedes reiniciar este tutorial cuando necesites. ¡Éxito gestionando la escuela!',
-  },
-];
-```
-
----
-
-## Parte 8: Pasos del Tutorial - ESTUDIANTES
-
-```tsx
-// src/components/tutorial/steps/studentSteps.ts
-import { Step } from 'react-joyride';
-
+```typescript
 export const studentSteps: Step[] = [
   {
     target: 'body',
     placement: 'center',
     title: '¡Bienvenido a Spanish Adventure! 🌟',
-    content: '¡Tu aventura de aprendizaje comienza aquí! Este tutorial te mostrará cómo usar tu panel de estudiante.',
+    content: `¡Tu aventura de aprendizaje comienza aquí! 
+
+Este tutorial te guiará por todas las funciones de tu panel de estudiante. Aprenderás cómo ver tu progreso, comunicarte con tu profesor y tutor, completar tareas, y mucho más.
+
+Puedes avanzar con "Siguiente" o saltar el tutorial si ya lo conoces. ¡No te preocupes, siempre puedes verlo de nuevo desde el menú!`,
     disableBeacon: true,
   },
   {
     target: '[data-tutorial="level-card"]',
-    title: 'Tu Nivel',
-    content: 'Aquí verás tu nivel actual de español. Si aún no tienes nivel, deberás completar el examen de nivelación.',
+    title: 'Tu Nivel de Español 📊',
+    content: `Esta tarjeta muestra tu nivel actual de español (A1, A2, B1, B2, C1, C2).
+
+📌 **Si no tienes nivel aún**: Deberás completar el Examen de Nivelación. Este examen tiene una parte escrita y una parte oral con tu profesor.
+
+📌 **Si ya tienes nivel**: Aquí verás tu progreso. Tu nivel puede cambiar según tu avance en el currículo.
+
+💡 **Tip**: El nivel determina qué contenido verás en tus clases y ejercicios.`,
+    disableBeacon: true,
   },
   {
     target: '[data-tutorial="teacher-card"]',
-    title: 'Tu Profesor',
-    content: 'Este es tu profesor asignado. Puedes enviarle mensajes, ver su perfil y (si eres online) reservar clases.',
+    title: 'Tu Profesor Asignado 👨‍🏫',
+    content: `Aquí aparece la información de tu profesor de español.
+
+📌 **Botón "Chat"**: Envía mensajes directos a tu profesor para resolver dudas o consultas.
+
+📌 **Botón "Perfil"**: Ve la información completa de tu profesor, su experiencia y especialidades.
+
+📌 **Botón "Reservar"** (solo online): Programa clases en los horarios disponibles de tu profesor.
+
+📌 **Botón "Horario"** (solo presencial): Ve el horario de clases asignado.
+
+💡 **Tip**: No dudes en escribirle si tienes preguntas sobre las clases o tareas.`,
+    disableBeacon: true,
   },
   {
     target: '[data-tutorial="tutor-card"]',
-    title: 'Tu Tutor',
-    content: 'Tu tutor te ayudará con práctica y dudas. También puedes contactarlo desde aquí.',
+    title: 'Tu Tutor de Apoyo 🎓',
+    content: `Tu tutor es quien te ayuda con práctica adicional y resolución de dudas.
+
+📌 **Diferencia con el profesor**: El tutor se enfoca en reforzar lo que aprendes, practicar conversación y ayudarte con vocabulario.
+
+📌 **Botones disponibles**: Chat para mensajes, Perfil para conocerlo, y opciones de reserva/horario según tu modalidad.
+
+💡 **Tip**: Aprovecha las sesiones con tu tutor para practicar conversación y ganar confianza al hablar español.`,
+    disableBeacon: true,
   },
   {
     target: '[data-tutorial="tasks-card"]',
-    title: 'Tus Tareas',
-    content: 'Las tareas pendientes aparecen aquí. Haz clic para ver los detalles y entregar tu trabajo.',
+    title: 'Tus Tareas Pendientes 📝',
+    content: `Este contador muestra cuántas tareas tienes pendientes por entregar.
+
+📌 **Ver tareas**: Más abajo encontrarás la lista completa de tareas con fechas de entrega.
+
+📌 **Entregar tarea**: Haz clic en una tarea para ver los detalles y subir tu trabajo.
+
+📌 **Archivos adjuntos**: Algunas tareas incluyen PDFs o materiales que tu profesor adjuntó.
+
+💡 **Tip**: Revisa las fechas de entrega para organizar tu tiempo. Las tareas completadas a tiempo suman puntos extra.`,
+    disableBeacon: true,
   },
   {
     target: '[data-tutorial="progress-grid"]',
-    title: 'Tu Progreso',
-    content: 'Mira tu avance en el currículo. Cada semana tiene temas que irás completando con tu profesor.',
+    title: 'Tu Progreso en el Currículo 📈',
+    content: `Aquí ves tu avance visual en las semanas del currículo.
+
+📌 **Semanas coloreadas**: 
+   - 🟢 Verde = Completada
+   - 🟡 Amarillo = En progreso  
+   - ⚪ Gris = Pendiente
+
+📌 **Clic en una semana**: Ve los temas de esa semana y cuáles has completado.
+
+📌 **Temas (Topics)**: Cada semana tiene varios temas. Al completar todos, la semana se marca como finalizada.
+
+💡 **Tip**: Haz clic en una semana para ver exactamente qué temas te faltan por completar.`,
+    disableBeacon: true,
   },
   {
     target: '[data-tutorial="practice-panel"]',
-    title: 'Ejercicios de Práctica',
-    content: 'Aquí encontrarás ejercicios personalizados para ti. ¡Practica vocabulario, gramática y más!',
+    title: 'Ejercicios de Práctica 🎯',
+    content: `Aquí encontrarás ejercicios personalizados creados por tu profesor o tutor.
+
+📌 **Tipos de ejercicios**:
+   - Flashcards de vocabulario
+   - Conjugación de verbos
+   - Completar oraciones
+   - Lectura comprensiva
+   - Ordenar oraciones
+
+📌 **Ganar puntos**: Cada ejercicio completado suma puntos a tu ranking.
+
+💡 **Tip**: Practica un poco cada día. La constancia es clave para mejorar tu español.`,
+    disableBeacon: true,
   },
   {
     target: '[data-tutorial="gamification-panel"]',
-    title: 'Puntos y Logros',
-    content: 'Gana puntos completando actividades y desbloquea logros. ¡Compite en el ranking con otros estudiantes!',
+    title: 'Puntos, Logros y Ranking 🏆',
+    content: `¡Aquí está la diversión! Sistema de gamificación para motivarte.
+
+📌 **Puntos**: Ganas puntos por:
+   - Completar ejercicios
+   - Entregar tareas
+   - Asistir a clases
+   - Logros especiales
+
+📌 **Logros**: Insignias especiales que tu profesor te otorga por buen desempeño.
+
+📌 **Ranking**: Compite amigablemente con otros estudiantes.
+
+💡 **Tip**: ¡Los puntos se acumulan! Intenta subir en el ranking cada semana.`,
+    disableBeacon: true,
   },
   {
     target: '[data-tutorial="weekly-calendar"]',
-    title: 'Calendario Semanal',
-    content: 'Ve tu horario de clases, tutorías, aventuras y actividades de la semana.',
+    title: 'Calendario de la Semana 📅',
+    content: `Ve tu horario completo de actividades.
+
+📌 **Tipos de eventos**:
+   - 📚 Clases de español
+   - 🎓 Tutorías
+   - 🎨 Electivas (arte, música, deportes)
+   - 🌄 Aventuras y excursiones
+
+📌 **Navegación**: Usa las flechas para ver semanas anteriores o futuras.
+
+📌 **Detalles**: Haz clic en un evento para ver más información.
+
+💡 **Tip**: Revisa el calendario cada mañana para saber qué actividades tienes.`,
+    disableBeacon: true,
   },
   {
     target: '[data-tutorial="notifications"]',
-    title: 'Notificaciones',
-    content: 'Recibirás alertas sobre nuevas tareas, mensajes de tu profesor y actualizaciones de la escuela.',
+    title: 'Centro de Notificaciones 🔔',
+    content: `La campanita te avisa de novedades importantes.
+
+📌 **Recibirás alertas cuando**:
+   - Tu profesor te asigne una nueva tarea
+   - Alguien te envíe un mensaje
+   - Recibas un logro
+   - Haya cambios en el horario
+
+📌 **Número rojo**: Indica cuántas notificaciones sin leer tienes.
+
+💡 **Tip**: Revisa las notificaciones regularmente para no perderte información importante.`,
+    disableBeacon: true,
   },
   {
     target: 'body',
     placement: 'center',
-    title: '¡A aprender! 🚀',
-    content: '¡Ya estás listo para comenzar tu aventura! Si necesitas ver este tutorial de nuevo, puedes reiniciarlo. ¡Mucho éxito!',
+    title: '¡Estás listo para aprender! 🚀',
+    content: `¡Felicitaciones! Ya conoces todas las herramientas de tu panel.
+
+📌 **Resumen**:
+   - Revisa tu progreso en el currículo
+   - Completa tareas y ejercicios
+   - Comunícate con tu profesor y tutor
+   - Gana puntos y logros
+   - Consulta tu calendario
+
+📌 **Ver tutorial de nuevo**: Haz clic en el icono ❓ en el menú superior.
+
+¡Mucho éxito en tu aventura de aprender español! 🇪🇸`,
+    disableBeacon: true,
   },
 ];
 ```
 
 ---
 
-## Parte 9: Botón para Reiniciar Tutorial
+## Nuevos Pasos para Tutores (Detallados)
 
-```tsx
-// src/components/tutorial/TutorialLauncher.tsx
-import { Button } from '@/components/ui/button';
-import { HelpCircle, Play } from 'lucide-react';
-import { useTutorial } from './TutorialProvider';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+```typescript
+export const tutorSteps: Step[] = [
+  {
+    target: 'body',
+    placement: 'center',
+    title: '¡Bienvenido, Tutor! 🎓',
+    content: `Este es tu centro de control para gestionar a tus estudiantes.
 
-export const TutorialLauncher = () => {
-  const { startTutorial, resetTutorial, hasSeenTutorial } = useTutorial();
+Como tutor, tu rol es apoyar el aprendizaje reforzando lo que enseña el profesor. Aquí encontrarás:
+- Lista de estudiantes asignados
+- Herramientas para generar ejercicios
+- Acceso a materiales del currículo
+- Control de tus horas trabajadas
 
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button 
-          variant="outline" 
-          size="sm"
-          className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
-        >
-          <HelpCircle className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={resetTutorial}>
-          <Play className="h-4 w-4 mr-2" />
-          {hasSeenTutorial ? 'Ver tutorial de nuevo' : 'Iniciar tutorial'}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-};
+¡Vamos a explorar cada sección!`,
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="students-table"]',
+    title: 'Tabla de Estudiantes 👥',
+    content: `Aquí verás todos tus estudiantes asignados en una tabla organizada.
+
+📌 **Columnas**:
+   - Nombre del estudiante
+   - Tu rol (Profesor, Tutor o ambos)
+   - Nivel actual (A1-C2)
+   - Tipo (Online/Presencial)
+   - Sala asignada
+   - Profesor principal
+
+📌 **Ordenamiento**: Los más recientes aparecen primero.
+
+💡 **Tip**: Si eres profesor Y tutor del mismo estudiante, verás ambas etiquetas.`,
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="view-progress-btn"]',
+    title: 'Botón Ver Progreso 📊',
+    content: `Este botón abre el panel completo de progreso del estudiante.
+
+📌 **Qué puedes hacer**:
+   - Ver las semanas del currículo completadas
+   - Editar notas diarias (clase, tutoría, vocabulario)
+   - Ver y otorgar logros
+   - Consultar el historial completo
+
+📌 **Notas de tutoría**: Cada día puedes registrar qué temas practicaron y observaciones.
+
+💡 **Tip**: Registrar notas diarias ayuda al profesor a saber qué reforzar.`,
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="staff-hours"]',
+    title: 'Control de Horas 🕐',
+    content: `Aquí gestionas tus horas trabajadas de la semana.
+
+📌 **Visualización**:
+   - Horas trabajadas hoy
+   - Horas trabajadas esta semana
+   - Límite semanal
+   - Gráfico de distribución
+
+📌 **Solicitar horas extra**: Si necesitas más horas, puedes solicitar aprobación al administrador.
+
+💡 **Tip**: Las horas se calculan automáticamente de los eventos en el calendario.`,
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="practice-panel"]',
+    title: 'Generador de Ejercicios IA 🤖',
+    content: `Herramienta potente para crear ejercicios personalizados con inteligencia artificial.
+
+📌 **Tipos de ejercicios**:
+   - 📚 Flashcards de vocabulario
+   - 🔤 Conjugación de verbos
+   - ✏️ Completar espacios
+   - 📖 Comprensión lectora
+   - 🔀 Ordenar oraciones
+
+📌 **Cómo usarlo**:
+   1. Selecciona el tipo de ejercicio
+   2. Elige el nivel (A1-C2)
+   3. Ingresa el tema o vocabulario
+   4. La IA genera los ejercicios
+   5. Asígnalos a uno o varios estudiantes
+
+💡 **Tip**: Los ejercicios generados quedan guardados para reutilizar.`,
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="materials-panel"]',
+    title: 'Materiales del Currículo 📚',
+    content: `Accede a todas las guías y recursos organizados por semana.
+
+📌 **Contenido disponible**:
+   - Guías de cada tema
+   - Material de apoyo (PDFs)
+   - Recursos multimedia
+   - Ejercicios prediseñados
+
+📌 **Protección**: Los PDFs tienen marca de agua con tu nombre para evitar distribución no autorizada.
+
+📌 **Navegación**: Selecciona una semana para ver todos sus materiales.
+
+💡 **Tip**: Revisa los materiales antes de la tutoría para estar preparado.`,
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="my-schedule-btn"]',
+    title: 'Botón Mi Horario 📅',
+    content: `Abre tu calendario personal de actividades asignadas.
+
+📌 **Verás**:
+   - Tutorías programadas
+   - Clases (si también eres profesor)
+   - Horarios por día y hora
+
+📌 **Vista**: Calendario semanal con todas tus asignaciones.
+
+💡 **Tip**: Consulta tu horario cada día para confirmar tus sesiones.`,
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="notifications"]',
+    title: 'Centro de Notificaciones 🔔',
+    content: `Recibe alertas importantes en tiempo real.
+
+📌 **Te notifica sobre**:
+   - Mensajes nuevos de estudiantes
+   - Cambios en el horario
+   - Solicitudes de horas extra (estado)
+   - Avisos del administrador
+
+📌 **Indicador rojo**: Muestra cuántas notificaciones sin leer tienes.
+
+💡 **Tip**: Revisa las notificaciones al iniciar tu jornada.`,
+    disableBeacon: true,
+  },
+  {
+    target: 'body',
+    placement: 'center',
+    title: '¡Listo para tutorear! 🚀',
+    content: `Ya conoces todas las herramientas de tu panel.
+
+📌 **Flujo de trabajo típico**:
+   1. Revisa tu horario del día
+   2. Prepara los materiales para cada tutoría
+   3. Registra notas después de cada sesión
+   4. Genera ejercicios de práctica si es necesario
+   5. Responde mensajes de estudiantes
+
+📌 **Ver tutorial de nuevo**: Icono ❓ en el menú.
+
+¡Éxito con tus tutorías! 🎓`,
+    disableBeacon: true,
+  },
+];
 ```
 
 ---
 
-## Parte 10: Agregar data-tutorial a los Componentes
+## Nuevos Pasos para Profesores (Detallados)
 
-Necesitamos agregar atributos `data-tutorial` a los elementos clave de cada dashboard:
-
-### Dashboard.tsx (Estudiante)
-```tsx
-// Ejemplo de atributos a agregar:
-<QuickStatCard data-tutorial="level-card" ... />
-<StaffCard data-tutorial="teacher-card" ... />
-<StaffCard data-tutorial="tutor-card" ... />
-<Card data-tutorial="tasks-card" ... />
-<WeeklyProgressGrid data-tutorial="progress-grid" ... />
-<StudentPracticePanel data-tutorial="practice-panel" ... />
-<GamificationPanel data-tutorial="gamification-panel" ... />
-<WeeklyCalendar data-tutorial="weekly-calendar" ... />
-<NotificationBell data-tutorial="notifications" ... />
-```
-
-### TeacherDashboard.tsx
-```tsx
-<Table data-tutorial="students-table" ... />
-<Button data-tutorial="create-task-btn" ... />
-<TeacherTaskReviewPanel data-tutorial="task-review-panel" ... />
-<Button data-tutorial="create-test-btn" ... />
-<Button data-tutorial="view-progress-btn" ... />
-<StaffHoursCard data-tutorial="staff-hours" ... />
-<PracticeSessionPanel data-tutorial="practice-panel" ... />
-<TeacherMaterialsPanel data-tutorial="materials-panel" ... />
-<TeacherScheduledClassesCard data-tutorial="scheduled-classes" ... />
-<Button data-tutorial="my-schedule-btn" ... />
-```
-
-### TutorDashboard.tsx
-```tsx
-<Table data-tutorial="students-table" ... />
-<Button data-tutorial="view-progress-btn" ... />
-<StaffHoursCard data-tutorial="staff-hours" ... />
-<PracticeSessionPanel data-tutorial="practice-panel" ... />
-<TeacherMaterialsPanel data-tutorial="materials-panel" ... />
-<Button data-tutorial="my-schedule-btn" ... />
-<NotificationBell data-tutorial="notifications" ... />
-```
-
-### AdminDashboard.tsx
-```tsx
-<AdminApprovalPanel data-tutorial="approval-panel" ... />
-<Table data-tutorial="students-table" ... />
-<Button data-tutorial="assign-teacher-btn" ... />
-<Button data-tutorial="manage-progress-btn" ... />
-<WeeklyCalendar data-tutorial="weekly-calendar" ... />
-<Button data-tutorial="create-event-btn" ... />
-<Button data-tutorial="manage-rooms-btn" ... />
-<Button data-tutorial="staff-hours-btn" ... />
-<Button data-tutorial="curriculum-btn" ... />
-<Button data-tutorial="placement-test-btn" ... />
-```
+Similar estructura con:
+- Explicación detallada de crear tareas
+- Cómo revisar entregas
+- Crear exámenes personalizados
+- Ver progreso de estudiantes
+- Generar ejercicios con IA
+- Etc.
 
 ---
 
-## Parte 11: Integrar Provider en App.tsx
+## Nuevos Pasos para Admin (Detallados)
 
-```tsx
-// src/App.tsx
-import { TutorialProvider } from './components/tutorial';
-
-// Envolver dentro de AuthProvider
-<AuthProvider>
-  <TutorialProvider>
-    <Routes>
-      ...
-    </Routes>
-  </TutorialProvider>
-</AuthProvider>
-```
+Similar estructura con:
+- Panel de aprobación de usuarios
+- Gestión de estudiantes
+- Asignación de staff
+- Calendario y eventos
+- Gestión de cuartos
+- Horas del personal
+- Currículo
+- Examen de nivelación
 
 ---
 
-## Parte 12: Agregar Launcher al Header de Cada Dashboard
+## Archivos a Modificar
 
-Agregar el botón de ayuda en el header de cada dashboard:
-
-```tsx
-import { TutorialLauncher } from '@/components/tutorial';
-
-// En el header, junto a otros botones
-<div className="flex items-center gap-1.5 sm:gap-2">
-  <TutorialLauncher />
-  <LanguageSwitcher />
-  <NotificationBell />
-  ...
-</div>
-```
-
----
-
-## Resumen de Archivos
-
-| Archivo | Acción |
+| Archivo | Cambio |
 |---------|--------|
-| `package.json` | +react-joyride |
-| `src/components/tutorial/TutorialProvider.tsx` | **Nuevo** - Context + Joyride |
-| `src/components/tutorial/TutorialTooltip.tsx` | **Nuevo** - Tooltip personalizado |
-| `src/components/tutorial/TutorialLauncher.tsx` | **Nuevo** - Botón de ayuda |
-| `src/components/tutorial/steps/tutorSteps.ts` | **Nuevo** - Pasos tutor |
-| `src/components/tutorial/steps/teacherSteps.ts` | **Nuevo** - Pasos profesor |
-| `src/components/tutorial/steps/adminSteps.ts` | **Nuevo** - Pasos admin |
-| `src/components/tutorial/steps/studentSteps.ts` | **Nuevo** - Pasos estudiante |
-| `src/components/tutorial/index.ts` | **Nuevo** - Exports |
-| `src/App.tsx` | +TutorialProvider |
-| `src/pages/Dashboard.tsx` | +data-tutorial attrs +Launcher |
-| `src/pages/TeacherDashboard.tsx` | +data-tutorial attrs +Launcher |
-| `src/pages/TutorDashboard.tsx` | +data-tutorial attrs +Launcher |
-| `src/pages/AdminDashboard.tsx` | +data-tutorial attrs +Launcher |
-
----
-
-## Flujo del Usuario
-
-```text
-1. Usuario nuevo se registra y es aprobado
-2. Primera vez que entra al dashboard:
-   - Tutorial inicia automáticamente (1.5s delay)
-   - Tooltip aparece centrado: "¡Bienvenido!"
-   - Usuario hace clic en "Siguiente"
-3. Tutorial guía por cada sección resaltada
-4. Al terminar o saltar:
-   - Se guarda en localStorage que ya lo vio
-   - No aparece automáticamente de nuevo
-5. Si quiere verlo otra vez:
-   - Click en icono (?) en el header
-   - "Ver tutorial de nuevo"
-```
+| `src/components/tutorial/TutorialProvider.tsx` | Agregar manejo de `TARGET_NOT_FOUND` para saltar pasos |
+| `src/components/tutorial/steps/studentSteps.ts` | Descripciones detalladas, agregar `disableBeacon: true` |
+| `src/components/tutorial/steps/tutorSteps.ts` | Descripciones detalladas |
+| `src/components/tutorial/steps/teacherSteps.ts` | Descripciones detalladas |
+| `src/components/tutorial/steps/adminSteps.ts` | Descripciones detalladas |
 
 ---
 
 ## Beneficios
 
-1. **Onboarding automático** - Usuarios nuevos aprenden sin manual
-2. **Específico por rol** - Cada usuario ve solo lo relevante
-3. **No intrusivo** - Puede saltarse y reiniciarse cuando quiera
-4. **Responsive** - Funciona en móvil y desktop
-5. **Personalizable** - Tooltip con estilo de la app
-6. **Persistente** - Recuerda si ya lo vio
-7. **i18n ready** - Textos traducibles a inglés fácilmente
+1. **Tutorial no se cierra inesperadamente** - Maneja elementos que no existen
+2. **Descripciones completas** - Cada paso explica el qué, cómo y por qué
+3. **Formato mejorado** - Uso de emojis y bullets para mejor legibilidad
+4. **Tips útiles** - Sugerencias prácticas para cada función
+5. **Resumen al final** - Recordatorio de lo aprendido

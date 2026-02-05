@@ -203,6 +203,7 @@ export const AdminApprovalPanel = () => {
                     size="sm" 
                     variant="outline"
                     className="text-destructive hover:bg-destructive/10"
+                    data-tutorial="reject-user-btn"
                     onClick={() => {
                       if (window.confirm(`¿Rechazar y eliminar a ${pendingUser.full_name}?`)) {
                         rejectUserMutation.mutate(pendingUser.id);
@@ -214,6 +215,7 @@ export const AdminApprovalPanel = () => {
                   </Button>
                   <Button 
                     size="sm"
+                    data-tutorial="approve-user-btn"
                     onClick={() => approveUserMutation.mutate(pendingUser.id)}
                     disabled={approveUserMutation.isPending}
                   >

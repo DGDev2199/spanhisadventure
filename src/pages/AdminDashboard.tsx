@@ -433,6 +433,7 @@ const AdminDashboard = () => {
               onClick={() => setAssignMultipleSchedulesOpen(true)} 
               variant="outline"
               className="flex flex-col items-center justify-center h-20 sm:h-24 gap-1.5 sm:gap-2 bg-primary/5 hover:bg-primary/10 border-primary/20 hover:border-primary/40 transition-all hover:shadow-lg hover:-translate-y-0.5 group"
+              data-tutorial="assign-schedules-btn"
             >
               <Users className="h-6 w-6 sm:h-7 sm:w-7 text-primary group-hover:scale-110 transition-transform" />
               <span className="text-[10px] sm:text-xs font-medium text-center leading-tight text-primary">
@@ -704,6 +705,7 @@ const AdminDashboard = () => {
                             <Button
                               size="sm"
                               variant="outline"
+                              data-tutorial="student-progress-btn"
                               onClick={() => {
                                 setProgressStudent({ 
                                   id: student.user_id, 
@@ -720,6 +722,7 @@ const AdminDashboard = () => {
                             <Button
                               size="sm"
                               variant="outline"
+                              data-tutorial="student-schedule-btn"
                               onClick={() => {
                                 setScheduleStudent({ id: student.user_id, name: student.profiles?.full_name });
                                 setScheduleDialogOpen(true);
@@ -732,6 +735,7 @@ const AdminDashboard = () => {
                             <Button
                               size="sm"
                               variant="outline"
+                              data-tutorial="student-level-btn"
                               onClick={() => {
                                 setManualLevelStudent(student);
                                 setManualLevelDialogOpen(true);
@@ -744,6 +748,7 @@ const AdminDashboard = () => {
                             <Button
                               size="sm"
                               variant="outline"
+                              data-tutorial="student-assign-btn"
                               onClick={() => {
                                 setSelectedStudent(student);
                                 setAssignDialogOpen(true);

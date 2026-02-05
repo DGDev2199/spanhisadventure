@@ -195,7 +195,7 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
 
         <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
           {/* Grid de tipos de evento */}
-          <div>
+          <div data-tutorial="event-type-grid">
             <Label className="mb-2 block">Tipo de Evento *</Label>
             <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
               {EVENT_TYPES.map((type) => (
@@ -217,7 +217,7 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
             </div>
           </div>
 
-          <div>
+          <div data-tutorial="event-title-input">
             <Label>Título *</Label>
             <Input
               value={title}
@@ -235,7 +235,7 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
             />
           </div>
 
-          <div>
+          <div data-tutorial="event-days-select">
             <Label className="mb-3 block">Días de la Semana * (selecciona uno o varios)</Label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 border rounded-lg p-3">
               {DAYS.map((day) => (
@@ -262,7 +262,7 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
+            <div data-tutorial="event-time-start">
               <Label>Hora de Inicio *</Label>
               <Input
                 type="time"
@@ -272,7 +272,7 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
               />
             </div>
 
-            <div>
+            <div data-tutorial="event-time-end">
               <Label>Hora de Fin *</Label>
               <Input
                 type="time"
@@ -284,7 +284,7 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
+            <div data-tutorial="event-level-select">
               <Label>Nivel (opcional)</Label>
               <Select value={level} onValueChange={setLevel}>
                 <SelectTrigger>
@@ -320,7 +320,7 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
           </div>
 
           {/* Staff - 2 Profesores */}
-          <div className="space-y-2">
+          <div className="space-y-2" data-tutorial="event-teacher-select">
             <Label className="text-xs text-muted-foreground">Profesores (opcional)</Label>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -359,7 +359,7 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
           </div>
 
           {/* Staff - 2 Tutores */}
-          <div className="space-y-2">
+          <div className="space-y-2" data-tutorial="event-tutor-select">
             <Label className="text-xs text-muted-foreground">Tutores (opcional)</Label>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -402,6 +402,7 @@ export const CreateScheduleEventDialog = ({ open, onOpenChange }: CreateSchedule
               Cancelar
             </Button>
             <Button
+              data-tutorial="event-create-btn"
               onClick={() => createEventMutation.mutate()}
               disabled={!title || selectedDays.length === 0 || createEventMutation.isPending}
               className="w-full sm:flex-1"

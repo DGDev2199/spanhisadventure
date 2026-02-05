@@ -1,413 +1,766 @@
 
-# Plan: Arreglar PDF Móvil + Dashboards y Cards Responsive
+# Plan: Sistema de Tutorial/Guía Interactiva por Rol
 
-## Problemas Identificados
+## Resumen
 
-### 1. PDF Viewer en Móvil No Funciona
-**Causa raíz:** Los navegadores móviles (Safari iOS, Chrome Android) no soportan bien iframes con blob URLs para PDFs. El navegador muestra "Abrir" pero no puede renderizar el contenido.
-
-**Solución:** Implementar react-pdf para renderizar PDFs página por página de forma nativa, con controles de navegación y zoom optimizados para táctil.
-
-### 2. Dashboards y Cards No Responsive
-Los siguientes componentes necesitan mejoras de responsividad:
-- `WeeklyProgressGrid` - Cuadrícula de semanas muy pequeña en móvil
-- `StudentProgressView` - Notas diarias difíciles de editar en móvil
-- `DayProgressModal` - Modal de notas no optimizado para móvil
-- `TopicActionsModal` - Ya está responsive, pero puede mejorar
-- `QuickStatCard` y `StaffCard` - Cards del dashboard principal
+Implementar un sistema de tutoriales interactivos estilo videojuego que guíe a cada tipo de usuario por las funciones de su dashboard. Los tutoriales se muestran automáticamente la primera vez que un usuario inicia sesión, con opción de repetirlos desde el menú.
 
 ---
 
-## Parte 1: Arreglar SecurePDFViewer para Móvil
+## Librería Seleccionada
 
-### Problema Técnico
-Los navegadores móviles no renderizan PDFs en iframes con blob URLs. Necesitamos usar `react-pdf` (ya instalado en el proyecto) para renderizar cada página del PDF como un canvas.
+**react-joyride** - La más popular para React con soporte TypeScript:
+- 34k+ estrellas en GitHub
+- 249k descargas diarias en npm
+- Licencia MIT
+- Soporte completo para componentes personalizados
+- Control de estado con callbacks
 
-### Cambios en `SecurePDFViewer.tsx`
+---
+
+## Arquitectura del Sistema
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                    TutorialProvider                          │
+│  (Context global que maneja estado de todos los tutoriales) │
+└─────────────────────────────────────────────────────────────┘
+                              │
+         ┌────────────────────┼────────────────────┐
+         ▼                    ▼                    ▼
+   ┌──────────┐         ┌──────────┐        ┌──────────┐
+   │  Tutor   │         │ Teacher  │        │  Admin   │
+   │ Tutorial │         │ Tutorial │        │ Tutorial │
+   └──────────┘         └──────────┘        └──────────┘
+                              │
+                              ▼
+                       ┌──────────┐
+                       │ Student  │
+                       │ Tutorial │
+                       └──────────┘
+```
+
+---
+
+## Parte 1: Instalación
+
+```bash
+npm install react-joyride
+```
+
+---
+
+## Parte 2: Estructura de Archivos
+
+```text
+src/
+├── components/
+│   └── tutorial/
+│       ├── index.ts                    # Exports
+│       ├── TutorialProvider.tsx        # Context + estado global
+│       ├── TutorialTooltip.tsx         # Tooltip personalizado
+│       ├── TutorialLauncher.tsx        # Botón para reiniciar tutorial
+│       └── steps/
+│           ├── tutorSteps.ts           # Pasos para Tutores
+│           ├── teacherSteps.ts         # Pasos para Profesores
+│           ├── adminSteps.ts           # Pasos para Admin/Coordinador
+│           └── studentSteps.ts         # Pasos para Estudiantes
+└── hooks/
+    └── useTutorial.ts                  # Hook para usar el tutorial
+```
+
+---
+
+## Parte 3: TutorialProvider (Context Global)
 
 ```tsx
-// Importaciones adicionales
-import { Document, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
-import 'react-pdf/dist/esm/Page/TextLayer.css';
+// src/components/tutorial/TutorialProvider.tsx
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import Joyride, { CallBackProps, STATUS, Step, ACTIONS, EVENTS } from 'react-joyride';
+import { useAuth } from '@/contexts/AuthContext';
+import { tutorSteps } from './steps/tutorSteps';
+import { teacherSteps } from './steps/teacherSteps';
+import { adminSteps } from './steps/adminSteps';
+import { studentSteps } from './steps/studentSteps';
+import { TutorialTooltip } from './TutorialTooltip';
 
-// Configurar worker de PDF.js
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-
-// Para móvil, renderizar con react-pdf
-const [numPages, setNumPages] = useState<number>(0);
-const [currentPage, setCurrentPage] = useState(1);
-const [scale, setScale] = useState(1);
-
-// Nuevo renderizador móvil
-const renderMobilePDFContent = () => (
-  <div className="flex-1 overflow-auto relative">
-    {isLoading && (
-      <div className="absolute inset-0 flex items-center justify-center">
-        <span>Cargando PDF...</span>
-      </div>
-    )}
-    
-    {objectUrl && (
-      <Document
-        file={objectUrl}
-        onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-        loading={<div className="p-4 text-center">Cargando documento...</div>}
-        error={<div className="p-4 text-center text-red-500">Error al cargar el PDF</div>}
-      >
-        <Page
-          pageNumber={currentPage}
-          width={window.innerWidth - 32}
-          className="mx-auto"
-          renderTextLayer={false}
-          renderAnnotationLayer={false}
-        />
-      </Document>
-    )}
-    
-    {/* Controles de navegación */}
-    <div className="sticky bottom-0 bg-background/95 border-t p-2 flex items-center justify-center gap-4">
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-        disabled={currentPage <= 1}
-      >
-        ← Anterior
-      </Button>
-      <span className="text-sm">
-        {currentPage} / {numPages}
-      </span>
-      <Button
-        size="sm"
-        variant="outline"
-        onClick={() => setCurrentPage(p => Math.min(numPages, p + 1))}
-        disabled={currentPage >= numPages}
-      >
-        Siguiente →
-      </Button>
-    </div>
-    
-    {/* Watermark */}
-    <PDFWatermarkOverlay userName={userName} currentTime={currentTime} />
-  </div>
-);
-
-// En el render móvil, usar el nuevo componente
-if (isMobile) {
-  return (
-    <Drawer open={open} onOpenChange={...}>
-      <DrawerContent className="h-[95vh] flex flex-col">
-        <DrawerHeader>...</DrawerHeader>
-        {renderMobilePDFContent()}
-      </DrawerContent>
-    </Drawer>
-  );
+interface TutorialContextType {
+  startTutorial: () => void;
+  stopTutorial: () => void;
+  isRunning: boolean;
+  hasSeenTutorial: boolean;
+  resetTutorial: () => void;
 }
-```
 
----
+const TutorialContext = createContext<TutorialContextType | null>(null);
 
-## Parte 2: WeeklyProgressGrid Responsive
+export const useTutorial = () => {
+  const context = useContext(TutorialContext);
+  if (!context) throw new Error('useTutorial must be used within TutorialProvider');
+  return context;
+};
 
-### Cambios Principales
+export const TutorialProvider = ({ children }: { children: React.ReactNode }) => {
+  const { user, userRole } = useAuth();
+  const [run, setRun] = useState(false);
+  const [steps, setSteps] = useState<Step[]>([]);
+  const [stepIndex, setStepIndex] = useState(0);
 
-1. **Cuadrícula de semanas más grande en móvil:**
-```tsx
-// ANTES
-<div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
+  // Key para localStorage basado en rol
+  const storageKey = `tutorial-seen-${userRole}-${user?.id}`;
 
-// DESPUÉS - Menos columnas y más espacio en móvil
-<div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4">
-```
+  const hasSeenTutorial = localStorage.getItem(storageKey) === 'true';
 
-2. **Botones de semana más grandes y táctiles:**
-```tsx
-<button
-  className={cn(
-    "relative p-3 sm:p-4 rounded-xl transition-all duration-200 border-2",
-    "min-h-[72px] sm:min-h-[80px] touch-target", // Más altura
-    // ... resto de clases
-  )}
->
-  {/* Número de semana más grande */}
-  <div className="text-xl sm:text-2xl font-bold">{week.week_number}</div>
-  
-  {/* Badge de nivel */}
-  <Badge className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 mt-1">
-    {week.level}
-  </Badge>
-</button>
-```
+  // Obtener pasos según el rol
+  useEffect(() => {
+    if (!userRole) return;
+    
+    switch (userRole) {
+      case 'tutor':
+        setSteps(tutorSteps);
+        break;
+      case 'teacher':
+        setSteps(teacherSteps);
+        break;
+      case 'admin':
+      case 'coordinator':
+        setSteps(adminSteps);
+        break;
+      case 'student':
+        setSteps(studentSteps);
+        break;
+    }
+  }, [userRole]);
 
-3. **Detalle de semana seleccionada mejorado:**
-```tsx
-{/* Topics grid - más columnas en tablet/desktop */}
-<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-  {/* TopicCards más grandes */}
-</div>
-```
+  // Auto-iniciar tutorial para usuarios nuevos
+  useEffect(() => {
+    if (user && userRole && steps.length > 0 && !hasSeenTutorial) {
+      // Pequeño delay para que el DOM se renderice
+      const timer = setTimeout(() => {
+        setRun(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [user, userRole, steps.length, hasSeenTutorial]);
 
----
+  const handleCallback = useCallback((data: CallBackProps) => {
+    const { status, action, index, type } = data;
+    
+    if ([STATUS.FINISHED, STATUS.SKIPPED].includes(status)) {
+      setRun(false);
+      setStepIndex(0);
+      localStorage.setItem(storageKey, 'true');
+    } else if (type === EVENTS.STEP_AFTER && action === ACTIONS.NEXT) {
+      setStepIndex(index + 1);
+    } else if (type === EVENTS.STEP_AFTER && action === ACTIONS.PREV) {
+      setStepIndex(index - 1);
+    }
+  }, [storageKey]);
 
-## Parte 3: StudentProgressView Responsive
+  const startTutorial = () => {
+    setStepIndex(0);
+    setRun(true);
+  };
 
-### Cambios en la Vista General
+  const stopTutorial = () => {
+    setRun(false);
+  };
 
-```tsx
-{/* Header con stats - stack vertical en móvil */}
-<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
-  <div className="space-y-1">
-    <p className="text-sm sm:text-base font-medium">Progreso General</p>
-    <p className="text-xl sm:text-2xl font-bold text-primary">
-      {completedWeeks} / {totalWeeks} Semanas
-    </p>
-  </div>
-  <div className="text-left sm:text-right">
-    <p className="text-2xl sm:text-3xl font-bold text-secondary">{Math.round(progressPercentage)}%</p>
-    <p className="text-xs text-muted-foreground">Completado</p>
-  </div>
-</div>
+  const resetTutorial = () => {
+    localStorage.removeItem(storageKey);
+    startTutorial();
+  };
 
-{/* Botones de acción - full width en móvil */}
-<div className="flex flex-col sm:flex-row gap-2">
-  <Button variant="outline" size="sm" className="flex-1 w-full sm:w-auto">
-    <ArrowLeftRight className="h-4 w-4 mr-2" />
-    Reasignar Nivel
-  </Button>
-  <Button variant="outline" size="sm" className="flex-1 w-full sm:w-auto">
-    <UserMinus className="h-4 w-4 mr-2" />
-    Marcar Alumni
-  </Button>
-</div>
-```
-
-### Grid de Notas Diarias
-
-```tsx
-{/* Grid de días - 1 columna en móvil, 2 en tablet, 4 en desktop */}
-<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-  {DAYS.map((day) => (
-    <div
-      key={day}
-      onClick={() => setSelectedDay(...)}
-      className={cn(
-        "p-4 rounded-lg border transition-all",
-        "min-h-[80px] touch-target", // Más altura para táctil
-        "cursor-pointer hover:border-primary hover:shadow-md",
-        // ... resto de estilos
-      )}
-    >
-      <div className="flex items-center gap-2 mb-2">
-        <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-        <span className="font-semibold text-sm sm:text-base">{DAY_LABELS[day]}</span>
-      </div>
-      {/* Indicadores más visibles */}
-      <div className="flex flex-wrap items-center gap-1.5 mt-2">
-        {hasTeacher && (
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-green-100 text-green-700">
-            <GraduationCap className="h-3.5 w-3.5" />
-            Prof
-          </span>
-        )}
-        {hasTutor && (
-          <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-blue-100 text-blue-700">
-            <Users className="h-3.5 w-3.5" />
-            Tutor
-          </span>
-        )}
-      </div>
-    </div>
-  ))}
-</div>
-```
-
----
-
-## Parte 4: DayProgressModal Responsive
-
-### Usar Drawer en Móvil
-
-```tsx
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription } from '@/components/ui/drawer';
-import { useIsMobile } from '@/hooks/use-mobile';
-
-export const DayProgressModal = ({ ... }) => {
-  const isMobile = useIsMobile();
-  
-  const content = (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Campos de texto más grandes */}
-      <div className="space-y-2">
-        <Label className="flex items-center gap-2 text-sm font-semibold">
-          <BookOpen className="h-4 w-4 text-green-600" />
-          Temas de clase
-        </Label>
-        <Textarea
-          value={classTopics}
-          onChange={(e) => setClassTopics(e.target.value)}
-          placeholder="Describe los temas..."
-          rows={4}
-          className="resize-none text-base" // Texto más grande
-        />
-      </div>
-      {/* Repetir para otros campos... */}
-    </div>
-  );
-  
-  if (isMobile) {
-    return (
-      <Drawer open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-        <DrawerContent className="max-h-[90vh]">
-          <DrawerHeader className="text-left">
-            <DrawerTitle className="flex items-center gap-2">
-              <BookOpen className="h-5 w-5 text-primary" />
-              {dayLabel}
-            </DrawerTitle>
-            <DrawerDescription>
-              {isEditable ? 'Registra el progreso' : 'Resumen del día'}
-            </DrawerDescription>
-          </DrawerHeader>
-          <div className="px-4 pb-4 overflow-y-auto">
-            {content}
-          </div>
-          <div className="flex gap-2 p-4 border-t">
-            <Button variant="outline" onClick={onClose} className="flex-1">
-              {canSave ? 'Cancelar' : 'Cerrar'}
-            </Button>
-            {canSave && (
-              <Button onClick={() => saveMutation.mutate()} className="flex-1">
-                Guardar
-              </Button>
-            )}
-          </div>
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-  
-  // Desktop: Dialog normal
   return (
-    <Dialog open={open} onOpenChange={...}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        {/* ... contenido existente ... */}
-      </DialogContent>
-    </Dialog>
+    <TutorialContext.Provider value={{
+      startTutorial,
+      stopTutorial,
+      isRunning: run,
+      hasSeenTutorial,
+      resetTutorial,
+    }}>
+      {children}
+      <Joyride
+        steps={steps}
+        run={run}
+        stepIndex={stepIndex}
+        callback={handleCallback}
+        continuous
+        scrollToFirstStep
+        showSkipButton
+        showProgress
+        spotlightClicks
+        disableOverlayClose
+        tooltipComponent={TutorialTooltip}
+        locale={{
+          back: 'Anterior',
+          close: 'Cerrar',
+          last: '¡Listo!',
+          next: 'Siguiente',
+          skip: 'Saltar tutorial',
+        }}
+        styles={{
+          options: {
+            zIndex: 10000,
+            primaryColor: '#7c3aed', // Primary color del tema
+            overlayColor: 'rgba(0, 0, 0, 0.6)',
+          },
+        }}
+      />
+    </TutorialContext.Provider>
   );
 };
 ```
 
 ---
 
-## Parte 5: Dashboard Cards Responsive
-
-### QuickStatCard
+## Parte 4: Tooltip Personalizado
 
 ```tsx
-// Ajustar tamaños y espaciado
-<Card className="shadow-md hover:shadow-lg transition-all duration-300">
-  <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0 p-3 sm:p-4">
-    <CardTitle className="text-xs sm:text-sm font-medium line-clamp-1">{title}</CardTitle>
-    <div className="flex-shrink-0">{icon}</div>
-  </CardHeader>
-  <CardContent className="p-3 sm:p-4 pt-0 sm:pt-0">
-    <div className="text-xl sm:text-2xl font-bold text-primary truncate">
-      {isLoading ? '...' : value}
-    </div>
-    <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 line-clamp-1">
-      {subtitle}
-    </p>
-  </CardContent>
-</Card>
-```
+// src/components/tutorial/TutorialTooltip.tsx
+import { TooltipRenderProps } from 'react-joyride';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { X, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 
-### StaffCard
+export const TutorialTooltip = ({
+  continuous,
+  index,
+  step,
+  backProps,
+  closeProps,
+  primaryProps,
+  skipProps,
+  tooltipProps,
+  size,
+}: TooltipRenderProps) => {
+  const progress = ((index + 1) / size) * 100;
 
-```tsx
-// Botones de acción más táctiles
-<div className="flex flex-wrap gap-1.5 sm:gap-2 mt-3">
-  {showChat && (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={onChat}
-      className="h-9 sm:h-8 px-3 touch-target flex-1 sm:flex-none"
+  return (
+    <Card 
+      {...tooltipProps} 
+      className="max-w-md shadow-xl border-2 border-primary/20 animate-in fade-in zoom-in-95"
     >
-      <MessageSquare className="h-4 w-4 sm:mr-1.5" />
-      <span className="hidden sm:inline">Chat</span>
-    </Button>
-  )}
-  {/* Repetir para otros botones... */}
-</div>
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary animate-pulse" />
+            <CardTitle className="text-lg">{step.title}</CardTitle>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8" 
+            {...closeProps}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex items-center gap-2 mt-2">
+          <Progress value={progress} className="h-2" />
+          <span className="text-xs text-muted-foreground whitespace-nowrap">
+            {index + 1} / {size}
+          </span>
+        </div>
+      </CardHeader>
+      
+      <CardContent className="py-3">
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          {step.content}
+        </p>
+      </CardContent>
+      
+      <CardFooter className="flex justify-between gap-2 pt-2">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          {...skipProps}
+          className="text-muted-foreground"
+        >
+          Saltar
+        </Button>
+        
+        <div className="flex gap-2">
+          {index > 0 && (
+            <Button variant="outline" size="sm" {...backProps}>
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Anterior
+            </Button>
+          )}
+          
+          {continuous && (
+            <Button size="sm" {...primaryProps}>
+              {index === size - 1 ? '¡Terminé!' : 'Siguiente'}
+              {index < size - 1 && <ChevronRight className="h-4 w-4 ml-1" />}
+            </Button>
+          )}
+        </div>
+      </CardFooter>
+    </Card>
+  );
+};
 ```
 
 ---
 
-## Parte 6: Admin/Teacher Dashboard Tables
-
-### Tablas Scrollables Horizontalmente
+## Parte 5: Pasos del Tutorial - TUTORES
 
 ```tsx
-{/* Wrapper para scroll horizontal en móvil */}
-<div className="w-full overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-  <Table className="min-w-[600px]">
-    <TableHeader>
-      <TableRow>
-        <TableHead className="sticky left-0 bg-background z-10">Estudiante</TableHead>
-        <TableHead>Nivel</TableHead>
-        <TableHead>Profesor</TableHead>
-        <TableHead className="text-right">Acciones</TableHead>
-      </TableRow>
-    </TableHeader>
-    <TableBody>
-      {/* Filas... */}
-    </TableBody>
-  </Table>
+// src/components/tutorial/steps/tutorSteps.ts
+import { Step } from 'react-joyride';
+
+export const tutorSteps: Step[] = [
+  {
+    target: 'body',
+    placement: 'center',
+    title: '¡Bienvenido, Tutor! 🎓',
+    content: 'Este tutorial te guiará por las funciones principales de tu panel. ¡Vamos a conocerlo juntos!',
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="students-table"]',
+    title: 'Tus Estudiantes',
+    content: 'Aquí verás la lista de todos los estudiantes que tienes asignados. Puedes ver su nivel, profesor y acciones disponibles.',
+  },
+  {
+    target: '[data-tutorial="view-progress-btn"]',
+    title: 'Ver Progreso',
+    content: 'Haz clic aquí para ver y editar el progreso semanal del estudiante. Puedes agregar notas sobre temas de tutoría, vocabulario y logros.',
+  },
+  {
+    target: '[data-tutorial="staff-hours"]',
+    title: 'Tus Horas',
+    content: 'Aquí puedes ver el resumen de tus horas trabajadas esta semana. También puedes solicitar horas extra si es necesario.',
+  },
+  {
+    target: '[data-tutorial="practice-panel"]',
+    title: 'Ejercicios de Práctica',
+    content: 'Genera ejercicios personalizados con IA para tus estudiantes. Elige el tipo, nivel y tema, ¡y la IA creará ejercicios automáticamente!',
+  },
+  {
+    target: '[data-tutorial="materials-panel"]',
+    title: 'Materiales del Currículo',
+    content: 'Accede a todas las guías y materiales del currículo organizados por semana y tema. Los PDFs están protegidos con marca de agua.',
+  },
+  {
+    target: '[data-tutorial="my-schedule-btn"]',
+    title: 'Tu Horario',
+    content: 'Haz clic aquí para ver tu horario personal con todas las clases y tutorías asignadas.',
+  },
+  {
+    target: '[data-tutorial="notifications"]',
+    title: 'Notificaciones',
+    content: 'Aquí recibirás alertas sobre nuevas tareas, mensajes de estudiantes y actualizaciones importantes.',
+  },
+  {
+    target: 'body',
+    placement: 'center',
+    title: '¡Listo para comenzar! 🚀',
+    content: 'Ya conoces las funciones principales. Si necesitas ver este tutorial de nuevo, puedes reiniciarlo desde el menú. ¡Éxito con tus tutorías!',
+  },
+];
+```
+
+---
+
+## Parte 6: Pasos del Tutorial - PROFESORES
+
+```tsx
+// src/components/tutorial/steps/teacherSteps.ts
+import { Step } from 'react-joyride';
+
+export const teacherSteps: Step[] = [
+  {
+    target: 'body',
+    placement: 'center',
+    title: '¡Bienvenido, Profesor! 👨‍🏫',
+    content: 'Este tutorial te mostrará todas las herramientas disponibles para gestionar tus clases y estudiantes.',
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="students-table"]',
+    title: 'Tus Estudiantes',
+    content: 'Lista completa de estudiantes asignados. Verás en qué rol estás para cada uno (Profesor, Tutor o ambos).',
+  },
+  {
+    target: '[data-tutorial="create-task-btn"]',
+    title: 'Crear Tarea',
+    content: 'Asigna tareas a tus estudiantes. Puedes adjuntar archivos PDF y establecer fechas de entrega.',
+  },
+  {
+    target: '[data-tutorial="task-review-panel"]',
+    title: 'Revisar Entregas',
+    content: 'Aquí verás las tareas que los estudiantes han enviado. Puedes calificarlas y dar feedback.',
+  },
+  {
+    target: '[data-tutorial="create-test-btn"]',
+    title: 'Crear Exámenes',
+    content: 'Crea exámenes personalizados con preguntas de opción múltiple, completar y más. Asígnalos a uno o varios estudiantes.',
+  },
+  {
+    target: '[data-tutorial="view-progress-btn"]',
+    title: 'Progreso del Estudiante',
+    content: 'Accede al progreso completo: semanas del currículo, notas diarias y logros otorgados.',
+  },
+  {
+    target: '[data-tutorial="staff-hours"]',
+    title: 'Control de Horas',
+    content: 'Registra tus horas trabajadas y solicita horas extra cuando sea necesario.',
+  },
+  {
+    target: '[data-tutorial="practice-panel"]',
+    title: 'Generador de Ejercicios IA',
+    content: 'La inteligencia artificial te ayuda a crear ejercicios personalizados: flashcards, conjugaciones, lecturas y más.',
+  },
+  {
+    target: '[data-tutorial="materials-panel"]',
+    title: 'Guías y Materiales',
+    content: 'Todos los recursos del currículo organizados por semana. Las guías de profesor están protegidas.',
+  },
+  {
+    target: '[data-tutorial="scheduled-classes"]',
+    title: 'Clases Programadas',
+    content: 'Si tienes estudiantes online, aquí verás las reservaciones de clase pendientes.',
+  },
+  {
+    target: 'body',
+    placement: 'center',
+    title: '¡Todo listo! 🎉',
+    content: 'Conoces todas las herramientas. Puedes reiniciar este tutorial cuando quieras desde el menú. ¡Buenas clases!',
+  },
+];
+```
+
+---
+
+## Parte 7: Pasos del Tutorial - ADMIN/COORDINADOR
+
+```tsx
+// src/components/tutorial/steps/adminSteps.ts
+import { Step } from 'react-joyride';
+
+export const adminSteps: Step[] = [
+  {
+    target: 'body',
+    placement: 'center',
+    title: '¡Bienvenido, Administrador! 🛡️',
+    content: 'Este tutorial te mostrará las herramientas de gestión de la escuela. Tienes acceso a todas las funciones administrativas.',
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="approval-panel"]',
+    title: 'Aprobación de Usuarios',
+    content: 'Aquí verás las solicitudes de registro pendientes. Puedes aprobar o rechazar a estudiantes, profesores y tutores.',
+  },
+  {
+    target: '[data-tutorial="students-table"]',
+    title: 'Gestión de Estudiantes',
+    content: 'Lista completa de estudiantes. Puedes asignar profesores, tutores, cuartos y gestionar su progreso.',
+  },
+  {
+    target: '[data-tutorial="assign-teacher-btn"]',
+    title: 'Asignar Staff',
+    content: 'Asigna o cambia el profesor y tutor de cada estudiante. También puedes cambiar su modalidad (presencial/online).',
+  },
+  {
+    target: '[data-tutorial="manage-progress-btn"]',
+    title: 'Ver Progreso',
+    content: 'Accede al progreso completo de cualquier estudiante: currículo, notas semanales y logros.',
+  },
+  {
+    target: '[data-tutorial="weekly-calendar"]',
+    title: 'Calendario Semanal',
+    content: 'Gestiona el horario de la escuela. Crea clases, tutorías, aventuras, electivas y eventos especiales.',
+  },
+  {
+    target: '[data-tutorial="create-event-btn"]',
+    title: 'Crear Eventos',
+    content: 'Agrega nuevos eventos al calendario: clases grupales, aventuras, deportes, culturales y más.',
+  },
+  {
+    target: '[data-tutorial="manage-rooms-btn"]',
+    title: 'Gestión de Cuartos',
+    content: 'Administra los cuartos de la escuela y asigna estudiantes a cada uno.',
+  },
+  {
+    target: '[data-tutorial="staff-hours-btn"]',
+    title: 'Horas del Personal',
+    content: 'Revisa y aprueba las horas trabajadas y solicitudes de horas extra del staff.',
+  },
+  {
+    target: '[data-tutorial="curriculum-btn"]',
+    title: 'Gestión del Currículo',
+    content: 'Administra las semanas, temas y materiales del currículo. Sube PDFs y recursos para los profesores.',
+  },
+  {
+    target: '[data-tutorial="placement-test-btn"]',
+    title: 'Examen de Nivelación',
+    content: 'Configura y gestiona el examen de nivelación que toman los nuevos estudiantes.',
+  },
+  {
+    target: 'body',
+    placement: 'center',
+    title: '¡Panel dominado! 🏆',
+    content: 'Ahora conoces todas las herramientas administrativas. Puedes reiniciar este tutorial cuando necesites. ¡Éxito gestionando la escuela!',
+  },
+];
+```
+
+---
+
+## Parte 8: Pasos del Tutorial - ESTUDIANTES
+
+```tsx
+// src/components/tutorial/steps/studentSteps.ts
+import { Step } from 'react-joyride';
+
+export const studentSteps: Step[] = [
+  {
+    target: 'body',
+    placement: 'center',
+    title: '¡Bienvenido a Spanish Adventure! 🌟',
+    content: '¡Tu aventura de aprendizaje comienza aquí! Este tutorial te mostrará cómo usar tu panel de estudiante.',
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="level-card"]',
+    title: 'Tu Nivel',
+    content: 'Aquí verás tu nivel actual de español. Si aún no tienes nivel, deberás completar el examen de nivelación.',
+  },
+  {
+    target: '[data-tutorial="teacher-card"]',
+    title: 'Tu Profesor',
+    content: 'Este es tu profesor asignado. Puedes enviarle mensajes, ver su perfil y (si eres online) reservar clases.',
+  },
+  {
+    target: '[data-tutorial="tutor-card"]',
+    title: 'Tu Tutor',
+    content: 'Tu tutor te ayudará con práctica y dudas. También puedes contactarlo desde aquí.',
+  },
+  {
+    target: '[data-tutorial="tasks-card"]',
+    title: 'Tus Tareas',
+    content: 'Las tareas pendientes aparecen aquí. Haz clic para ver los detalles y entregar tu trabajo.',
+  },
+  {
+    target: '[data-tutorial="progress-grid"]',
+    title: 'Tu Progreso',
+    content: 'Mira tu avance en el currículo. Cada semana tiene temas que irás completando con tu profesor.',
+  },
+  {
+    target: '[data-tutorial="practice-panel"]',
+    title: 'Ejercicios de Práctica',
+    content: 'Aquí encontrarás ejercicios personalizados para ti. ¡Practica vocabulario, gramática y más!',
+  },
+  {
+    target: '[data-tutorial="gamification-panel"]',
+    title: 'Puntos y Logros',
+    content: 'Gana puntos completando actividades y desbloquea logros. ¡Compite en el ranking con otros estudiantes!',
+  },
+  {
+    target: '[data-tutorial="weekly-calendar"]',
+    title: 'Calendario Semanal',
+    content: 'Ve tu horario de clases, tutorías, aventuras y actividades de la semana.',
+  },
+  {
+    target: '[data-tutorial="notifications"]',
+    title: 'Notificaciones',
+    content: 'Recibirás alertas sobre nuevas tareas, mensajes de tu profesor y actualizaciones de la escuela.',
+  },
+  {
+    target: 'body',
+    placement: 'center',
+    title: '¡A aprender! 🚀',
+    content: '¡Ya estás listo para comenzar tu aventura! Si necesitas ver este tutorial de nuevo, puedes reiniciarlo. ¡Mucho éxito!',
+  },
+];
+```
+
+---
+
+## Parte 9: Botón para Reiniciar Tutorial
+
+```tsx
+// src/components/tutorial/TutorialLauncher.tsx
+import { Button } from '@/components/ui/button';
+import { HelpCircle, Play } from 'lucide-react';
+import { useTutorial } from './TutorialProvider';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+export const TutorialLauncher = () => {
+  const { startTutorial, resetTutorial, hasSeenTutorial } = useTutorial();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button 
+          variant="outline" 
+          size="sm"
+          className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
+        >
+          <HelpCircle className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={resetTutorial}>
+          <Play className="h-4 w-4 mr-2" />
+          {hasSeenTutorial ? 'Ver tutorial de nuevo' : 'Iniciar tutorial'}
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+```
+
+---
+
+## Parte 10: Agregar data-tutorial a los Componentes
+
+Necesitamos agregar atributos `data-tutorial` a los elementos clave de cada dashboard:
+
+### Dashboard.tsx (Estudiante)
+```tsx
+// Ejemplo de atributos a agregar:
+<QuickStatCard data-tutorial="level-card" ... />
+<StaffCard data-tutorial="teacher-card" ... />
+<StaffCard data-tutorial="tutor-card" ... />
+<Card data-tutorial="tasks-card" ... />
+<WeeklyProgressGrid data-tutorial="progress-grid" ... />
+<StudentPracticePanel data-tutorial="practice-panel" ... />
+<GamificationPanel data-tutorial="gamification-panel" ... />
+<WeeklyCalendar data-tutorial="weekly-calendar" ... />
+<NotificationBell data-tutorial="notifications" ... />
+```
+
+### TeacherDashboard.tsx
+```tsx
+<Table data-tutorial="students-table" ... />
+<Button data-tutorial="create-task-btn" ... />
+<TeacherTaskReviewPanel data-tutorial="task-review-panel" ... />
+<Button data-tutorial="create-test-btn" ... />
+<Button data-tutorial="view-progress-btn" ... />
+<StaffHoursCard data-tutorial="staff-hours" ... />
+<PracticeSessionPanel data-tutorial="practice-panel" ... />
+<TeacherMaterialsPanel data-tutorial="materials-panel" ... />
+<TeacherScheduledClassesCard data-tutorial="scheduled-classes" ... />
+<Button data-tutorial="my-schedule-btn" ... />
+```
+
+### TutorDashboard.tsx
+```tsx
+<Table data-tutorial="students-table" ... />
+<Button data-tutorial="view-progress-btn" ... />
+<StaffHoursCard data-tutorial="staff-hours" ... />
+<PracticeSessionPanel data-tutorial="practice-panel" ... />
+<TeacherMaterialsPanel data-tutorial="materials-panel" ... />
+<Button data-tutorial="my-schedule-btn" ... />
+<NotificationBell data-tutorial="notifications" ... />
+```
+
+### AdminDashboard.tsx
+```tsx
+<AdminApprovalPanel data-tutorial="approval-panel" ... />
+<Table data-tutorial="students-table" ... />
+<Button data-tutorial="assign-teacher-btn" ... />
+<Button data-tutorial="manage-progress-btn" ... />
+<WeeklyCalendar data-tutorial="weekly-calendar" ... />
+<Button data-tutorial="create-event-btn" ... />
+<Button data-tutorial="manage-rooms-btn" ... />
+<Button data-tutorial="staff-hours-btn" ... />
+<Button data-tutorial="curriculum-btn" ... />
+<Button data-tutorial="placement-test-btn" ... />
+```
+
+---
+
+## Parte 11: Integrar Provider en App.tsx
+
+```tsx
+// src/App.tsx
+import { TutorialProvider } from './components/tutorial';
+
+// Envolver dentro de AuthProvider
+<AuthProvider>
+  <TutorialProvider>
+    <Routes>
+      ...
+    </Routes>
+  </TutorialProvider>
+</AuthProvider>
+```
+
+---
+
+## Parte 12: Agregar Launcher al Header de Cada Dashboard
+
+Agregar el botón de ayuda en el header de cada dashboard:
+
+```tsx
+import { TutorialLauncher } from '@/components/tutorial';
+
+// En el header, junto a otros botones
+<div className="flex items-center gap-1.5 sm:gap-2">
+  <TutorialLauncher />
+  <LanguageSwitcher />
+  <NotificationBell />
+  ...
 </div>
 ```
 
 ---
 
-## Resumen de Archivos a Modificar
+## Resumen de Archivos
 
-| Archivo | Cambios |
-|---------|---------|
-| `SecurePDFViewer.tsx` | Usar react-pdf para móvil con controles de navegación |
-| `WeeklyProgressGrid.tsx` | Grid más grande, menos columnas en móvil |
-| `StudentProgressView.tsx` | Grid de notas responsive, botones full-width |
-| `DayProgressModal.tsx` | Usar Drawer en móvil, campos más grandes |
-| `QuickStatCard.tsx` | Padding y fuentes responsive |
-| `StaffCard.tsx` | Botones táctiles, layout flexible |
-| `TopicCard.tsx` | Ya está bien, pequeños ajustes |
-| `Dashboard.tsx` | Ajustar grid de stats |
-| `AdminDashboard.tsx` | Tablas scrollables, cards responsive |
-| `TeacherDashboard.tsx` | Mismo tratamiento que Admin |
+| Archivo | Acción |
+|---------|--------|
+| `package.json` | +react-joyride |
+| `src/components/tutorial/TutorialProvider.tsx` | **Nuevo** - Context + Joyride |
+| `src/components/tutorial/TutorialTooltip.tsx` | **Nuevo** - Tooltip personalizado |
+| `src/components/tutorial/TutorialLauncher.tsx` | **Nuevo** - Botón de ayuda |
+| `src/components/tutorial/steps/tutorSteps.ts` | **Nuevo** - Pasos tutor |
+| `src/components/tutorial/steps/teacherSteps.ts` | **Nuevo** - Pasos profesor |
+| `src/components/tutorial/steps/adminSteps.ts` | **Nuevo** - Pasos admin |
+| `src/components/tutorial/steps/studentSteps.ts` | **Nuevo** - Pasos estudiante |
+| `src/components/tutorial/index.ts` | **Nuevo** - Exports |
+| `src/App.tsx` | +TutorialProvider |
+| `src/pages/Dashboard.tsx` | +data-tutorial attrs +Launcher |
+| `src/pages/TeacherDashboard.tsx` | +data-tutorial attrs +Launcher |
+| `src/pages/TutorDashboard.tsx` | +data-tutorial attrs +Launcher |
+| `src/pages/AdminDashboard.tsx` | +data-tutorial attrs +Launcher |
 
 ---
 
-## Clases CSS Útiles a Agregar
+## Flujo del Usuario
 
-```css
-/* En index.css */
-.touch-target {
-  min-height: 44px;
-  min-width: 44px;
-}
-
-@media (max-width: 640px) {
-  .safe-scroll {
-    -webkit-overflow-scrolling: touch;
-  }
-}
+```text
+1. Usuario nuevo se registra y es aprobado
+2. Primera vez que entra al dashboard:
+   - Tutorial inicia automáticamente (1.5s delay)
+   - Tooltip aparece centrado: "¡Bienvenido!"
+   - Usuario hace clic en "Siguiente"
+3. Tutorial guía por cada sección resaltada
+4. Al terminar o saltar:
+   - Se guarda en localStorage que ya lo vio
+   - No aparece automáticamente de nuevo
+5. Si quiere verlo otra vez:
+   - Click en icono (?) en el header
+   - "Ver tutorial de nuevo"
 ```
 
 ---
 
 ## Beneficios
 
-1. **PDFs funcionan en móvil** - Renderizado nativo con react-pdf
-2. **Controles táctiles adecuados** - Mínimo 44px de altura
-3. **Cuadrículas legibles** - Menos columnas = más espacio
-4. **Modales adaptativos** - Drawers en móvil, Dialogs en desktop
-5. **Edición de notas fácil** - Campos de texto grandes y accesibles
-6. **Tablas scrollables** - Sin romper el layout en móvil
+1. **Onboarding automático** - Usuarios nuevos aprenden sin manual
+2. **Específico por rol** - Cada usuario ve solo lo relevante
+3. **No intrusivo** - Puede saltarse y reiniciarse cuando quiera
+4. **Responsive** - Funciona en móvil y desktop
+5. **Personalizable** - Tooltip con estilo de la app
+6. **Persistente** - Recuerda si ya lo vio
+7. **i18n ready** - Textos traducibles a inglés fácilmente

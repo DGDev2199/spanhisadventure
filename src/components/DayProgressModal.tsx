@@ -8,11 +8,19 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+} from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { BookOpen, MessageSquare, BookMarked, Trophy, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface WeekTopic {
   id: string;
@@ -57,6 +65,7 @@ export const DayProgressModal = ({
   weekTopics = [],
 }: DayProgressModalProps) => {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   
   const [classTopics, setClassTopics] = useState(existingNote?.class_topics || '');
   const [tutoringTopics, setTutoringTopics] = useState(existingNote?.tutoring_topics || '');
@@ -142,9 +151,207 @@ export const DayProgressModal = ({
     }
   });
 
-  const hasAnyContent = classTopics || tutoringTopics || vocabulary || achievements || challenges;
   const canSave = isEditable && (canEditClassTopics || canEditTutoringTopics || canEditVocabulary || canEditAchievements || canEditChallenges);
 
+  // Shared form content
+  const formContent = (
+    <div className="space-y-4 sm:space-y-6">
+      {/* Class Topics - Both can edit */}
+      <div className="space-y-2">
+        <Label className="flex items-center gap-2 text-sm font-semibold">
+          <BookOpen className="h-4 w-4 text-green-600" />
+          Temas aprendidos en clase
+          <span className="text-xs text-muted-foreground font-normal">(Profesor/Tutor)</span>
+        </Label>
+        {isEditable && canEditClassTopics ? (
+          <>
+            {/* Topic suggestions */}
+            {weekTopics.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                <span className="text-xs text-muted-foreground mr-1">Sugerencias:</span>
+                {weekTopics.map(topic => (
+                  <Button
+                    key={topic.id}
+                    variant="outline"
+                    size="sm"
+                    className="text-xs h-7 px-2 touch-target"
+                    onClick={() => {
+                      setClassTopics(prev => 
+                        prev ? `${prev}, ${topic.name}` : topic.name
+                      );
+                    }}
+                  >
+                    + {topic.name}
+                  </Button>
+                ))}
+              </div>
+            )}
+            <Textarea
+              value={classTopics}
+              onChange={(e) => setClassTopics(e.target.value)}
+              placeholder="Describe los temas que se enseñaron en clase..."
+              rows={3}
+              className="resize-none text-base"
+            />
+          </>
+        ) : (
+          <div className={`min-h-[60px] p-3 rounded-md text-sm border-l-4 ${
+            classTopics 
+              ? 'border-green-500 bg-green-50 dark:bg-green-950/20' 
+              : 'border-muted bg-muted/30'
+          }`}>
+            {classTopics || <span className="text-muted-foreground italic">Sin información</span>}
+          </div>
+        )}
+      </div>
+
+      {/* Tutoring Topics - Both can edit */}
+      <div className="space-y-2">
+        <Label className="flex items-center gap-2 text-sm font-semibold">
+          <MessageSquare className="h-4 w-4 text-blue-600" />
+          Temas practicados en tutorías
+          <span className="text-xs text-muted-foreground font-normal">(Profesor/Tutor)</span>
+        </Label>
+        {isEditable && canEditTutoringTopics ? (
+          <Textarea
+            value={tutoringTopics}
+            onChange={(e) => setTutoringTopics(e.target.value)}
+            placeholder="Describe los temas que se practicaron en la tutoría..."
+            rows={3}
+            className="resize-none text-base"
+          />
+        ) : (
+          <div className={`min-h-[60px] p-3 rounded-md text-sm border-l-4 ${
+            tutoringTopics 
+              ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' 
+              : 'border-muted bg-muted/30'
+          }`}>
+            {tutoringTopics || <span className="text-muted-foreground italic">Sin información</span>}
+          </div>
+        )}
+      </div>
+
+      {/* Vocabulary - Both can edit */}
+      <div className="space-y-2">
+        <Label className="flex items-center gap-2 text-sm font-semibold">
+          <BookMarked className="h-4 w-4 text-purple-600" />
+          Vocabulario
+          <span className="text-xs text-muted-foreground font-normal">(Profesor/Tutor)</span>
+        </Label>
+        {isEditable && canEditVocabulary ? (
+          <Textarea
+            value={vocabulary}
+            onChange={(e) => setVocabulary(e.target.value)}
+            placeholder="Lista el vocabulario nuevo aprendido..."
+            rows={2}
+            className="resize-none text-base"
+          />
+        ) : (
+          <div className={`min-h-[50px] p-3 rounded-md text-sm border-l-4 ${
+            vocabulary 
+              ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/20' 
+              : 'border-muted bg-muted/30'
+          }`}>
+            {vocabulary || <span className="text-muted-foreground italic">Sin información</span>}
+          </div>
+        )}
+      </div>
+
+      {/* Achievements - Both can edit */}
+      <div className="space-y-2">
+        <Label className="flex items-center gap-2 text-sm font-semibold">
+          <Trophy className="h-4 w-4 text-yellow-600" />
+          Logros
+          <span className="text-xs text-muted-foreground font-normal">(Profesor/Tutor)</span>
+        </Label>
+        {isEditable && canEditAchievements ? (
+          <Textarea
+            value={achievements}
+            onChange={(e) => setAchievements(e.target.value)}
+            placeholder="Describe los logros del estudiante..."
+            rows={2}
+            className="resize-none text-base"
+          />
+        ) : (
+          <div className={`min-h-[50px] p-3 rounded-md text-sm border-l-4 ${
+            achievements 
+              ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20' 
+              : 'border-muted bg-muted/30'
+          }`}>
+            {achievements || <span className="text-muted-foreground italic">Sin información</span>}
+          </div>
+        )}
+      </div>
+
+      {/* Challenges - Both can edit */}
+      <div className="space-y-2">
+        <Label className="flex items-center gap-2 text-sm font-semibold">
+          <AlertTriangle className="h-4 w-4 text-orange-600" />
+          Retos
+          <span className="text-xs text-muted-foreground font-normal">(Profesor/Tutor)</span>
+        </Label>
+        {isEditable && canEditChallenges ? (
+          <Textarea
+            value={challenges}
+            onChange={(e) => setChallenges(e.target.value)}
+            placeholder="Describe los retos o dificultades identificadas..."
+            rows={2}
+            className="resize-none text-base"
+          />
+        ) : (
+          <div className={`min-h-[50px] p-3 rounded-md text-sm border-l-4 ${
+            challenges 
+              ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/20' 
+              : 'border-muted bg-muted/30'
+          }`}>
+            {challenges || <span className="text-muted-foreground italic">Sin información</span>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // Mobile: Use Drawer
+  if (isMobile) {
+    return (
+      <Drawer open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+        <DrawerContent className="max-h-[90vh] flex flex-col">
+          <DrawerHeader className="text-left px-4 pt-4 pb-2 border-b">
+            <DrawerTitle className="flex items-center gap-2">
+              <BookOpen className="h-5 w-5 text-primary" />
+              {dayLabel}
+            </DrawerTitle>
+            <DrawerDescription>
+              {isEditable 
+                ? 'Registra el progreso del estudiante para este día' 
+                : 'Resumen del progreso del día'}
+            </DrawerDescription>
+          </DrawerHeader>
+          
+          <div className="flex-1 overflow-y-auto px-4 py-4">
+            {formContent}
+          </div>
+          
+          <div className="flex gap-2 p-4 border-t bg-background">
+            <Button variant="outline" onClick={onClose} className="flex-1 h-11 touch-target">
+              {canSave ? 'Cancelar' : 'Cerrar'}
+            </Button>
+            {canSave && (
+              <Button 
+                onClick={() => saveMutation.mutate()}
+                disabled={saveMutation.isPending}
+                className="flex-1 h-11 touch-target"
+              >
+                {saveMutation.isPending ? 'Guardando...' : 'Guardar'}
+              </Button>
+            )}
+          </div>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
+  // Desktop: Use Dialog
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -160,159 +367,8 @@ export const DayProgressModal = ({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* Class Topics - Both can edit */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-sm font-semibold">
-              <BookOpen className="h-4 w-4 text-green-600" />
-              Temas aprendidos en clase
-              <span className="text-xs text-muted-foreground font-normal">(Profesor/Tutor)</span>
-            </Label>
-            {isEditable && canEditClassTopics ? (
-              <>
-                {/* Topic suggestions */}
-                {weekTopics.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-2">
-                    <span className="text-xs text-muted-foreground mr-1">Sugerencias:</span>
-                    {weekTopics.map(topic => (
-                      <Button
-                        key={topic.id}
-                        variant="outline"
-                        size="sm"
-                        className="text-xs h-6 px-2"
-                        onClick={() => {
-                          setClassTopics(prev => 
-                            prev ? `${prev}, ${topic.name}` : topic.name
-                          );
-                        }}
-                      >
-                        + {topic.name}
-                      </Button>
-                    ))}
-                  </div>
-                )}
-                <Textarea
-                  value={classTopics}
-                  onChange={(e) => setClassTopics(e.target.value)}
-                  placeholder="Describe los temas que se enseñaron en clase..."
-                  rows={3}
-                  className="resize-none"
-                />
-              </>
-            ) : (
-              <div className={`min-h-[60px] p-3 rounded-md text-sm border-l-4 ${
-                classTopics 
-                  ? 'border-green-500 bg-green-50 dark:bg-green-950/20' 
-                  : 'border-muted bg-muted/30'
-              }`}>
-                {classTopics || <span className="text-muted-foreground italic">Sin información</span>}
-              </div>
-            )}
-          </div>
-
-          {/* Tutoring Topics - Both can edit */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-sm font-semibold">
-              <MessageSquare className="h-4 w-4 text-blue-600" />
-              Temas practicados en tutorías
-              <span className="text-xs text-muted-foreground font-normal">(Profesor/Tutor)</span>
-            </Label>
-            {isEditable && canEditTutoringTopics ? (
-              <Textarea
-                value={tutoringTopics}
-                onChange={(e) => setTutoringTopics(e.target.value)}
-                placeholder="Describe los temas que se practicaron en la tutoría..."
-                rows={3}
-                className="resize-none"
-              />
-            ) : (
-              <div className={`min-h-[60px] p-3 rounded-md text-sm border-l-4 ${
-                tutoringTopics 
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20' 
-                  : 'border-muted bg-muted/30'
-              }`}>
-                {tutoringTopics || <span className="text-muted-foreground italic">Sin información</span>}
-              </div>
-            )}
-          </div>
-
-          {/* Vocabulary - Both can edit */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-sm font-semibold">
-              <BookMarked className="h-4 w-4 text-purple-600" />
-              Vocabulario
-              <span className="text-xs text-muted-foreground font-normal">(Profesor/Tutor)</span>
-            </Label>
-            {isEditable && canEditVocabulary ? (
-              <Textarea
-                value={vocabulary}
-                onChange={(e) => setVocabulary(e.target.value)}
-                placeholder="Lista el vocabulario nuevo aprendido..."
-                rows={2}
-                className="resize-none"
-              />
-            ) : (
-              <div className={`min-h-[50px] p-3 rounded-md text-sm border-l-4 ${
-                vocabulary 
-                  ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/20' 
-                  : 'border-muted bg-muted/30'
-              }`}>
-                {vocabulary || <span className="text-muted-foreground italic">Sin información</span>}
-              </div>
-            )}
-          </div>
-
-          {/* Achievements - Both can edit */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-sm font-semibold">
-              <Trophy className="h-4 w-4 text-yellow-600" />
-              Logros
-              <span className="text-xs text-muted-foreground font-normal">(Profesor/Tutor)</span>
-            </Label>
-            {isEditable && canEditAchievements ? (
-              <Textarea
-                value={achievements}
-                onChange={(e) => setAchievements(e.target.value)}
-                placeholder="Describe los logros del estudiante..."
-                rows={2}
-                className="resize-none"
-              />
-            ) : (
-              <div className={`min-h-[50px] p-3 rounded-md text-sm border-l-4 ${
-                achievements 
-                  ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20' 
-                  : 'border-muted bg-muted/30'
-              }`}>
-                {achievements || <span className="text-muted-foreground italic">Sin información</span>}
-              </div>
-            )}
-          </div>
-
-          {/* Challenges - Both can edit */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2 text-sm font-semibold">
-              <AlertTriangle className="h-4 w-4 text-orange-600" />
-              Retos
-              <span className="text-xs text-muted-foreground font-normal">(Profesor/Tutor)</span>
-            </Label>
-            {isEditable && canEditChallenges ? (
-              <Textarea
-                value={challenges}
-                onChange={(e) => setChallenges(e.target.value)}
-                placeholder="Describe los retos o dificultades identificadas..."
-                rows={2}
-                className="resize-none"
-              />
-            ) : (
-              <div className={`min-h-[50px] p-3 rounded-md text-sm border-l-4 ${
-                challenges 
-                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/20' 
-                  : 'border-muted bg-muted/30'
-              }`}>
-                {challenges || <span className="text-muted-foreground italic">Sin información</span>}
-              </div>
-            )}
-          </div>
+        <div className="py-4">
+          {formContent}
         </div>
 
         <div className="flex justify-end gap-2 pt-4 border-t">

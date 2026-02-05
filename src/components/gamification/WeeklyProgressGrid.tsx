@@ -134,18 +134,18 @@ export const WeeklyProgressGrid = ({
   if (isLoading) {
     return (
       <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="px-4 sm:px-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <span>📅</span>
             {t('progress.weeklyProgress', 'Progreso Semanal')}
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
+        <CardContent className="px-4 sm:px-6">
+          <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4">
             {Array.from({ length: 12 }).map((_, i) => (
               <div 
                 key={i}
-                className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-muted/50 border-2 border-dashed border-muted-foreground/20 animate-pulse h-16 sm:h-20"
+                className="p-3 sm:p-4 rounded-xl bg-muted/50 border-2 border-dashed border-muted-foreground/20 animate-pulse min-h-[72px] sm:min-h-[80px]"
               />
             ))}
           </div>
@@ -156,15 +156,15 @@ export const WeeklyProgressGrid = ({
 
   return (
     <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
+      <CardHeader className="px-4 sm:px-6">
+        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
           <span>📅</span>
           {t('progress.weeklyProgress', 'Progreso Semanal')}
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        {/* Grid de 12 semanas */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3 mb-4 sm:mb-6">
+      <CardContent className="px-4 sm:px-6">
+        {/* Grid de 12 semanas - más grande y táctil en móvil */}
+        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4 mb-4 sm:mb-6">
           {weeks.map((week) => {
             const status = getWeekStatus(week.week_number, currentWeek, completedWeeks);
             const isSelected = selectedWeek?.id === week.id;
@@ -174,35 +174,36 @@ export const WeeklyProgressGrid = ({
                 key={week.id}
                 onClick={() => handleWeekClick(week)}
                 className={cn(
-                  "relative p-2 sm:p-3 rounded-lg sm:rounded-xl transition-all duration-200 border-2 text-center cursor-pointer",
+                  "relative p-3 sm:p-4 rounded-xl transition-all duration-200 border-2 text-center cursor-pointer touch-target",
+                  "min-h-[72px] sm:min-h-[80px]",
                   status === 'completed' && "bg-green-100 border-green-500 text-green-800 dark:bg-green-900/30 dark:border-green-500 dark:text-green-300",
-                  status === 'current' && "bg-blue-100 border-blue-500 text-blue-800 dark:bg-blue-900/30 dark:border-blue-500 dark:text-blue-300 ring-2 ring-blue-300 ring-offset-1 sm:ring-offset-2",
+                  status === 'current' && "bg-blue-100 border-blue-500 text-blue-800 dark:bg-blue-900/30 dark:border-blue-500 dark:text-blue-300 ring-2 ring-blue-300 ring-offset-2",
                   status === 'locked' && "bg-muted/50 border-dashed border-muted-foreground/30 text-muted-foreground hover:border-primary/40 hover:bg-muted/70",
-                  isSelected && "scale-105 shadow-lg",
-                  "hover:scale-105 hover:shadow-md"
+                  isSelected && "scale-105 shadow-lg ring-2 ring-primary",
+                  "hover:scale-[1.02] hover:shadow-md active:scale-100"
                 )}
               >
                 {/* Status icon */}
-                <div className="absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5">
+                <div className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2">
                   {status === 'completed' && (
-                    <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-green-600 bg-white dark:bg-background rounded-full" />
+                    <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 bg-white dark:bg-background rounded-full" />
                   )}
                   {status === 'current' && (
-                    <Circle className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 fill-blue-600" />
+                    <Circle className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 fill-blue-600" />
                   )}
                   {status === 'locked' && (
-                    <Lock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                    <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                   )}
                 </div>
 
                 {/* Week number */}
-                <div className="text-base sm:text-lg font-bold">{week.week_number}</div>
+                <div className="text-xl sm:text-2xl font-bold">{week.week_number}</div>
                 
                 {/* Level badge */}
                 <Badge 
                   variant="secondary" 
                   className={cn(
-                    "text-[8px] sm:text-[10px] px-1 sm:px-1.5 py-0 mt-0.5 sm:mt-1 text-white",
+                    "text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 mt-1 text-white",
                     getLevelColor(week.level)
                   )}
                 >

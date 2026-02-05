@@ -1,377 +1,566 @@
 
-# Plan: Tutorial Ultra-Detallado con Pasos Individuales por Botón
+# Plan: Tutorial Admin Ultra-Granular con Pasos Dentro de Modales
 
 ## Entendimiento del Problema
 
-El tutorial actual agrupa demasiada información en pocos pasos. Por ejemplo, el paso "Generador de Ejercicios IA" explica todo el panel de una vez, cuando debería:
-1. Primero explicar el **botón "Generar con IA"**
-2. Luego explicar las **pestañas de tipos** (Flashcards, Conjugación, etc.)
-3. Luego explicar el **botón "Asignar"** en cada ejercicio
-4. Luego explicar el **botón "Practicar"**
+El tutorial actual para admin/coordinator tiene solo 10 pasos generales que explican los botones principales, pero NO entra dentro de los modales para explicar:
+- Cada campo del formulario de crear eventos
+- Los botones dentro del panel de aprobación
+- Los pasos dentro del diálogo de currículo
+- Los botones de acción en la tabla de estudiantes
+- Etc.
 
-## Nueva Estructura del Tutorial
+## Nueva Estructura Ultra-Granular (35+ pasos)
 
-En lugar de 9-11 pasos generales, tendremos **20-30 pasos específicos** por rol, cada uno enfocado en **un solo elemento**.
+En lugar de 10 pasos, tendremos **35-40 pasos específicos** que incluyen:
+1. Pasos en el dashboard principal
+2. Pasos DENTRO de cada modal/diálogo importante
 
 ---
 
 ## Cambios Necesarios
 
-### 1. Agregar `data-tutorial` a CADA Botón Individual
+### 1. Agregar `data-tutorial` a Elementos DENTRO de Modales
 
-**En PracticeSessionPanel.tsx:**
+**En AdminApprovalPanel.tsx:**
 ```tsx
-// Botón generar
-<Button data-tutorial="generate-ai-btn" onClick={() => setShowGenerateDialog(true)}>
-  <Plus className="h-4 w-4 mr-2" />
-  Generar con IA
+// Botón aprobar individual
+<Button data-tutorial="approve-user-btn" onClick={() => approveUserMutation.mutate(pendingUser.id)}>
+  Aprobar
 </Button>
 
-// Pestañas de tipos
-<TabsList data-tutorial="exercise-tabs">
-  <TabsTrigger value="flashcard">Flashcards</TabsTrigger>
-  ...
+// Botón rechazar individual
+<Button data-tutorial="reject-user-btn" onClick={() => rejectUserMutation.mutate(pendingUser.id)}>
+  <X className="h-4 w-4" />
+</Button>
+
+// Lista de usuarios pendientes
+<div data-tutorial="pending-users-list">
+```
+
+**En CreateScheduleEventDialog.tsx:**
+```tsx
+// Campo título
+<Input data-tutorial="event-title-input" value={title} onChange={...} />
+
+// Selector de tipo de evento
+<Select data-tutorial="event-type-select">
+
+// Selector de días
+<div data-tutorial="event-days-select">
+
+// Campos de hora
+<Input data-tutorial="event-time-start" type="time" />
+<Input data-tutorial="event-time-end" type="time" />
+
+// Selector de nivel
+<Select data-tutorial="event-level-select">
+
+// Selector de staff
+<Select data-tutorial="event-teacher-select">
+<Select data-tutorial="event-tutor-select">
+
+// Botón crear
+<Button data-tutorial="event-create-btn">Crear Evento</Button>
+```
+
+**En ManageCurriculumDialog.tsx:**
+```tsx
+// Tabs principales
+<TabsList data-tutorial="curriculum-tabs">
+  <TabsTrigger data-tutorial="curriculum-weeks-tab" value="weeks">Semanas</TabsTrigger>
+  <TabsTrigger data-tutorial="curriculum-materials-tab" value="materials">Materiales</TabsTrigger>
 </TabsList>
 
-// Botón asignar en cada ejercicio
-<Button data-tutorial="assign-exercise-btn" onClick={() => handleAssign(exercise.id)}>
-  <Users className="h-4 w-4" />
+// Lista de semanas
+<div data-tutorial="curriculum-weeks-list">
+
+// Botón editar semana
+<Button data-tutorial="curriculum-edit-week-btn">
+  <Edit2 className="h-4 w-4" />
 </Button>
 
-// Botón practicar
-<Button data-tutorial="practice-exercise-btn" onClick={() => setSelectedExercise(exercise)}>
-  <Play className="h-4 w-4" />
+// Formulario agregar tema
+<Input data-tutorial="curriculum-topic-name-input" placeholder="Nombre del tema" />
+<Button data-tutorial="curriculum-add-topic-btn">Agregar Tema</Button>
+
+// Botón subir material
+<Button data-tutorial="curriculum-upload-material-btn">
+  <Upload className="h-4 w-4" />
+  Subir Archivo
 </Button>
+
+// Switch guía de profesor
+<Switch data-tutorial="curriculum-teacher-guide-switch" />
 ```
 
-**En TeacherMaterialsPanel.tsx:**
+**En AdminDashboard.tsx (tabla de estudiantes):**
 ```tsx
-// Título colapsable
-<CollapsibleTrigger data-tutorial="materials-expand-btn">
-  Materiales y Guías del Currículo
-</CollapsibleTrigger>
-
-// Cada semana
-<CollapsibleTrigger data-tutorial="week-expand-btn">
-  Semana X: Título
-</CollapsibleTrigger>
-```
-
-**En TeacherDashboard.tsx:**
-```tsx
-// Cada botón de acción en la tabla de estudiantes
-<Button data-tutorial="student-chat-btn">Chat</Button>
+// Botón progreso en fila
 <Button data-tutorial="student-progress-btn">Progreso</Button>
-<Button data-tutorial="student-call-btn">Llamar</Button>
 
-// Botón crear tarea
-<Button data-tutorial="create-task-btn">+ Tarea</Button>
+// Botón horario en fila
+<Button data-tutorial="student-schedule-btn">Horario</Button>
 
-// Botón crear examen
-<Button data-tutorial="create-test-btn">+ Examen</Button>
+// Botón nivel en fila
+<Button data-tutorial="student-level-btn">Nivel</Button>
+
+// Botón asignar en fila
+<Button data-tutorial="student-assign-btn">Asignar</Button>
 ```
 
 ---
 
-### 2. Nuevos Pasos Detallados para PROFESORES
+### 2. Nuevos Pasos Granulares para ADMIN (35+ pasos)
 
 ```typescript
-export const teacherSteps: Step[] = [
-  // === BIENVENIDA ===
+export const adminSteps: Step[] = [
+  // ========== BIENVENIDA ==========
   {
     target: 'body',
     placement: 'center',
-    title: '¡Bienvenido, Profesor! 👨‍🏫',
-    content: 'Este tutorial te guiará paso a paso por cada botón y función de tu panel. ¡Vamos a explorarlo juntos!',
+    title: '¡Bienvenido, Administrador! 🛡️',
+    content: `Este tutorial te guiará por CADA botón y función de tu panel.
+
+Aprenderás a:
+• Aprobar usuarios paso a paso
+• Gestionar estudiantes (progreso, horarios, asignaciones)
+• Crear eventos en el calendario
+• Administrar el currículo y materiales
+• Y mucho más...
+
+¡Vamos a explorarlo todo en detalle!`,
     disableBeacon: true,
   },
 
-  // === TABLA DE ESTUDIANTES - GENERAL ===
+  // ========== PANEL DE APROBACIÓN ==========
+  {
+    target: '[data-tutorial="approval-panel"]',
+    title: 'Panel de Aprobación de Usuarios 👤',
+    content: `Aquí aparecen los nuevos usuarios que solicitan acceso.
+
+📌 Cada tarjeta muestra:
+   - Nombre y foto del usuario
+   - Correo electrónico
+   - Rol solicitado (estudiante, profesor, tutor)
+   - Fecha de registro
+
+Vamos a ver los botones de acción...`,
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="approve-user-btn"]',
+    title: 'Botón Aprobar Usuario ✅',
+    content: `Haz clic aquí para aprobar al usuario.
+
+📌 **Al aprobar**:
+   - El usuario recibe una notificación
+   - Puede acceder a la plataforma
+   - Aparece en las listas según su rol
+
+💡 Tip: Verifica que el rol sea correcto antes de aprobar.`,
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="reject-user-btn"]',
+    title: 'Botón Rechazar Usuario ❌',
+    content: `Haz clic aquí para rechazar y eliminar la solicitud.
+
+📌 **Al rechazar**:
+   - El usuario es eliminado del sistema
+   - No puede acceder con esa cuenta
+   - Tendría que registrarse de nuevo
+
+💡 Tip: Usa esto para registros falsos o duplicados.`,
+    disableBeacon: true,
+  },
+
+  // ========== TABLA DE ESTUDIANTES ==========
   {
     target: '[data-tutorial="students-table"]',
     title: 'Tabla de Estudiantes 👥',
-    content: `Esta tabla muestra todos tus estudiantes asignados.
+    content: `Lista completa de todos los estudiantes registrados.
 
-Cada fila tiene información del estudiante y **botones de acción** a la derecha. Vamos a ver cada botón...`,
+📌 **Columnas**:
+   - Nombre y email
+   - Nivel actual (A1-C2)
+   - Tipo (Online/Presencial)
+   - Habitación asignada
+   - Estado del examen de nivelación
+
+Cada fila tiene botones de acción que veremos ahora...`,
     disableBeacon: true,
   },
-
-  // === BOTÓN CHAT EN TABLA ===
-  {
-    target: '[data-tutorial="student-chat-btn"]',
-    title: 'Botón Chat 💬',
-    content: `Abre una conversación directa con este estudiante.
-
-📌 **Uso**: Envía mensajes, responde dudas, da instrucciones.
-📌 **Notificación**: El estudiante recibirá alerta de tu mensaje.
-
-💡 Tip: Usa el chat para seguimiento personalizado fuera de clase.`,
-    disableBeacon: true,
-  },
-
-  // === BOTÓN PROGRESO EN TABLA ===
   {
     target: '[data-tutorial="student-progress-btn"]',
     title: 'Botón Ver Progreso 📊',
     content: `Abre el panel completo de progreso del estudiante.
 
-📌 **Pestaña Currículo**: Ve qué semanas y temas ha completado.
-📌 **Pestaña Notas**: Registra observaciones diarias (clase, tutoría, vocabulario).
-📌 **Pestaña Logros**: Otorga insignias por buen desempeño.
+📌 **Pestañas disponibles**:
+   - Currículo: semanas y temas completados
+   - Notas diarias: observaciones de clase y tutoría
+   - Logros: insignias otorgadas
 
-💡 Tip: Revisa el progreso antes de cada clase para preparar el contenido.`,
+📌 **Puedes**:
+   - Marcar temas como completados
+   - Agregar notas diarias
+   - Otorgar logros
+
+💡 Tip: Revisa el progreso para identificar estudiantes que necesitan más apoyo.`,
     disableBeacon: true,
   },
-
-  // === BOTÓN VIDEOLLAMADA EN TABLA ===
   {
-    target: '[data-tutorial="student-call-btn"]',
-    title: 'Botón Videollamada 📹',
-    content: `Inicia una videollamada con el estudiante (solo para estudiantes online).
+    target: '[data-tutorial="student-schedule-btn"]',
+    title: 'Botón Gestionar Horario 📅',
+    content: `Administra el horario individual del estudiante.
 
-📌 **Uso**: Haz clic para abrir la sala de video.
-📌 **El estudiante**: Recibirá notificación para unirse.
+📌 **Opciones**:
+   - Ver eventos asignados
+   - Agregar clases específicas
+   - Modificar tutorías
+   - Asignar electivas
 
-💡 Tip: Prueba la conexión antes de la clase programada.`,
+💡 Tip: Útil para crear horarios personalizados.`,
     disableBeacon: true,
   },
-
-  // === BOTÓN CREAR TAREA ===
   {
-    target: '[data-tutorial="create-task-btn"]',
-    title: 'Botón Crear Tarea ➕📝',
-    content: `Abre el formulario para asignar una nueva tarea.
+    target: '[data-tutorial="student-level-btn"]',
+    title: 'Botón Asignar Nivel 🎓',
+    content: `Asigna o cambia el nivel de español manualmente.
 
-📌 **Campos**:
-   - Título de la tarea
-   - Descripción detallada
-   - Fecha de entrega
-   - Archivo PDF adjunto (opcional)
-   - Seleccionar estudiante(s)
+📌 **Cuándo usarlo**:
+   - Después de una evaluación oral
+   - Para corregir nivel incorrecto
+   - Para promocionar a un estudiante
 
-📌 **Puntos**: El estudiante gana +5 pts al entregar.
+📌 **Niveles**: A1, A2, B1, B2, C1, C2
 
-💡 Tip: Sé específico en la descripción para evitar confusiones.`,
+💡 Tip: Normalmente el nivel se asigna después del examen de nivelación.`,
     disableBeacon: true,
   },
-
-  // === PANEL REVISIÓN TAREAS ===
   {
-    target: '[data-tutorial="task-review-panel"]',
-    title: 'Panel de Tareas Enviadas 📬',
-    content: `Lista de tareas que estudiantes han entregado para tu revisión.
+    target: '[data-tutorial="student-assign-btn"]',
+    title: 'Botón Asignar Staff ⚙️',
+    content: `Asigna profesor y tutor al estudiante.
 
-📌 **Ver entrega**: Haz clic para abrir el trabajo del estudiante.
-📌 **Calificar**: Asigna 0, 5 o 10 puntos extra.
-📌 **Feedback**: Escribe comentarios para el estudiante.
+📌 **Puedes asignar**:
+   - Profesor principal
+   - Tutor de apoyo
+   - Habitación (para presenciales)
 
-💡 Tip: Revisa las entregas pronto para mantener la motivación del estudiante.`,
+📌 **Importante**: El estudiante verá a su profesor/tutor en su panel y podrá comunicarse con ellos.
+
+💡 Tip: Equilibra la carga de estudiantes entre el staff.`,
     disableBeacon: true,
   },
 
-  // === BOTÓN CREAR EXAMEN ===
+  // ========== BOTONES PRINCIPALES ==========
   {
-    target: '[data-tutorial="create-test-btn"]',
-    title: 'Botón Crear Examen ➕📋',
-    content: `Abre el creador de exámenes personalizados.
+    target: '[data-tutorial="create-event-btn"]',
+    title: 'Botón Crear Evento 📅',
+    content: `Abre el formulario para crear eventos en el calendario.
 
-📌 **Tipos de preguntas**:
-   - Opción múltiple (A, B, C, D)
-   - Completar espacios
-   - Verdadero/Falso
-   - Respuesta corta
+📌 **Tipos de eventos**:
+   - Clases de español
+   - Tutorías de práctica
+   - Actividades culturales
+   - Aventuras y excursiones
+   - Electivas
 
-📌 **Configuración**: Tiempo límite, fecha, estudiantes asignados.
-
-💡 Tip: Mezcla tipos de preguntas para evaluar diferentes habilidades.`,
+Haz clic para abrir el formulario y ver cada campo...`,
     disableBeacon: true,
   },
 
-  // === CARD HORAS ===
+  // ========== DENTRO DEL MODAL CREAR EVENTO ==========
   {
-    target: '[data-tutorial="staff-hours"]',
-    title: 'Tarjeta de Horas 🕐',
-    content: `Resumen de tus horas trabajadas esta semana.
+    target: '[data-tutorial="event-title-input"]',
+    title: 'Campo: Título del Evento 📝',
+    content: `Escribe el nombre del evento.
 
-📌 **Visualización**:
-   - Horas de hoy
-   - Total de la semana
-   - Límite asignado
-   - Gráfico por día
+📌 **Ejemplos**:
+   - "Clase A1 - Verbos Regulares"
+   - "Tutoría B2 - Conversación"
+   - "Excursión: Museo de Historia"
 
-💡 Tip: Las horas se calculan automáticamente de eventos en el calendario.`,
+💡 Tip: Sé descriptivo para que todos entiendan de qué se trata.`,
     disableBeacon: true,
   },
-
-  // === PANEL EJERCICIOS - GENERAL ===
   {
-    target: '[data-tutorial="practice-panel"]',
-    title: 'Panel de Ejercicios Prácticos 🎯',
-    content: `Aquí generas y gestionas ejercicios con IA. Vamos a ver cada parte...`,
+    target: '[data-tutorial="event-type-select"]',
+    title: 'Selector: Tipo de Evento 🏷️',
+    content: `Elige el tipo de actividad.
+
+📌 **Tipos disponibles**:
+   - 📚 Clase
+   - 👨‍🏫 Práctica/Tutoría
+   - 🎭 Cultural
+   - ⚽ Deportiva
+   - 🏔️ Aventura
+   - 💃 Baile
+   - 📖 Electiva
+
+📌 El tipo define el color en el calendario.`,
     disableBeacon: true,
   },
-
-  // === BOTÓN GENERAR CON IA ===
   {
-    target: '[data-tutorial="generate-ai-btn"]',
-    title: 'Botón "Generar con IA" 🤖',
-    content: `Abre el formulario para crear ejercicios con inteligencia artificial.
+    target: '[data-tutorial="event-days-select"]',
+    title: 'Selector: Días de la Semana 📆',
+    content: `Marca los días en que se repite el evento.
 
-📌 **Pasos**:
-   1. Selecciona tipo de ejercicio
-   2. Elige nivel (A1-C2)
-   3. Escribe el tema o vocabulario
-   4. Haz clic en "Generar"
-   5. La IA crea los ejercicios automáticamente
+📌 **Opciones**:
+   - Selecciona uno o varios días
+   - Lunes a Sábado disponibles
+   - Útil para clases recurrentes
 
-📌 **Tiempo**: Tarda 10-30 segundos según la complejidad.
-
-💡 Tip: Sé específico con el tema para mejores resultados.`,
+💡 Tip: Para clases regulares, selecciona todos los días que aplican.`,
     disableBeacon: true,
   },
-
-  // === PESTAÑAS DE TIPOS ===
   {
-    target: '[data-tutorial="exercise-tabs"]',
-    title: 'Pestañas de Tipos de Ejercicio 📚',
-    content: `Filtra los ejercicios creados por tipo:
+    target: '[data-tutorial="event-time-start"]',
+    title: 'Campo: Hora de Inicio ⏰',
+    content: `Selecciona la hora de inicio del evento.
 
-📌 **Flashcards**: Tarjetas de vocabulario (frente/reverso)
-📌 **Conjugación**: Verbos en diferentes tiempos
-📌 **Vocabulario**: Definiciones y traducciones
-📌 **Ordenar Frases**: Poner palabras en orden correcto
-📌 **Opción Múltiple**: Preguntas con 4 opciones
-📌 **Completar Huecos**: Rellenar espacios en oraciones
-📌 **Lectura**: Textos con preguntas de comprensión
+📌 Formato de 24 horas (ej: 09:00, 14:30)
 
-💡 Tip: Usa "Todos" para ver todos los ejercicios juntos.`,
+💡 Tip: Verifica que no haya conflictos con otros eventos.`,
     disableBeacon: true,
   },
-
-  // === BOTÓN ASIGNAR EJERCICIO ===
   {
-    target: '[data-tutorial="assign-exercise-btn"]',
-    title: 'Botón Asignar 👥',
-    content: `Asigna este ejercicio a uno o varios estudiantes.
+    target: '[data-tutorial="event-time-end"]',
+    title: 'Campo: Hora de Fin ⏱️',
+    content: `Selecciona la hora de finalización.
 
-📌 **Pasos**:
-   1. Haz clic en el icono de personas
-   2. Selecciona los estudiantes
-   3. Confirma la asignación
+📌 Debe ser posterior a la hora de inicio.
 
-📌 **Resultado**: El estudiante verá el ejercicio en su panel de práctica.
-
-💡 Tip: Puedes asignar el mismo ejercicio a múltiples estudiantes.`,
+💡 Tip: Las clases típicas duran 1-2 horas.`,
     disableBeacon: true,
   },
-
-  // === BOTÓN PRACTICAR EJERCICIO ===
   {
-    target: '[data-tutorial="practice-exercise-btn"]',
-    title: 'Botón Practicar ▶️',
-    content: `Abre el ejercicio para verlo o probarlo tú mismo.
+    target: '[data-tutorial="event-level-select"]',
+    title: 'Selector: Nivel 🎯',
+    content: `Asigna el nivel de español para este evento.
 
-📌 **Uso**: 
-   - Revisa cómo se ve el ejercicio
-   - Verifica que las respuestas son correctas
-   - Prueba la experiencia del estudiante
+📌 **Niveles**: A1, A2, B1, B2, C1, C2
 
-💡 Tip: Siempre prueba un ejercicio antes de asignarlo.`,
+📌 Solo estudiantes de este nivel verán el evento en su calendario.
+
+💡 Tip: Deja vacío para eventos generales (aventuras, deportes).`,
     disableBeacon: true,
   },
-
-  // === PANEL MATERIALES - GENERAL ===
   {
-    target: '[data-tutorial="materials-panel"]',
-    title: 'Panel de Materiales 📚',
-    content: `Accede a guías y recursos del currículo. Haz clic para expandirlo...`,
+    target: '[data-tutorial="event-teacher-select"]',
+    title: 'Selector: Profesor 👨‍🏫',
+    content: `Asigna el profesor responsable.
+
+📌 El profesor verá este evento en su horario.
+📌 Puedes asignar hasta 2 profesores.
+
+💡 Tip: Verifica disponibilidad antes de asignar.`,
     disableBeacon: true,
   },
-
-  // === BOTÓN EXPANDIR SEMANA ===
   {
-    target: '[data-tutorial="week-expand-btn"]',
-    title: 'Expandir Semana 📂',
-    content: `Haz clic en una semana para ver sus temas y materiales.
+    target: '[data-tutorial="event-create-btn"]',
+    title: 'Botón Crear ✅',
+    content: `Confirma y crea el evento.
 
-📌 **Contenido**: Cada semana tiene múltiples temas.
-📌 **Guías del profesor**: Marcadas con 🎓 (protegidas con marca de agua).
-📌 **Material extra**: Recursos adicionales para compartir.
+📌 El evento aparecerá inmediatamente en:
+   - El calendario semanal
+   - El horario de los profesores asignados
+   - El horario de estudiantes del nivel seleccionado
 
-💡 Tip: Las guías del profesor tienen instrucciones detalladas para cada tema.`,
+💡 Tip: Revisa todos los campos antes de crear.`,
     disableBeacon: true,
   },
 
-  // === CLASES PROGRAMADAS ===
+  // ========== BOTÓN CURRÍCULO ==========
   {
-    target: '[data-tutorial="scheduled-classes"]',
-    title: 'Clases Programadas 📅',
-    content: `Panel de reservaciones de estudiantes online.
+    target: '[data-tutorial="curriculum-btn"]',
+    title: 'Botón Gestionar Currículo 📚',
+    content: `Abre el administrador completo del currículo.
 
-📌 **Información**:
-   - Nombre del estudiante
-   - Fecha y hora reservada
-   - Estado (pendiente/confirmada)
+📌 Aquí puedes:
+   - Crear y editar semanas
+   - Agregar temas a cada semana
+   - Subir materiales y guías
+   - Organizar contenido por nivel
 
-📌 **Acciones**: Confirmar, reagendar o iniciar videollamada.
-
-💡 Tip: Revisa las reservaciones cada mañana para estar preparado.`,
+Haz clic para explorar el panel de currículo...`,
     disableBeacon: true,
   },
 
-  // === BOTÓN MI HORARIO ===
+  // ========== DENTRO DEL MODAL CURRÍCULO ==========
   {
-    target: '[data-tutorial="my-schedule-btn"]',
-    title: 'Botón "Horario" 🗓️',
-    content: `Abre tu calendario personal con todas las actividades.
+    target: '[data-tutorial="curriculum-tabs"]',
+    title: 'Pestañas del Currículo 📑',
+    content: `El currículo tiene dos secciones principales:
 
-📌 **Contenido**:
-   - Clases programadas
-   - Tutorías (si también eres tutor)
-   - Eventos de la escuela
+📌 **Semanas y Temas**: Estructura del programa
+📌 **Material Extra**: PDFs y recursos adicionales
 
-📌 **Vista**: Calendario semanal con código de colores.
+Vamos a explorar cada una...`,
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="curriculum-weeks-list"]',
+    title: 'Lista de Semanas 📋',
+    content: `Todas las semanas del programa organizadas por nivel.
 
-💡 Tip: Consulta tu horario cada día al comenzar.`,
+📌 Cada semana muestra:
+   - Número y título
+   - Nivel (A1-C2)
+   - Número de temas
+
+📌 Haz clic en una semana para ver/editar sus temas.
+
+💡 Tip: Las semanas con más temas aparecen con indicador.`,
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="curriculum-edit-week-btn"]',
+    title: 'Botón Editar Semana ✏️',
+    content: `Modifica los datos de la semana.
+
+📌 **Puedes cambiar**:
+   - Título de la semana
+   - Descripción
+   - Nivel asignado
+
+💡 Tip: Usa títulos descriptivos como "Semana 1: Presentaciones".`,
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="curriculum-topic-name-input"]',
+    title: 'Campo: Nuevo Tema 📝',
+    content: `Escribe el nombre del tema a agregar.
+
+📌 **Ejemplos**:
+   - "Verbos regulares -AR"
+   - "Vocabulario: La familia"
+   - "Gramática: Ser vs Estar"
+
+💡 Tip: Mantén los nombres concisos y claros.`,
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="curriculum-add-topic-btn"]',
+    title: 'Botón Agregar Tema ➕',
+    content: `Confirma y agrega el tema a la semana.
+
+📌 El tema aparecerá en:
+   - La lista de la semana
+   - El progreso de estudiantes de este nivel
+
+💡 Tip: Puedes reordenar los temas después.`,
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="curriculum-upload-material-btn"]',
+    title: 'Botón Subir Material 📄',
+    content: `Sube archivos PDF o multimedia.
+
+📌 **Formatos permitidos**:
+   - PDF (documentos y guías)
+   - MP4 (videos)
+   - PNG/JPG (imágenes)
+
+📌 **Tamaño máximo**: 50MB
+
+💡 Tip: Nombra los archivos descriptivamente.`,
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="curriculum-teacher-guide-switch"]',
+    title: 'Switch: Guía del Profesor 🎓',
+    content: `Marca si el material es solo para profesores.
+
+📌 **Activado**: Solo profesores/tutores ven el archivo
+📌 **Desactivado**: Estudiantes también pueden acceder
+
+💡 Tip: Las guías de profesor incluyen instrucciones de clase.`,
     disableBeacon: true,
   },
 
-  // === NOTIFICACIONES ===
+  // ========== OTROS BOTONES PRINCIPALES ==========
+  {
+    target: '[data-tutorial="manage-rooms-btn"]',
+    title: 'Gestión de Habitaciones 🏠',
+    content: `Administra las habitaciones de la escuela.
+
+📌 **Funciones**:
+   - Crear nuevas habitaciones
+   - Asignar estudiantes
+   - Ver ocupación
+   - Activar/desactivar
+
+💡 Tip: Solo aplica para estudiantes presenciales.`,
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="staff-hours-btn"]',
+    title: 'Control de Horas del Personal 🕐',
+    content: `Revisa y aprueba horas trabajadas.
+
+📌 **Ver**:
+   - Horas por profesor/tutor
+   - Límite semanal asignado
+   - Solicitudes de horas extra
+
+📌 **Aprobar/Rechazar** solicitudes de horas adicionales.
+
+💡 Tip: Revisa semanalmente para mantener control.`,
+    disableBeacon: true,
+  },
+  {
+    target: '[data-tutorial="placement-test-btn"]',
+    title: 'Examen de Nivelación 📝',
+    content: `Configura el examen para nuevos estudiantes.
+
+📌 **Secciones**:
+   - Preguntas de gramática
+   - Comprensión lectora
+   - Audio (listening)
+
+📌 El profesor confirma el nivel con evaluación oral.
+
+💡 Tip: Revisa las preguntas periódicamente.`,
+    disableBeacon: true,
+  },
+
+  // ========== NOTIFICACIONES ==========
   {
     target: '[data-tutorial="notifications"]',
-    title: 'Campana de Notificaciones 🔔',
-    content: `Haz clic aquí para ver alertas importantes.
+    title: 'Centro de Notificaciones 🔔',
+    content: `Recibe alertas importantes.
 
 📌 **Te notifica sobre**:
-   - Mensajes de estudiantes
-   - Tareas enviadas para revisar
-   - Cambios de horario
-   - Avisos administrativos
+   - Nuevos usuarios pendientes
+   - Solicitudes de horas extra
+   - Cambios importantes
+   - Mensajes del sistema
 
-📌 **Número rojo**: Cantidad de notificaciones sin leer.
+📌 **Número rojo**: Notificaciones sin leer.
 
-💡 Tip: Revisa las notificaciones al iniciar sesión.`,
+💡 Tip: Revisa al iniciar sesión.`,
     disableBeacon: true,
   },
 
-  // === CIERRE ===
+  // ========== CIERRE ==========
   {
     target: 'body',
     placement: 'center',
-    title: '¡Tutorial Completado! 🎉',
-    content: `Ya conoces cada botón y función de tu panel.
+    title: '¡Tutorial Completado! 🏆',
+    content: `Ya conoces CADA botón y función de tu panel.
 
-📌 **Resumen de acciones principales**:
-   - 💬 Chat: Mensajes con estudiantes
-   - 📊 Progreso: Ver avance y notas
-   - 📝 Tareas: Crear y revisar
-   - 📋 Exámenes: Crear evaluaciones
-   - 🤖 IA: Generar ejercicios
-   - 📚 Materiales: Guías del currículo
+📌 **Resumen de flujos principales**:
+   1. Aprobar usuarios nuevos
+   2. Asignar staff a estudiantes
+   3. Crear eventos en el calendario
+   4. Gestionar currículo y materiales
+   5. Controlar horas del personal
 
-📌 **Ver de nuevo**: Icono ❓ en el menú.
+📌 **Ver tutorial de nuevo**: Icono ❓ en el menú superior.
 
-¡Éxito con tus clases! 👨‍🏫`,
+¡Éxito gestionando la escuela! 🛡️`,
     disableBeacon: true,
   },
 ];
@@ -379,99 +568,42 @@ Cada fila tiene información del estudiante y **botones de acción** a la derech
 
 ---
 
-### 3. Estructura Similar para TUTORES
-
-Los tutores tienen menos funciones, así que sus pasos serían:
-
-1. Bienvenida
-2. Tabla de estudiantes (general)
-3. Botón Chat en fila
-4. Botón Progreso en fila
-5. Botón Videollamada en fila
-6. Tarjeta de horas
-7. Panel ejercicios (general)
-8. Botón Generar con IA
-9. Pestañas de tipos
-10. Botón Asignar
-11. Botón Practicar
-12. Panel materiales (general)
-13. Expandir semana
-14. Botón Mi Horario
-15. Notificaciones
-16. Cierre
-
----
-
-### 4. Estructura para ESTUDIANTES
-
-1. Bienvenida
-2. Tarjeta nivel
-3. Tarjeta profesor
-4. Botón Chat en tarjeta profesor
-5. Botón Reservar/Horario en tarjeta profesor
-6. Botón Perfil en tarjeta profesor
-7. Tarjeta tutor
-8. Botón Chat en tarjeta tutor
-9. Botón Reservar/Horario en tarjeta tutor
-10. Tarjeta tareas
-11. Cuadrícula de progreso
-12. Clic en semana
-13. Panel de práctica
-14. Ejercicio individual
-15. Panel de puntos y logros
-16. Ranking
-17. Calendario semanal (si presencial)
-18. Notificaciones
-19. Cierre
-
----
-
-### 5. Estructura para ADMIN
-
-1. Bienvenida
-2. Panel de aprobación (general)
-3. Botón Aprobar usuario
-4. Botón Rechazar usuario
-5. Tabla de estudiantes
-6. Botón Asignar profesor/tutor
-7. Botón Cambiar modalidad
-8. Botón Ver progreso
-9. Botón Asignar sala
-10. Calendario semanal
-11. Botón Crear evento
-12. Botón Editar evento
-13. Gestión de salas
-14. Control de horas del staff
-15. Botón aprobar horas extra
-16. Gestión del currículo
-17. Subir materiales
-18. Examen de nivelación
-19. Cierre
-
----
-
 ## Archivos a Modificar
 
 | Archivo | Cambios |
 |---------|---------|
-| `src/components/practice/PracticeSessionPanel.tsx` | Agregar `data-tutorial` a cada botón |
-| `src/components/TeacherMaterialsPanel.tsx` | Agregar `data-tutorial` a expansores |
-| `src/pages/TeacherDashboard.tsx` | Agregar `data-tutorial` a cada botón de acción |
-| `src/pages/TutorDashboard.tsx` | Agregar `data-tutorial` a cada botón |
-| `src/pages/Dashboard.tsx` | Agregar `data-tutorial` a botones en StaffCard |
-| `src/pages/AdminDashboard.tsx` | Agregar `data-tutorial` a todos los botones |
-| `src/components/dashboard/StaffCard.tsx` | Agregar `data-tutorial` a botones internos |
-| `src/components/tutorial/steps/teacherSteps.ts` | Reescribir con 20+ pasos granulares |
-| `src/components/tutorial/steps/tutorSteps.ts` | Reescribir con 16+ pasos granulares |
-| `src/components/tutorial/steps/studentSteps.ts` | Reescribir con 19+ pasos granulares |
-| `src/components/tutorial/steps/adminSteps.ts` | Reescribir con 20+ pasos granulares |
+| `src/components/AdminApprovalPanel.tsx` | Agregar `data-tutorial` a botones aprobar/rechazar |
+| `src/components/CreateScheduleEventDialog.tsx` | Agregar `data-tutorial` a cada campo del formulario |
+| `src/components/ManageCurriculumDialog.tsx` | Agregar `data-tutorial` a tabs, lista, botones |
+| `src/pages/AdminDashboard.tsx` | Agregar `data-tutorial` a botones de tabla de estudiantes |
+| `src/components/tutorial/steps/adminSteps.ts` | Reescribir con 35+ pasos granulares |
+
+---
+
+## Consideraciones Especiales
+
+### Pasos Dentro de Modales
+
+Para que el tutorial funcione DENTRO de los modales, necesitamos:
+1. **Abrir el modal automáticamente** antes del paso correspondiente
+2. O hacer que esos pasos sean **opcionales** si el modal no está abierto
+
+La librería react-joyride tiene la opción `spotlightClicks: true` que permite interactuar mientras el tutorial está activo. Esto permite al usuario abrir el modal y luego el tutorial continúa.
+
+### Flujo Sugerido
+
+1. Tutorial explica el botón "Crear Evento" en el dashboard
+2. El paso dice "Haz clic para abrir el formulario..."
+3. El usuario hace clic y abre el modal
+4. Los siguientes pasos apuntan a elementos DENTRO del modal
+5. Si el modal se cierra, esos pasos se saltan automáticamente
 
 ---
 
 ## Beneficios
 
-1. **Cada botón tiene su explicación** - No hay ambigüedad
-2. **Fácil de seguir** - Un concepto a la vez
-3. **Más interactivo** - El usuario ve exactamente qué botón hacer clic
-4. **Completo** - No se omite ninguna función
-5. **Mejor retención** - Información en pequeñas dosis
+1. **Ultra-detallado**: Cada botón tiene su propia explicación
+2. **Dentro de modales**: Explica paso a paso los formularios
+3. **Interactivo**: El usuario ve exactamente dónde hacer clic
+4. **Completo**: No se omite ninguna función
+5. **Tolerante a errores**: Si un elemento no existe, salta al siguiente

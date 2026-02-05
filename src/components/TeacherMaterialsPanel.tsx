@@ -180,7 +180,7 @@ export const TeacherMaterialsPanel = () => {
     <>
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
         <Card>
-          <CollapsibleTrigger className="w-full text-left">
+          <CollapsibleTrigger className="w-full text-left" data-tutorial="materials-expand-btn">
             <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
               <CardTitle className="flex items-center gap-2">
                 {isExpanded ? (
@@ -226,6 +226,7 @@ export const TeacherMaterialsPanel = () => {
                     <CollapsibleTrigger
                       onClick={() => toggleWeek(week.id)}
                       className="w-full p-3 rounded-lg border hover:bg-muted/50 transition-colors flex items-center justify-between"
+                      data-tutorial="week-expand-btn"
                     >
                       <div className="flex items-center gap-3">
                         {isWeekExpanded ? (

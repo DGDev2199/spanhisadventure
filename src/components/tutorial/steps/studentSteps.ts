@@ -1,173 +1,205 @@
 import { Step } from 'react-joyride';
 
 export const studentSteps: Step[] = [
+  // === BIENVENIDA ===
   {
     target: 'body',
     placement: 'center',
     title: '¡Bienvenido a Spanish Adventure! 🌟',
-    content: `¡Tu aventura de aprendizaje comienza aquí! 
+    content: `Este tutorial te guiará paso a paso por cada función de tu panel de estudiante.
 
-Este tutorial te guiará por todas las funciones de tu panel de estudiante. Aprenderás cómo ver tu progreso, comunicarte con tu profesor y tutor, completar tareas, y mucho más.
+Aprenderás a comunicarte con tu profesor y tutor, ver tu progreso, completar tareas y ejercicios.
 
-Puedes avanzar con "Siguiente" o saltar el tutorial si ya lo conoces. ¡No te preocupes, siempre puedes verlo de nuevo desde el menú!`,
+¡Vamos a explorar juntos!`,
     disableBeacon: true,
   },
+
+  // === TARJETA DE NIVEL ===
   {
     target: '[data-tutorial="level-card"]',
     title: 'Tu Nivel de Español 📊',
-    content: `Esta tarjeta muestra tu nivel actual de español (A1, A2, B1, B2, C1, C2).
+    content: `Esta tarjeta muestra tu nivel actual (A1, A2, B1, B2, C1, C2).
 
-📌 Si no tienes nivel aún: Deberás completar el Examen de Nivelación. Este examen tiene una parte escrita y una parte oral con tu profesor.
+📌 **Sin nivel**: Debes completar el Examen de Nivelación primero.
+📌 **Con nivel**: Aquí ves tu progreso actual.
 
-📌 Si ya tienes nivel: Aquí verás tu progreso. Tu nivel puede cambiar según tu avance en el currículo.
-
-💡 Tip: El nivel determina qué contenido verás en tus clases y ejercicios.`,
+💡 Tip: Tu nivel determina el contenido de tus clases.`,
     disableBeacon: true,
   },
+
+  // === TARJETA DEL PROFESOR ===
   {
     target: '[data-tutorial="teacher-card"]',
     title: 'Tu Profesor Asignado 👨‍🏫',
-    content: `Aquí aparece la información de tu profesor de español.
+    content: `Información de tu profesor de español.
 
-📌 Botón "Chat": Envía mensajes directos a tu profesor para resolver dudas o consultas.
+📌 **Haz clic en el nombre** para ver su perfil completo.
+📌 Los botones de acción aparecen debajo si tienes profesor asignado.
 
-📌 Botón "Perfil": Ve la información completa de tu profesor, su experiencia y especialidades.
-
-📌 Botón "Reservar" (solo online): Programa clases en los horarios disponibles.
-
-📌 Botón "Horario" (solo presencial): Ve el horario de clases asignado.
-
-💡 Tip: No dudes en escribirle si tienes preguntas sobre las clases o tareas.`,
+💡 Tip: Si no tienes profesor, contacta al administrador.`,
     disableBeacon: true,
   },
+
+  // === BOTÓN CHAT PROFESOR ===
+  {
+    target: '[data-tutorial="staff-chat-btn"]',
+    title: 'Botón Chat 💬',
+    content: `Abre una conversación directa con tu profesor o tutor.
+
+📌 **Uso**: Envía mensajes para resolver dudas.
+📌 **Notificación**: Recibirás alerta cuando respondan.
+
+💡 Tip: No dudes en escribir si tienes preguntas sobre tareas o clases.`,
+    disableBeacon: true,
+  },
+
+  // === BOTÓN RESERVAR/HORARIO ===
+  {
+    target: '[data-tutorial="staff-booking-btn"]',
+    title: 'Botón Reservar Clase 📅',
+    content: `Programa una clase con tu profesor (solo estudiantes online).
+
+📌 **Pasos**:
+   1. Haz clic en "Reservar"
+   2. Selecciona fecha y hora disponible
+   3. Confirma la reservación
+
+💡 Tip: Revisa los horarios disponibles con anticipación.`,
+    disableBeacon: true,
+  },
+
+  // === TARJETA DEL TUTOR ===
   {
     target: '[data-tutorial="tutor-card"]',
     title: 'Tu Tutor de Apoyo 🎓',
-    content: `Tu tutor es quien te ayuda con práctica adicional y resolución de dudas.
+    content: `Tu tutor te ayuda con práctica adicional y conversación.
 
-📌 Diferencia con el profesor: El tutor se enfoca en reforzar lo que aprendes, practicar conversación y ayudarte con vocabulario.
+📌 **Diferencia con el profesor**: El tutor refuerza lo aprendido y practica vocabulario contigo.
+📌 **Mismos botones**: Chat, reserva y perfil disponibles.
 
-📌 Botones disponibles: Chat para mensajes, Perfil para conocerlo, y opciones de reserva/horario según tu modalidad.
-
-💡 Tip: Aprovecha las sesiones con tu tutor para practicar conversación y ganar confianza al hablar español.`,
+💡 Tip: Aprovecha las tutorías para ganar confianza al hablar.`,
     disableBeacon: true,
   },
+
+  // === TARJETA DE TAREAS ===
   {
     target: '[data-tutorial="tasks-card"]',
     title: 'Tus Tareas Pendientes 📝',
-    content: `Este contador muestra cuántas tareas tienes pendientes por entregar.
+    content: `Contador de tareas por entregar.
 
-📌 Ver tareas: Más abajo encontrarás la lista completa de tareas con fechas de entrega.
+📌 **Ver tareas**: Más abajo encuentras la lista completa.
+📌 **Entregar**: Haz clic en una tarea para subir tu trabajo.
+📌 **Puntos**: Ganas +5 puntos al entregar a tiempo.
 
-📌 Entregar tarea: Haz clic en una tarea para ver los detalles y subir tu trabajo.
-
-📌 Archivos adjuntos: Algunas tareas incluyen PDFs o materiales que tu profesor adjuntó.
-
-💡 Tip: Revisa las fechas de entrega para organizar tu tiempo. Las tareas completadas a tiempo suman puntos extra (+5 puntos).`,
+💡 Tip: Revisa las fechas de entrega para organizarte.`,
     disableBeacon: true,
   },
+
+  // === GRID DE PROGRESO ===
   {
     target: '[data-tutorial="progress-grid"]',
-    title: 'Tu Progreso en el Currículo 📈',
-    content: `Aquí ves tu avance visual en las semanas del currículo.
+    title: 'Tu Progreso Semanal 📈',
+    content: `Visualización de tu avance en el currículo.
 
-📌 Semanas coloreadas: 
-   🟢 Verde = Completada
-   🟡 Amarillo = En progreso  
+📌 **Colores**:
+   🟢 Verde = Semana completada
+   🟡 Amarillo = En progreso
    ⚪ Gris = Pendiente
 
-📌 Clic en una semana: Ve los temas de esa semana y cuáles has completado.
+📌 **Clic en semana**: Ve los temas específicos.
 
-📌 Temas (Topics): Cada semana tiene varios temas. Al completar todos, la semana se marca como finalizada.
-
-💡 Tip: Haz clic en una semana para ver exactamente qué temas te faltan por completar.`,
+💡 Tip: Completa todos los temas para avanzar de semana.`,
     disableBeacon: true,
   },
+
+  // === PANEL DE PRÁCTICA ===
   {
     target: '[data-tutorial="practice-panel"]',
     title: 'Ejercicios de Práctica 🎯',
-    content: `Aquí encontrarás ejercicios personalizados creados por tu profesor o tutor.
+    content: `Ejercicios asignados por tu profesor o tutor.
 
-📌 Tipos de ejercicios:
-   • Flashcards de vocabulario
-   • Conjugación de verbos
-   • Completar oraciones
-   • Lectura comprensiva
-   • Ordenar oraciones
+📌 **Tipos disponibles**:
+   - Flashcards de vocabulario
+   - Conjugación de verbos
+   - Completar oraciones
+   - Comprensión lectora
 
-📌 Ganar puntos: Cada ejercicio completado suma puntos a tu ranking.
+📌 **Puntos**: Cada ejercicio completado suma puntos.
 
-💡 Tip: Practica un poco cada día. La constancia es clave para mejorar tu español.`,
+💡 Tip: Practica un poco cada día para mejores resultados.`,
     disableBeacon: true,
   },
+
+  // === PANEL DE GAMIFICACIÓN ===
   {
     target: '[data-tutorial="gamification-panel"]',
-    title: 'Puntos, Logros y Ranking 🏆',
-    content: `¡Aquí está la diversión! Sistema de gamificación para motivarte.
+    title: 'Puntos y Logros 🏆',
+    content: `Sistema de gamificación para motivarte.
 
-📌 Puntos: Ganas puntos por:
-   • Completar ejercicios
-   • Entregar tareas (+5 puntos)
-   • Calificación de tareas (+5/10 puntos extra)
-   • Logros especiales
+📌 **Ganas puntos por**:
+   - Completar ejercicios
+   - Entregar tareas (+5 pts)
+   - Logros especiales
 
-📌 Logros: Insignias especiales que tu profesor te otorga por buen desempeño.
+📌 **Ranking**: Compite amigablemente con otros estudiantes.
 
-📌 Ranking: Compite amigablemente con otros estudiantes.
-
-💡 Tip: ¡Los puntos se acumulan! Intenta subir en el ranking cada semana.`,
+💡 Tip: ¡Los puntos se acumulan! Intenta subir cada semana.`,
     disableBeacon: true,
   },
+
+  // === CALENDARIO SEMANAL ===
   {
     target: '[data-tutorial="weekly-calendar"]',
-    title: 'Calendario de la Semana 📅',
-    content: `Ve tu horario completo de actividades (solo estudiantes presenciales).
+    title: 'Calendario Semanal 📅',
+    content: `Tu horario de actividades (estudiantes presenciales).
 
-📌 Tipos de eventos:
+📌 **Eventos**:
    📚 Clases de español
    🎓 Tutorías
-   🎨 Electivas (arte, música, deportes)
-   🌄 Aventuras y excursiones
+   🎨 Electivas
+   🌄 Aventuras
 
-📌 Navegación: Usa las flechas para ver semanas anteriores o futuras.
+📌 **Clic en evento**: Ver detalles y materiales.
 
-📌 Detalles: Haz clic en un evento para ver más información y materiales.
-
-💡 Tip: Revisa el calendario cada mañana para saber qué actividades tienes.`,
+💡 Tip: Revisa el calendario cada mañana.`,
     disableBeacon: true,
   },
+
+  // === NOTIFICACIONES ===
   {
     target: '[data-tutorial="notifications"]',
-    title: 'Centro de Notificaciones 🔔',
-    content: `La campanita te avisa de novedades importantes.
+    title: 'Notificaciones 🔔',
+    content: `Centro de alertas importantes.
 
-📌 Recibirás alertas cuando:
-   • Tu profesor te asigne una nueva tarea
-   • Alguien te envíe un mensaje
-   • Recibas un logro o insignia
-   • Haya cambios en el horario
+📌 **Te avisa cuando**:
+   - Nueva tarea asignada
+   - Mensaje recibido
+   - Logro otorgado
+   - Cambios de horario
 
-📌 Número rojo: Indica cuántas notificaciones sin leer tienes.
+📌 **Número rojo**: Notificaciones sin leer.
 
-💡 Tip: Revisa las notificaciones regularmente para no perderte información importante.`,
+💡 Tip: Revisa las notificaciones regularmente.`,
     disableBeacon: true,
   },
+
+  // === CIERRE ===
   {
     target: 'body',
     placement: 'center',
-    title: '¡Estás listo para aprender! 🚀',
-    content: `¡Felicitaciones! Ya conoces todas las herramientas de tu panel.
+    title: '¡Listo para aprender! 🚀',
+    content: `Ya conoces tu panel de estudiante.
 
-📌 Resumen:
-   • Revisa tu progreso en el currículo
-   • Completa tareas y ejercicios para ganar puntos
-   • Comunícate con tu profesor y tutor
-   • Gana puntos y logros en el ranking
-   • Consulta tu calendario de actividades
+📌 **Resumen**:
+   - 💬 Chat con profesor y tutor
+   - 📊 Ver tu progreso y nivel
+   - 📝 Completar tareas y ejercicios
+   - 🏆 Ganar puntos y logros
+   - 📅 Consultar calendario
 
-📌 Ver tutorial de nuevo: Haz clic en el icono ❓ en el menú superior.
+📌 **Ver de nuevo**: Icono ❓ en el menú.
 
-¡Mucho éxito en tu aventura de aprender español! 🇪🇸`,
+¡Mucho éxito aprendiendo español! 🇪🇸`,
     disableBeacon: true,
   },
 ];

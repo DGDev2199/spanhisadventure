@@ -19,6 +19,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { uploadChatFile } from '@/hooks/useChatFileUrl';
+import { ChatFileAttachment } from '@/components/chat/ChatFileAttachment';
 
 interface StaffToStudentChatDialogProps {
   open: boolean;
@@ -132,23 +134,16 @@ export const StaffToStudentChatDialog = ({ open, onOpenChange, studentId, studen
       let fileName = null;
       let fileType = null;
 
-      // Upload file if present
+      // Upload file if present - use signed URLs since bucket is private
       if (selectedFile) {
         setIsUploading(true);
-        const fileExt = selectedFile.name.split('.').pop();
-        const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+        
+        const uploadResult = await uploadChatFile(selectedFile, user.id);
+        if (!uploadResult) throw new Error('Failed to upload file');
 
-        const { error: uploadError } = await supabase.storage
-          .from('chat-files')
-          .upload(filePath, selectedFile);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('chat-files')
-          .getPublicUrl(filePath);
-
-        fileUrl = publicUrl;
+        // Store the file path, not the signed URL (signed URLs expire)
+        // We'll generate fresh signed URLs when displaying
+        fileUrl = `chat-files://${uploadResult.filePath}`;
         fileName = selectedFile.name;
         fileType = selectedFile.type;
       }
@@ -229,9 +224,6 @@ export const StaffToStudentChatDialog = ({ open, onOpenChange, studentId, studen
     setSelectedFile(file);
   };
 
-  const isImageFile = (fileType: string | null) => {
-    return fileType?.startsWith('image/');
-  };
 
   const roleLabel = userRole === 'teacher' ? 'Profesor' : 'Tutor';
 
@@ -273,29 +265,12 @@ export const StaffToStudentChatDialog = ({ open, onOpenChange, studentId, studen
                 
                 {/* File attachment */}
                 {msg.file_url && (
-                  <div className="mb-2">
-                    {isImageFile(msg.file_type) ? (
-                      <a href={msg.file_url} target="_blank" rel="noopener noreferrer">
-                        <img 
-                          src={msg.file_url} 
-                          alt={msg.file_name || 'Imagen adjunta'} 
-                          className="max-w-full max-h-48 rounded-md object-cover"
-                        />
-                      </a>
-                    ) : (
-                      <a 
-                        href={msg.file_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className={`flex items-center gap-2 p-2 rounded-md ${
-                          msg.sender_id === user?.id ? 'bg-primary-foreground/20' : 'bg-background'
-                        }`}
-                      >
-                        <FileText className="h-4 w-4" />
-                        <span className="text-sm truncate">{msg.file_name || 'Archivo adjunto'}</span>
-                      </a>
-                    )}
-                  </div>
+                  <ChatFileAttachment
+                    fileUrl={msg.file_url}
+                    fileName={msg.file_name}
+                    fileType={msg.file_type}
+                    isSender={msg.sender_id === user?.id}
+                  />
                 )}
                 
                 {msg.message && !msg.message.startsWith('Archivo:') && (

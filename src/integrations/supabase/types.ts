@@ -3903,7 +3903,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
-          bio?: string | null
+          bio?: never
           full_name?: string | null
           id?: string | null
           is_public_profile?: boolean | null
@@ -3912,7 +3912,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
-          bio?: string | null
+          bio?: never
           full_name?: string | null
           id?: string | null
           is_public_profile?: boolean | null
@@ -3932,8 +3932,10 @@ export type Database = {
           hourly_rate: number | null
           id: string | null
           is_approved: boolean | null
+          is_public_profile: boolean | null
           languages_spoken: string[] | null
           role: Database["public"]["Enums"]["app_role"] | null
+          staff_type: string | null
           timezone: string | null
         }
         Relationships: []

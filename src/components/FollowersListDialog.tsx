@@ -28,7 +28,7 @@ export const FollowersListDialog = ({ open, onOpenChange, userId, type }: Follow
         if (!follows?.length) return [];
         
         const { data: profiles } = await supabase
-          .from('profiles')
+          .from('public_profiles_minimal')
           .select('id, full_name, avatar_url')
           .in('id', follows.map(f => f.follower_id));
         
@@ -42,7 +42,7 @@ export const FollowersListDialog = ({ open, onOpenChange, userId, type }: Follow
         if (!follows?.length) return [];
         
         const { data: profiles } = await supabase
-          .from('profiles')
+          .from('public_profiles_minimal')
           .select('id, full_name, avatar_url')
           .in('id', follows.map(f => f.following_id));
         

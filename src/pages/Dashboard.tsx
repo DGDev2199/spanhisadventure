@@ -26,6 +26,8 @@ import { useSubmitTask } from "@/hooks/useSubmitTask";
 import { WeeklyProgressGrid, GamificationPanel, LeaderboardCard } from "@/components/gamification";
 // Practice components
 import { StudentPracticePanel } from "@/components/practice";
+// Tutorial
+import { TutorialLauncher } from "@/components/tutorial";
 // Daily reminders
 import { DailyRemindersModal } from "@/components/DailyRemindersModal";
 
@@ -209,8 +211,9 @@ const Dashboard = () => {
                 <span className="hidden sm:inline">{t("navigation.community")}</span>
               </Button>
             )}
+            <TutorialLauncher />
             <LanguageSwitcher />
-            <NotificationBell />
+            <NotificationBell data-tutorial="notifications" />
             <Button
               onClick={signOut}
               variant="outline"
@@ -283,61 +286,69 @@ const Dashboard = () => {
             />
           )}
 
-          <QuickStatCard
-            title={t("dashboard.currentLevel")}
-            value={studentProfile?.level || t("dashboard.noLevel")}
-            subtitle={studentProfile?.level ? t("dashboard.currentLevel") : t("dashboard.completeTest")}
-            icon={<Award className="h-4 w-4 text-secondary" />}
-            isLoading={profileLoading}
-          />
+          <div data-tutorial="level-card">
+            <QuickStatCard
+              title={t("dashboard.currentLevel")}
+              value={studentProfile?.level || t("dashboard.noLevel")}
+              subtitle={studentProfile?.level ? t("dashboard.currentLevel") : t("dashboard.completeTest")}
+              icon={<Award className="h-4 w-4 text-secondary" />}
+              isLoading={profileLoading}
+            />
+          </div>
 
           {/* Teacher Card */}
-          <StaffCard
-            title={t("dashboard.myTeacher")}
-            staffName={teacherProfile?.full_name}
-            isLoading={profileLoading || teacherLoading}
-            iconColor="text-primary"
-            staffId={teacherProfile?.id}
-            showChat={isBasicChatEnabled}
-            showVideoCall={showVideoCallOptions}
-            showBooking={showBookingOptions}
-            showSchedule={!isOnlineStudent}
-            onChat={handleTeacherChat}
-            onVideoCall={handleTeacherVideoCall}
-            onBooking={handleTeacherBooking}
-            onViewSchedule={() => setClassScheduleOpen(true)}
-            onViewProfile={handleViewTeacherProfile}
-            bookingLabel={t("dashboard.bookClass")}
-            scheduleLabel={t("dashboard.viewClassSchedule")}
-          />
+          <div data-tutorial="teacher-card">
+            <StaffCard
+              title={t("dashboard.myTeacher")}
+              staffName={teacherProfile?.full_name}
+              isLoading={profileLoading || teacherLoading}
+              iconColor="text-primary"
+              staffId={teacherProfile?.id}
+              showChat={isBasicChatEnabled}
+              showVideoCall={showVideoCallOptions}
+              showBooking={showBookingOptions}
+              showSchedule={!isOnlineStudent}
+              onChat={handleTeacherChat}
+              onVideoCall={handleTeacherVideoCall}
+              onBooking={handleTeacherBooking}
+              onViewSchedule={() => setClassScheduleOpen(true)}
+              onViewProfile={handleViewTeacherProfile}
+              bookingLabel={t("dashboard.bookClass")}
+              scheduleLabel={t("dashboard.viewClassSchedule")}
+            />
+          </div>
 
           {/* Tutor Card */}
-          <StaffCard
-            title={t("dashboard.myTutor")}
-            staffName={tutorProfile?.full_name}
-            isLoading={profileLoading || tutorLoading}
-            iconColor="text-secondary"
-            staffId={tutorProfile?.id}
-            showChat={isBasicChatEnabled}
-            showVideoCall={showVideoCallOptions}
-            showBooking={showBookingOptions}
-            showSchedule={!isOnlineStudent}
-            onChat={handleTutorChat}
-            onVideoCall={handleTutorVideoCall}
-            onBooking={handleTutorBooking}
-            onViewSchedule={() => setTutoringScheduleOpen(true)}
-            onViewProfile={handleViewTutorProfile}
-            bookingLabel={t("dashboard.bookTutoring")}
-            scheduleLabel={t("dashboard.viewTutoringSchedule")}
-          />
+          <div data-tutorial="tutor-card">
+            <StaffCard
+              title={t("dashboard.myTutor")}
+              staffName={tutorProfile?.full_name}
+              isLoading={profileLoading || tutorLoading}
+              iconColor="text-secondary"
+              staffId={tutorProfile?.id}
+              showChat={isBasicChatEnabled}
+              showVideoCall={showVideoCallOptions}
+              showBooking={showBookingOptions}
+              showSchedule={!isOnlineStudent}
+              onChat={handleTutorChat}
+              onVideoCall={handleTutorVideoCall}
+              onBooking={handleTutorBooking}
+              onViewSchedule={() => setTutoringScheduleOpen(true)}
+              onViewProfile={handleViewTutorProfile}
+              bookingLabel={t("dashboard.bookTutoring")}
+              scheduleLabel={t("dashboard.viewTutoringSchedule")}
+            />
+          </div>
 
-          <QuickStatCard
-            title={t("dashboard.tasks")}
-            value={tasks?.length || 0}
-            subtitle={tasks && tasks.length > 0 ? t("dashboard.pendingTasks") : t("dashboard.noPendingTasks")}
-            icon={<BookOpen className="h-4 w-4 text-accent" />}
-            isLoading={tasksLoading}
-          />
+          <div data-tutorial="tasks-card">
+            <QuickStatCard
+              title={t("dashboard.tasks")}
+              value={tasks?.length || 0}
+              subtitle={tasks && tasks.length > 0 ? t("dashboard.pendingTasks") : t("dashboard.noPendingTasks")}
+              icon={<BookOpen className="h-4 w-4 text-accent" />}
+              isLoading={tasksLoading}
+            />
+          </div>
         </div>
 
         {/* Progress Section - Weekly + Student Progress together */}
@@ -345,7 +356,9 @@ const Dashboard = () => {
           <div className="space-y-6 mb-6">
             {/* Weekly Progress Grid - only when gamification is enabled */}
             {isGamificationEnabled && (
-              <WeeklyProgressGrid studentId={user.id} studentLevel={studentProfile?.level || null} isEditable={false} />
+              <div data-tutorial="progress-grid">
+                <WeeklyProgressGrid studentId={user.id} studentLevel={studentProfile?.level || null} isEditable={false} />
+              </div>
             )}
 
             {/* Student Progress View - immediately after */}
@@ -417,12 +430,19 @@ const Dashboard = () => {
         {user?.id && isGamificationEnabled && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
             <GamificationPanel userId={user.id} />
+            <div data-tutorial="gamification-panel">
+              <GamificationPanel userId={user.id} />
+            </div>
             <LeaderboardCard currentUserId={user.id} limit={5} />
           </div>
         )}
 
         {/* Practice Exercises Section - for students to see and complete their assignments */}
-        {user?.id && isGamificationEnabled && <StudentPracticePanel />}
+        {user?.id && isGamificationEnabled && (
+          <div data-tutorial="practice-panel">
+            <StudentPracticePanel />
+          </div>
+        )}
 
         {/* Tasks Section */}
         <TasksList
@@ -443,7 +463,7 @@ const Dashboard = () => {
 
         {/* Weekly Calendar - Presencial Students Only */}
         {!isOnlineStudent && (
-          <div id="weekly-calendar" className="mt-6">
+          <div id="weekly-calendar" className="mt-6" data-tutorial="weekly-calendar">
             <WeeklyCalendar />
           </div>
         )}

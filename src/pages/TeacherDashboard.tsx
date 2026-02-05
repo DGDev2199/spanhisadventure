@@ -42,6 +42,7 @@ import { VideoCallDialog } from '@/components/VideoCallDialog';
 import { VideoCallHistoryPanel } from '@/components/VideoCallHistoryPanel';
 import { StaffEarningsPanel } from '@/components/StaffEarningsPanel';
 import { StaffMessagesPanel } from '@/components/StaffMessagesPanel';
+import { TutorialLauncher } from '@/components/tutorial';
 import { Settings, Trophy, Plus as PlusIcon } from 'lucide-react';
 import { useSwipeable } from 'react-swipeable';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -388,13 +389,15 @@ const TeacherDashboard = () => {
                 <span className="hidden sm:inline">{t('navigation.community')}</span>
               </Button>
             )}
+            <TutorialLauncher />
             <LanguageSwitcher />
-            <NotificationBell />
+            <NotificationBell data-tutorial="notifications" />
             <Button
               onClick={() => setMyScheduleOpen(true)}
               variant="outline"
               size="sm"
               className="bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 touch-target"
+              data-tutorial="my-schedule-btn"
             >
               <CalendarClock className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Horario</span>
@@ -473,21 +476,21 @@ const TeacherDashboard = () => {
 
         {/* Staff Hours Card */}
         {user?.id && (
-          <div className="mb-8">
+          <div className="mb-8" data-tutorial="staff-hours">
             <StaffHoursCard userId={user.id} />
           </div>
         )}
 
         {/* Task Review Panel - See submitted tasks from students */}
         {user?.id && (
-          <div className="mb-8">
+          <div className="mb-8" data-tutorial="task-review-panel">
             <TeacherTaskReviewPanel teacherId={user.id} />
           </div>
         )}
 
         {/* Scheduled Classes by Students */}
         {user?.id && (
-          <div className="mb-8">
+          <div className="mb-8" data-tutorial="scheduled-classes">
             <TeacherScheduledClassesCard 
               teacherId={user.id} 
               onStartVideoCall={isVideoCallsEnabled ? (studentId, studentName) => {
@@ -500,14 +503,14 @@ const TeacherDashboard = () => {
 
         {/* Practice Exercises Panel */}
         {isPracticeEnabled && user?.id && (
-          <div className="mb-8">
+          <div className="mb-8" data-tutorial="practice-panel">
             <PracticeSessionPanel />
           </div>
         )}
 
         {/* Curriculum Materials and Teacher Guides */}
         {user?.id && (
-          <div className="mb-8">
+          <div className="mb-8" data-tutorial="materials-panel">
             <TeacherMaterialsPanel />
           </div>
         )}
@@ -555,7 +558,7 @@ const TeacherDashboard = () => {
         )}
 
         {/* Students Table */}
-        <Card className="shadow-md mb-6">
+        <Card className="shadow-md mb-6" data-tutorial="students-table">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>

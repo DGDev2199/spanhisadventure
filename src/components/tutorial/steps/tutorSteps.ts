@@ -1,157 +1,212 @@
 import { Step } from 'react-joyride';
 
 export const tutorSteps: Step[] = [
+  // === BIENVENIDA ===
   {
     target: 'body',
     placement: 'center',
     title: '¡Bienvenido, Tutor! 🎓',
-    content: `Este es tu centro de control para gestionar a tus estudiantes.
+    content: `Este tutorial te guiará paso a paso por cada botón y función de tu panel.
 
-Como tutor, tu rol es apoyar el aprendizaje reforzando lo que enseña el profesor. Aquí encontrarás:
-• Lista de estudiantes asignados
-• Herramientas para generar ejercicios con IA
-• Acceso a materiales del currículo
-• Control de tus horas trabajadas
+Como tutor, tu rol es reforzar el aprendizaje y practicar conversación con los estudiantes.
 
-¡Vamos a explorar cada sección!`,
+¡Vamos a explorar cada herramienta!`,
     disableBeacon: true,
   },
+
+  // === TABLA DE ESTUDIANTES ===
   {
     target: '[data-tutorial="students-table"]',
     title: 'Tabla de Estudiantes 👥',
-    content: `Aquí verás todos tus estudiantes asignados en una tabla organizada.
+    content: `Lista de todos tus estudiantes asignados.
 
-📌 Columnas disponibles:
-   • Nombre del estudiante
-   • Tu rol (Profesor, Tutor o ambos)
-   • Nivel actual (A1-C2)
-   • Tipo (Online/Presencial)
-   • Sala asignada
-   • Profesor principal
+📌 **Columnas**: Nombre, rol, nivel, tipo, sala, profesor.
+📌 **Acciones**: Cada fila tiene botones a la derecha.
 
-📌 Ordenamiento: Los más recientes aparecen primero.
-
-💡 Tip: Si eres profesor Y tutor del mismo estudiante, verás ambas etiquetas en la columna "Mi Rol".`,
+💡 Tip: Si eres profesor Y tutor del mismo estudiante, verás ambas etiquetas.`,
     disableBeacon: true,
   },
+
+  // === BOTÓN VER PROGRESO ===
   {
     target: '[data-tutorial="view-progress-btn"]',
     title: 'Botón Ver Progreso 📊',
-    content: `Este botón abre el panel completo de progreso del estudiante.
+    content: `Abre el panel completo de progreso del estudiante.
 
-📌 Qué puedes hacer:
-   • Ver las semanas del currículo completadas
-   • Editar notas diarias (clase, tutoría, vocabulario)
-   • Ver y otorgar logros personalizados
-   • Consultar el historial completo de avance
+📌 **Pestañas disponibles**:
+   - Currículo: Semanas completadas
+   - Notas: Registro diario (clase, tutoría, vocabulario)
+   - Logros: Insignias otorgadas
 
-📌 Notas de tutoría: Cada día puedes registrar qué temas practicaron y observaciones importantes.
-
-💡 Tip: Registrar notas diarias ayuda al profesor a saber qué reforzar en las clases.`,
+💡 Tip: Registra notas después de cada tutoría para que el profesor las vea.`,
     disableBeacon: true,
   },
+
+  // === TARJETA DE HORAS ===
   {
     target: '[data-tutorial="staff-hours"]',
     title: 'Control de Horas 🕐',
-    content: `Aquí gestionas tus horas trabajadas de la semana.
+    content: `Resumen de tus horas trabajadas.
 
-📌 Información que verás:
-   • Horas trabajadas hoy
-   • Horas trabajadas esta semana
-   • Límite semanal asignado
-   • Gráfico de distribución por día
+📌 **Información**:
+   - Horas de hoy
+   - Total de la semana
+   - Límite asignado
+   - Gráfico por día
 
-📌 Solicitar horas extra: Si necesitas más horas, haz clic en "Solicitar" y justifica el motivo. El administrador aprobará o rechazará la solicitud.
+📌 **Horas extra**: Solicita aprobación si necesitas más.
 
-💡 Tip: Las horas se calculan automáticamente de los eventos asignados en el calendario.`,
+💡 Tip: Las horas se calculan automáticamente del calendario.`,
     disableBeacon: true,
   },
+
+  // === PANEL DE EJERCICIOS ===
   {
     target: '[data-tutorial="practice-panel"]',
-    title: 'Generador de Ejercicios IA 🤖',
-    content: `Herramienta potente para crear ejercicios personalizados con inteligencia artificial.
+    title: 'Panel de Ejercicios 🎯',
+    content: `Aquí generas y gestionas ejercicios con IA.
 
-📌 Tipos de ejercicios disponibles:
-   📚 Flashcards de vocabulario
-   🔤 Conjugación de verbos
-   ✏️ Completar espacios en blanco
-   📖 Comprensión lectora
-   🔀 Ordenar oraciones
-
-📌 Cómo usarlo:
-   1. Selecciona el tipo de ejercicio
-   2. Elige el nivel (A1-C2)
-   3. Ingresa el tema o vocabulario específico
-   4. La IA genera los ejercicios automáticamente
-   5. Revísalos y asígnalos a uno o varios estudiantes
-
-💡 Tip: Los ejercicios generados quedan guardados para reutilizar con otros estudiantes.`,
+Vamos a ver cada botón del panel...`,
     disableBeacon: true,
   },
+
+  // === BOTÓN GENERAR CON IA ===
+  {
+    target: '[data-tutorial="generate-ai-btn"]',
+    title: 'Botón "Generar con IA" 🤖',
+    content: `Crea ejercicios personalizados con inteligencia artificial.
+
+📌 **Pasos**:
+   1. Selecciona tipo (flashcard, conjugación, etc.)
+   2. Elige nivel (A1-C2)
+   3. Escribe el tema o vocabulario
+   4. Haz clic en "Generar"
+
+📌 **Tiempo**: 10-30 segundos según complejidad.
+
+💡 Tip: Sé específico con el tema para mejores resultados.`,
+    disableBeacon: true,
+  },
+
+  // === PESTAÑAS DE TIPOS ===
+  {
+    target: '[data-tutorial="exercise-tabs"]',
+    title: 'Pestañas de Tipos 📚',
+    content: `Filtra ejercicios creados por tipo:
+
+📌 **Flashcards**: Tarjetas de vocabulario
+📌 **Conjugación**: Verbos en tiempos
+📌 **Vocabulario**: Definiciones
+📌 **Ordenar**: Poner palabras en orden
+📌 **Opción Múltiple**: Preguntas con opciones
+📌 **Huecos**: Completar espacios
+📌 **Lectura**: Comprensión lectora
+
+💡 Tip: Usa "Todos" para ver todo junto.`,
+    disableBeacon: true,
+  },
+
+  // === BOTÓN ASIGNAR ===
+  {
+    target: '[data-tutorial="assign-exercise-btn"]',
+    title: 'Botón Asignar 👥',
+    content: `Asigna el ejercicio a uno o varios estudiantes.
+
+📌 **Pasos**:
+   1. Haz clic en el icono de personas
+   2. Selecciona los estudiantes
+   3. Confirma la asignación
+
+📌 **Resultado**: El estudiante lo verá en su panel.
+
+💡 Tip: Puedes asignar el mismo ejercicio a múltiples estudiantes.`,
+    disableBeacon: true,
+  },
+
+  // === BOTÓN PRACTICAR ===
+  {
+    target: '[data-tutorial="practice-exercise-btn"]',
+    title: 'Botón Practicar ▶️',
+    content: `Abre el ejercicio para verlo o probarlo.
+
+📌 **Uso**:
+   - Revisa cómo se ve
+   - Verifica las respuestas
+   - Prueba la experiencia del estudiante
+
+💡 Tip: Siempre prueba un ejercicio antes de asignarlo.`,
+    disableBeacon: true,
+  },
+
+  // === PANEL DE MATERIALES ===
   {
     target: '[data-tutorial="materials-panel"]',
-    title: 'Materiales del Currículo 📚',
-    content: `Accede a todas las guías y recursos organizados por semana y nivel.
+    title: 'Panel de Materiales 📚',
+    content: `Accede a guías y recursos del currículo.
 
-📌 Contenido disponible:
-   • Guías de cada tema del currículo
-   • Material de apoyo en PDF
-   • Recursos multimedia
-   • Ejercicios prediseñados por tema
-
-📌 Protección: Los PDFs tienen marca de agua con tu nombre para evitar distribución no autorizada.
-
-📌 Navegación: Selecciona un nivel y una semana para ver todos sus materiales.
-
-💡 Tip: Revisa los materiales antes de cada tutoría para estar preparado.`,
+Haz clic para expandirlo y ver las semanas...`,
     disableBeacon: true,
   },
+
+  // === EXPANDIR MATERIALES ===
+  {
+    target: '[data-tutorial="materials-expand-btn"]',
+    title: 'Expandir Materiales 📂',
+    content: `Haz clic aquí para ver los materiales organizados por semana.
+
+📌 **Contenido**: Guías del profesor y material extra.
+📌 **Protección**: Los PDFs tienen marca de agua.
+
+💡 Tip: Revisa los materiales antes de cada tutoría.`,
+    disableBeacon: true,
+  },
+
+  // === BOTÓN MI HORARIO ===
   {
     target: '[data-tutorial="my-schedule-btn"]',
-    title: 'Botón Mi Horario 📅',
-    content: `Abre tu calendario personal con todas las actividades asignadas.
+    title: 'Botón Horario 🗓️',
+    content: `Abre tu calendario personal.
 
-📌 Verás:
-   • Tutorías programadas con cada estudiante
-   • Clases (si también eres profesor)
-   • Horarios organizados por día y hora
-   • Eventos de la escuela donde participas
+📌 **Contenido**:
+   - Tutorías programadas
+   - Clases (si también eres profesor)
+   - Eventos asignados
 
-📌 Vista: Calendario semanal con código de colores por tipo de actividad.
-
-💡 Tip: Consulta tu horario cada día para confirmar tus sesiones y prepararte.`,
+💡 Tip: Consulta tu horario cada día al comenzar.`,
     disableBeacon: true,
   },
+
+  // === NOTIFICACIONES ===
   {
     target: '[data-tutorial="notifications"]',
-    title: 'Centro de Notificaciones 🔔',
-    content: `Recibe alertas importantes en tiempo real.
+    title: 'Notificaciones 🔔',
+    content: `Centro de alertas importantes.
 
-📌 Te notificará sobre:
-   • Mensajes nuevos de estudiantes
-   • Cambios en el horario de clases
-   • Estado de solicitudes de horas extra (aprobada/rechazada)
-   • Avisos importantes del administrador
+📌 **Te notifica sobre**:
+   - Mensajes de estudiantes
+   - Cambios de horario
+   - Solicitudes de horas extra
+   - Avisos administrativos
 
-📌 Indicador rojo: Muestra cuántas notificaciones sin leer tienes.
-
-💡 Tip: Revisa las notificaciones al iniciar tu jornada para estar al día.`,
+💡 Tip: Revisa al iniciar sesión.`,
     disableBeacon: true,
   },
+
+  // === CIERRE ===
   {
     target: 'body',
     placement: 'center',
     title: '¡Listo para tutorear! 🚀',
-    content: `Ya conoces todas las herramientas de tu panel de tutor.
+    content: `Ya conoces cada función de tu panel.
 
-📌 Flujo de trabajo recomendado:
+📌 **Flujo de trabajo**:
    1. Revisa tu horario del día
-   2. Prepara los materiales para cada tutoría
+   2. Prepara materiales para cada tutoría
    3. Registra notas después de cada sesión
-   4. Genera ejercicios de práctica personalizados
+   4. Genera ejercicios de refuerzo
    5. Responde mensajes de estudiantes
 
-📌 Ver tutorial de nuevo: Haz clic en el icono ❓ en el menú superior.
+📌 **Ver de nuevo**: Icono ❓ en el menú.
 
 ¡Éxito con tus tutorías! 🎓`,
     disableBeacon: true,

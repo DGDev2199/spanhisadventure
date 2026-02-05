@@ -1,205 +1,287 @@
 import { Step } from 'react-joyride';
 
 export const teacherSteps: Step[] = [
+  // === BIENVENIDA ===
   {
     target: 'body',
     placement: 'center',
     title: '¡Bienvenido, Profesor! 👨‍🏫',
-    content: `Este es tu centro de control para gestionar clases y estudiantes.
+    content: `Este tutorial te guiará paso a paso por cada botón y función de tu panel.
 
-Como profesor, tienes acceso a herramientas completas para:
-• Gestionar tareas y exámenes
-• Evaluar el progreso de estudiantes
-• Generar ejercicios con IA
-• Revisar entregas y dar feedback
+Como profesor, tienes acceso a herramientas completas para gestionar clases, tareas y exámenes.
 
-¡Vamos a explorar cada función!`,
+¡Vamos a explorarlo juntos!`,
     disableBeacon: true,
   },
+
+  // === TABLA DE ESTUDIANTES ===
   {
     target: '[data-tutorial="students-table"]',
     title: 'Tabla de Estudiantes 👥',
-    content: `Lista completa de todos tus estudiantes asignados.
+    content: `Lista de todos tus estudiantes asignados.
 
-📌 Columnas disponibles:
-   • Nombre del estudiante
-   • Tu rol (Profesor, Tutor o ambos)
-   • Nivel actual (A1-C2)
-   • Modalidad (Online/Presencial)
-   • Sala asignada
-   • Tutor del estudiante
+📌 **Columnas**: Nombre, rol, nivel, tipo, sala, tutor.
+📌 **Acciones**: Cada fila tiene botones a la derecha.
 
-📌 Acciones rápidas: Cada fila tiene botones para chat, progreso y más.
-
-💡 Tip: Si eres profesor Y tutor del mismo estudiante, verás ambas etiquetas y tendrás acceso completo.`,
+Vamos a ver cada botón de acción...`,
     disableBeacon: true,
   },
-  {
-    target: '[data-tutorial="create-task-btn"]',
-    title: 'Crear Nueva Tarea 📝',
-    content: `Asigna tareas a uno o varios estudiantes.
 
-📌 Opciones al crear tarea:
-   • Título y descripción detallada
-   • Fecha de entrega
-   • Adjuntar archivos PDF o materiales
-   • Seleccionar estudiantes (individual o grupal)
-
-📌 Notificación automática: Los estudiantes reciben alerta cuando les asignas una tarea.
-
-📌 Puntos: Los estudiantes ganan +5 puntos al entregar y hasta +10 puntos extra según tu calificación.
-
-💡 Tip: Sé específico en las instrucciones para que los estudiantes entiendan qué esperas.`,
-    disableBeacon: true,
-  },
-  {
-    target: '[data-tutorial="task-review-panel"]',
-    title: 'Panel de Revisión de Tareas ✅',
-    content: `Aquí verás todas las tareas que los estudiantes han enviado para revisión.
-
-📌 Información disponible:
-   • Nombre del estudiante
-   • Tarea entregada con fecha
-   • Archivo adjunto (si lo hay)
-   • Estado de revisión
-
-📌 Calificar tarea:
-   • Revisar el trabajo enviado
-   • Asignar puntuación (0, 5 o 10 puntos extra)
-   • Dar feedback escrito al estudiante
-   • Marcar como revisada
-
-💡 Tip: El feedback constructivo ayuda a los estudiantes a mejorar. Sé específico sobre qué hicieron bien y qué pueden mejorar.`,
-    disableBeacon: true,
-  },
-  {
-    target: '[data-tutorial="create-test-btn"]',
-    title: 'Crear Exámenes Personalizados 📋',
-    content: `Diseña exámenes completos con diferentes tipos de preguntas.
-
-📌 Tipos de preguntas:
-   • Opción múltiple (A, B, C, D)
-   • Completar espacios en blanco
-   • Verdadero/Falso
-   • Respuesta corta
-
-📌 Configuración:
-   • Establecer tiempo límite
-   • Fecha de disponibilidad
-   • Asignar a estudiantes específicos
-   • Puntuación por pregunta
-
-📌 Corrección: Algunas preguntas se corrigen automáticamente, otras requieren tu revisión.
-
-💡 Tip: Combina diferentes tipos de preguntas para evaluar distintas habilidades.`,
-    disableBeacon: true,
-  },
+  // === BOTÓN VER PROGRESO ===
   {
     target: '[data-tutorial="view-progress-btn"]',
-    title: 'Ver Progreso del Estudiante 📊',
-    content: `Accede al panel completo de progreso de cada estudiante.
+    title: 'Botón Ver Progreso 📊',
+    content: `Abre el panel completo de progreso del estudiante.
 
-📌 Pestañas disponibles:
-   • Progreso del Currículo: Semanas y temas completados con colores
-   • Notas Semanales: Registro diario de clases, tutorías y vocabulario
-   • Logros: Insignias otorgadas y por otorgar
+📌 **Pestaña Currículo**: Semanas y temas completados.
+📌 **Pestaña Notas**: Registro diario (clase, tutoría, vocabulario).
+📌 **Pestaña Logros**: Insignias otorgadas y por otorgar.
 
-📌 Evaluar temas: Marca los temas como dominados (verde), en progreso (amarillo) o pendientes.
-
-📌 Otorgar logros: Crea y asigna insignias personalizadas por buen desempeño.
-
-💡 Tip: Usa las notas semanales para comunicarte con el tutor sobre el progreso del estudiante.`,
+💡 Tip: Revisa el progreso antes de cada clase.`,
     disableBeacon: true,
   },
+
+  // === BOTÓN CREAR TAREA ===
+  {
+    target: '[data-tutorial="create-task-btn"]',
+    title: 'Botón Crear Tarea ➕📝',
+    content: `Abre el formulario para asignar una nueva tarea.
+
+📌 **Campos**:
+   - Título y descripción
+   - Fecha de entrega
+   - Archivo PDF adjunto (opcional)
+   - Seleccionar estudiante(s)
+
+📌 **Puntos**: El estudiante gana +5 pts al entregar.
+
+💡 Tip: Sé específico en la descripción.`,
+    disableBeacon: true,
+  },
+
+  // === PANEL REVISIÓN TAREAS ===
+  {
+    target: '[data-tutorial="task-review-panel"]',
+    title: 'Panel de Tareas Enviadas 📬',
+    content: `Lista de tareas que estudiantes han entregado.
+
+📌 **Ver entrega**: Abre el trabajo del estudiante.
+📌 **Calificar**: Asigna 0, 5 o 10 puntos extra.
+📌 **Feedback**: Escribe comentarios.
+
+💡 Tip: Revisa las entregas pronto para mantener motivación.`,
+    disableBeacon: true,
+  },
+
+  // === BOTÓN CREAR EXAMEN ===
+  {
+    target: '[data-tutorial="create-test-btn"]',
+    title: 'Botón Crear Examen ➕📋',
+    content: `Abre el creador de exámenes personalizados.
+
+📌 **Tipos de preguntas**:
+   - Opción múltiple (A, B, C, D)
+   - Completar espacios
+   - Verdadero/Falso
+   - Respuesta corta
+
+📌 **Configuración**: Tiempo límite, fecha, estudiantes.
+
+💡 Tip: Mezcla tipos de preguntas para evaluar mejor.`,
+    disableBeacon: true,
+  },
+
+  // === TARJETA DE HORAS ===
   {
     target: '[data-tutorial="staff-hours"]',
-    title: 'Control de Horas Trabajadas 🕐',
-    content: `Gestiona y monitorea tus horas de trabajo.
+    title: 'Control de Horas 🕐',
+    content: `Resumen de tus horas trabajadas.
 
-📌 Información visible:
-   • Horas trabajadas hoy
-   • Total de horas esta semana
-   • Límite semanal asignado
-   • Distribución por día (gráfico)
+📌 **Visualización**:
+   - Horas de hoy
+   - Total de la semana
+   - Límite asignado
+   - Gráfico por día
 
-📌 Horas extra: Si necesitas trabajar más del límite, puedes solicitar autorización al administrador con justificación.
-
-💡 Tip: Las horas se calculan automáticamente de las clases y eventos asignados en el calendario.`,
+💡 Tip: Las horas se calculan automáticamente del calendario.`,
     disableBeacon: true,
   },
-  {
-    target: '[data-tutorial="practice-panel"]',
-    title: 'Generador de Ejercicios con IA 🤖',
-    content: `Crea ejercicios personalizados usando inteligencia artificial.
 
-📌 Tipos de ejercicios:
-   📚 Flashcards de vocabulario
-   🔤 Conjugación de verbos (regulares e irregulares)
-   ✏️ Completar espacios en blanco
-   📖 Comprensión lectora con preguntas
-   🔀 Ordenar palabras para formar oraciones
-
-📌 Proceso:
-   1. Elige tipo de ejercicio y nivel
-   2. Especifica el tema o vocabulario
-   3. La IA genera ejercicios automáticamente
-   4. Revisa y edita si es necesario
-   5. Asigna a estudiantes seleccionados
-
-💡 Tip: Guarda los ejercicios que funcionan bien para reutilizarlos.`,
-    disableBeacon: true,
-  },
-  {
-    target: '[data-tutorial="materials-panel"]',
-    title: 'Materiales y Guías del Currículo 📚',
-    content: `Accede a todos los recursos pedagógicos organizados por nivel y semana.
-
-📌 Contenido disponible:
-   • Guías del profesor (instrucciones detalladas)
-   • Guías del estudiante (material para compartir)
-   • PDFs de apoyo y ejercicios
-   • Recursos multimedia
-
-📌 Seguridad: Todos los PDFs tienen marca de agua con tu nombre.
-
-📌 Navegación: Filtra por nivel (A1-C2) y selecciona la semana deseada.
-
-💡 Tip: Revisa los materiales antes de cada clase para planificar mejor la sesión.`,
-    disableBeacon: true,
-  },
+  // === CLASES PROGRAMADAS ===
   {
     target: '[data-tutorial="scheduled-classes"]',
-    title: 'Clases Programadas (Online) 📅',
-    content: `Panel de reservaciones de clases para estudiantes online.
+    title: 'Clases Programadas 📅',
+    content: `Panel de reservaciones de estudiantes online.
 
-📌 Información disponible:
-   • Estudiantes que han reservado clase
-   • Fecha y hora de cada reservación
-   • Estado (pendiente, confirmada, completada)
-   • Link de videollamada
+📌 **Información**:
+   - Nombre del estudiante
+   - Fecha y hora reservada
+   - Estado (pendiente/confirmada)
 
-📌 Acciones:
-   • Confirmar o reagendar reservaciones
-   • Iniciar videollamada cuando llegue la hora
-   • Marcar clase como completada
+📌 **Acciones**: Confirmar, reagendar, iniciar videollamada.
 
-💡 Tip: Revisa las reservaciones cada día para preparar el material de cada estudiante.`,
+💡 Tip: Revisa las reservaciones cada mañana.`,
     disableBeacon: true,
   },
+
+  // === PANEL DE EJERCICIOS ===
+  {
+    target: '[data-tutorial="practice-panel"]',
+    title: 'Panel de Ejercicios 🎯',
+    content: `Aquí generas y gestionas ejercicios con IA.
+
+Vamos a ver cada botón del panel...`,
+    disableBeacon: true,
+  },
+
+  // === BOTÓN GENERAR CON IA ===
+  {
+    target: '[data-tutorial="generate-ai-btn"]',
+    title: 'Botón "Generar con IA" 🤖',
+    content: `Crea ejercicios personalizados con inteligencia artificial.
+
+📌 **Pasos**:
+   1. Selecciona tipo (flashcard, conjugación, etc.)
+   2. Elige nivel (A1-C2)
+   3. Escribe el tema o vocabulario
+   4. Haz clic en "Generar"
+
+📌 **Tiempo**: 10-30 segundos.
+
+💡 Tip: Sé específico con el tema.`,
+    disableBeacon: true,
+  },
+
+  // === PESTAÑAS DE TIPOS ===
+  {
+    target: '[data-tutorial="exercise-tabs"]',
+    title: 'Pestañas de Tipos 📚',
+    content: `Filtra ejercicios creados por tipo:
+
+📌 **Flashcards**: Tarjetas de vocabulario
+📌 **Conjugación**: Verbos en tiempos
+📌 **Vocabulario**: Definiciones
+📌 **Ordenar**: Palabras en orden
+📌 **Opción Múltiple**: Preguntas
+📌 **Huecos**: Completar espacios
+📌 **Lectura**: Comprensión lectora
+
+💡 Tip: Usa "Todos" para ver todo junto.`,
+    disableBeacon: true,
+  },
+
+  // === BOTÓN ASIGNAR ===
+  {
+    target: '[data-tutorial="assign-exercise-btn"]',
+    title: 'Botón Asignar 👥',
+    content: `Asigna el ejercicio a uno o varios estudiantes.
+
+📌 **Pasos**:
+   1. Haz clic en el icono de personas
+   2. Selecciona los estudiantes
+   3. Confirma la asignación
+
+💡 Tip: Puedes asignar el mismo ejercicio a múltiples estudiantes.`,
+    disableBeacon: true,
+  },
+
+  // === BOTÓN PRACTICAR ===
+  {
+    target: '[data-tutorial="practice-exercise-btn"]',
+    title: 'Botón Practicar ▶️',
+    content: `Abre el ejercicio para verlo o probarlo.
+
+📌 **Uso**:
+   - Revisa cómo se ve
+   - Verifica las respuestas
+   - Prueba la experiencia del estudiante
+
+💡 Tip: Siempre prueba antes de asignar.`,
+    disableBeacon: true,
+  },
+
+  // === PANEL DE MATERIALES ===
+  {
+    target: '[data-tutorial="materials-panel"]',
+    title: 'Panel de Materiales 📚',
+    content: `Accede a guías y recursos del currículo.
+
+Haz clic para expandirlo y ver las semanas...`,
+    disableBeacon: true,
+  },
+
+  // === EXPANDIR MATERIALES ===
+  {
+    target: '[data-tutorial="materials-expand-btn"]',
+    title: 'Expandir Materiales 📂',
+    content: `Haz clic aquí para ver materiales por semana.
+
+📌 **Contenido**: Guías del profesor y material extra.
+📌 **Protección**: PDFs con marca de agua.
+
+💡 Tip: Revisa antes de cada clase.`,
+    disableBeacon: true,
+  },
+
+  // === EXPANDIR SEMANA ===
+  {
+    target: '[data-tutorial="week-expand-btn"]',
+    title: 'Expandir Semana 📂',
+    content: `Haz clic en una semana para ver sus temas.
+
+📌 **Guías del profesor**: Marcadas con 🎓
+📌 **Material extra**: Recursos adicionales
+
+💡 Tip: Las guías tienen instrucciones detalladas.`,
+    disableBeacon: true,
+  },
+
+  // === BOTÓN MI HORARIO ===
+  {
+    target: '[data-tutorial="my-schedule-btn"]',
+    title: 'Botón Horario 🗓️',
+    content: `Abre tu calendario personal.
+
+📌 **Contenido**:
+   - Clases programadas
+   - Tutorías (si también eres tutor)
+   - Eventos de la escuela
+
+💡 Tip: Consulta tu horario cada día.`,
+    disableBeacon: true,
+  },
+
+  // === NOTIFICACIONES ===
+  {
+    target: '[data-tutorial="notifications"]',
+    title: 'Notificaciones 🔔',
+    content: `Centro de alertas importantes.
+
+📌 **Te notifica sobre**:
+   - Mensajes de estudiantes
+   - Tareas enviadas para revisar
+   - Cambios de horario
+   - Avisos administrativos
+
+💡 Tip: Revisa al iniciar sesión.`,
+    disableBeacon: true,
+  },
+
+  // === CIERRE ===
   {
     target: 'body',
     placement: 'center',
-    title: '¡Todo listo para enseñar! 🎉',
-    content: `Ya conoces todas las herramientas de tu panel de profesor.
+    title: '¡Tutorial Completado! 🎉',
+    content: `Ya conoces cada botón de tu panel.
 
-📌 Flujo de trabajo recomendado:
-   1. Revisa tu horario y reservaciones del día
-   2. Prepara materiales para cada clase
-   3. Registra el progreso después de cada sesión
-   4. Revisa y califica tareas pendientes
-   5. Genera ejercicios para refuerzo
+📌 **Resumen de acciones**:
+   - 📊 Progreso: Ver avance y notas
+   - 📝 Tareas: Crear y revisar
+   - 📋 Exámenes: Crear evaluaciones
+   - 🤖 IA: Generar ejercicios
+   - 📚 Materiales: Guías del currículo
 
-📌 Ver tutorial de nuevo: Haz clic en el icono ❓ en el menú superior.
+📌 **Ver de nuevo**: Icono ❓ en el menú.
 
 ¡Éxito con tus clases! 👨‍🏫`,
     disableBeacon: true,

@@ -82,6 +82,7 @@ function StaffCardComponent({
                   size="sm" 
                   className="flex-1 h-9 sm:h-8 touch-target"
                   onClick={onChat}
+                  data-tutorial="staff-chat-btn"
                 >
                   <MessageSquare className="h-4 w-4 sm:mr-1.5" />
                   <span className="hidden sm:inline text-xs">Chat</span>
@@ -93,6 +94,7 @@ function StaffCardComponent({
                   size="sm" 
                   className="flex-1 h-9 sm:h-8 touch-target"
                   onClick={onVideoCall}
+                  data-tutorial="staff-videocall-btn"
                 >
                   <Video className="h-4 w-4 sm:mr-1.5" />
                   <span className="hidden sm:inline text-xs">Video</span>
@@ -105,6 +107,7 @@ function StaffCardComponent({
                 size="sm" 
                 className="w-full h-9 sm:h-8 touch-target text-xs sm:text-sm"
                 onClick={onBooking}
+                data-tutorial="staff-booking-btn"
               >
                 <Calendar className="h-4 w-4 mr-1.5 sm:mr-2 flex-shrink-0" />
                 <span className="truncate">{defaultBookingLabel}</span>
@@ -116,6 +119,7 @@ function StaffCardComponent({
                 size="sm" 
                 className="w-full h-9 sm:h-8 touch-target text-xs sm:text-sm"
                 onClick={onViewSchedule}
+                data-tutorial="staff-schedule-btn"
               >
                 <Calendar className="h-4 w-4 mr-1.5 sm:mr-2 flex-shrink-0" />
                 <span className="truncate">{defaultScheduleLabel}</span>

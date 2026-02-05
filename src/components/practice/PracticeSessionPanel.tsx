@@ -127,7 +127,7 @@ export default function PracticeSessionPanel({
             <Sparkles className="h-5 w-5 text-primary" />
             Ejercicios Prácticos
           </CardTitle>
-          <Button onClick={() => setShowGenerateDialog(true)} size="sm">
+          <Button onClick={() => setShowGenerateDialog(true)} size="sm" data-tutorial="generate-ai-btn">
             <Plus className="h-4 w-4 mr-2" />
             Generar con IA
           </Button>
@@ -135,7 +135,7 @@ export default function PracticeSessionPanel({
         <CardContent>
           <Tabs defaultValue="all" className="space-y-4">
             <ScrollArea className="w-full">
-              <TabsList className="inline-flex w-auto min-w-full">
+              <TabsList className="inline-flex w-auto min-w-full" data-tutorial="exercise-tabs">
                 <TabsTrigger value="all">Todos</TabsTrigger>
                 <TabsTrigger value="flashcard">Flashcards</TabsTrigger>
                 <TabsTrigger value="conjugation">Conjugación</TabsTrigger>
@@ -208,6 +208,7 @@ export default function PracticeSessionPanel({
                                   size="sm"
                                   onClick={() => handleAssign(exercise.id)}
                                   title="Asignar a estudiante"
+                                  data-tutorial="assign-exercise-btn"
                                 >
                                   <Users className="h-4 w-4" />
                                   {isMobile && <span className="ml-1">Asignar</span>}
@@ -216,6 +217,7 @@ export default function PracticeSessionPanel({
                                   size="sm"
                                   onClick={() => setSelectedExercise(exercise)}
                                   title="Practicar"
+                                  data-tutorial="practice-exercise-btn"
                                 >
                                   <Play className="h-4 w-4" />
                                   {isMobile && <span className="ml-1">Practicar</span>}

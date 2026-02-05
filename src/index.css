@@ -164,10 +164,16 @@ All colors MUST be HSL.
     padding-right: env(safe-area-inset-right);
   }
 
-  /* Touch-friendly sizes */
+  /* Touch-friendly sizes - Apple HIG recommends 44px minimum */
   .touch-target {
     min-height: 44px;
     min-width: 44px;
+  }
+
+  /* Safe scrolling for mobile */
+  .safe-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 
   /* Smooth animations */

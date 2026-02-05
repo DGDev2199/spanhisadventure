@@ -48,52 +48,54 @@ function StaffCardComponent({
 
   return (
     <Card className="shadow-md hover:shadow-lg transition-shadow">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
-        <User className={`h-4 w-4 ${iconColor}`} />
+      <CardHeader className="flex flex-row items-center justify-between pb-2 p-3 sm:p-4 lg:p-6 lg:pb-2">
+        <CardTitle className="text-xs sm:text-sm font-medium line-clamp-1">{title}</CardTitle>
+        <User className={`h-4 w-4 flex-shrink-0 ${iconColor}`} />
       </CardHeader>
-      <CardContent>
-        <div className="text-lg font-bold">
+      <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
+        <div className="text-base sm:text-lg font-bold">
           {isLoading ? (
             '...'
           ) : staffName && onViewProfile ? (
             <button
               onClick={onViewProfile}
-              className="text-left hover:text-primary hover:underline cursor-pointer transition-colors flex items-center gap-1"
+              className="text-left hover:text-primary hover:underline cursor-pointer transition-colors flex items-center gap-1 touch-target min-h-[44px] w-full"
             >
-              {staffName}
-              <ExternalLink className="h-3.5 w-3.5 opacity-50" />
+              <span className="truncate">{staffName}</span>
+              <ExternalLink className="h-3.5 w-3.5 opacity-50 flex-shrink-0" />
             </button>
           ) : staffName ? (
-            staffName
+            <span className="truncate block">{staffName}</span>
           ) : (
-            <span className="text-muted-foreground text-base">{t('dashboard.notAssigned')}</span>
+            <span className="text-muted-foreground text-sm sm:text-base">{t('dashboard.notAssigned')}</span>
           )}
         </div>
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 line-clamp-1">
           {staffName ? `${title} ${t('dashboard.assigned')}` : t('dashboard.contactAdmin')}
         </p>
         {staffId && staffName && (
           <div className="space-y-2 mt-3">
-            <div className="flex gap-2">
+            <div className="flex gap-1.5 sm:gap-2">
               {showChat && onChat && (
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="flex-1"
+                  className="flex-1 h-9 sm:h-8 touch-target"
                   onClick={onChat}
                 >
-                  <MessageSquare className="h-4 w-4" />
+                  <MessageSquare className="h-4 w-4 sm:mr-1.5" />
+                  <span className="hidden sm:inline text-xs">Chat</span>
                 </Button>
               )}
               {showVideoCall && onVideoCall && (
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="flex-1"
+                  className="flex-1 h-9 sm:h-8 touch-target"
                   onClick={onVideoCall}
                 >
-                  <Video className="h-4 w-4" />
+                  <Video className="h-4 w-4 sm:mr-1.5" />
+                  <span className="hidden sm:inline text-xs">Video</span>
                 </Button>
               )}
             </div>
@@ -101,22 +103,22 @@ function StaffCardComponent({
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="w-full"
+                className="w-full h-9 sm:h-8 touch-target text-xs sm:text-sm"
                 onClick={onBooking}
               >
-                <Calendar className="h-4 w-4 mr-2" />
-                {defaultBookingLabel}
+                <Calendar className="h-4 w-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+                <span className="truncate">{defaultBookingLabel}</span>
               </Button>
             )}
             {showSchedule && onViewSchedule && (
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="w-full"
+                className="w-full h-9 sm:h-8 touch-target text-xs sm:text-sm"
                 onClick={onViewSchedule}
               >
-                <Calendar className="h-4 w-4 mr-2" />
-                {defaultScheduleLabel}
+                <Calendar className="h-4 w-4 mr-1.5 sm:mr-2 flex-shrink-0" />
+                <span className="truncate">{defaultScheduleLabel}</span>
               </Button>
             )}
           </div>

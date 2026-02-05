@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -13,12 +13,18 @@ import {
 } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Shield, AlertTriangle, X } from 'lucide-react';
+import { Shield, AlertTriangle, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { PDFWatermarkOverlay } from '@/components/curriculum/PDFWatermarkOverlay';
 import { usePdfObjectUrl } from '@/components/curriculum/usePdfObjectUrl';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useTranslation } from 'react-i18next';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import 'react-pdf/dist/esm/Page/TextLayer.css';
+
+// Configure PDF.js worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface SecurePDFViewerProps {
   open: boolean;
@@ -39,8 +45,22 @@ export default function SecurePDFViewer({
   const isMobile = useIsMobile();
   const [isBlurred, setIsBlurred] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleString());
+  
+  // Mobile PDF state
+  const [numPages, setNumPages] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [scale, setScale] = useState(1);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const { objectUrl, isLoading, error } = usePdfObjectUrl(pdfUrl, open);
+
+  // Reset page when opening
+  useEffect(() => {
+    if (open) {
+      setCurrentPage(1);
+      setScale(1);
+    }
+  }, [open]);
 
   // Update timestamp every minute
   useEffect(() => {
@@ -142,11 +162,142 @@ export default function SecurePDFViewer({
     return false;
   };
 
-  // Build PDF URL with parameters to hide toolbar
+  const handleDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+  };
+
+  const goToPrevPage = () => setCurrentPage(p => Math.max(1, p - 1));
+  const goToNextPage = () => setCurrentPage(p => Math.min(numPages, p + 1));
+  const zoomIn = () => setScale(s => Math.min(2, s + 0.25));
+  const zoomOut = () => setScale(s => Math.max(0.5, s - 0.25));
+
+  // Calculate page width for mobile
+  const getPageWidth = () => {
+    if (containerRef.current) {
+      return (containerRef.current.clientWidth - 32) * scale;
+    }
+    return (window.innerWidth - 32) * scale;
+  };
+
+  // Build PDF URL with parameters to hide toolbar (desktop only)
   const securePdfUrl = objectUrl ? `${objectUrl}#toolbar=0&navpanes=0&scrollbar=1` : '';
 
-  // Shared content for both mobile and desktop
-  const renderPDFContent = (heightClass: string) => (
+  // Mobile: Render PDF with react-pdf
+  const renderMobilePDFContent = () => (
+    <div 
+      ref={containerRef}
+      className={cn(
+        'flex-1 overflow-auto relative select-none transition-all duration-300',
+        isBlurred && 'blur-xl pointer-events-none'
+      )}
+      onContextMenu={handleContextMenu}
+    >
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background z-10">
+          <div className="text-sm text-muted-foreground">
+            {t('curriculum.loadingPdf', 'Cargando PDF…')}
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background">
+          <div className="text-center p-6 max-w-md">
+            <p className="text-base font-semibold mb-1">
+              {t('curriculum.pdfLoadError', 'No se pudo cargar el PDF')}
+            </p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+          </div>
+        </div>
+      )}
+
+      {objectUrl && !error && (
+        <div className="flex flex-col items-center py-4">
+          <Document
+            file={objectUrl}
+            onLoadSuccess={handleDocumentLoadSuccess}
+            loading={
+              <div className="p-8 text-center text-muted-foreground">
+                {t('curriculum.loadingDocument', 'Cargando documento...')}
+              </div>
+            }
+            error={
+              <div className="p-8 text-center text-destructive">
+                {t('curriculum.pdfLoadError', 'Error al cargar el PDF')}
+              </div>
+            }
+          >
+            <Page
+              pageNumber={currentPage}
+              width={getPageWidth()}
+              className="shadow-lg"
+              renderTextLayer={false}
+              renderAnnotationLayer={false}
+            />
+          </Document>
+        </div>
+      )}
+
+      {/* Watermark */}
+      <PDFWatermarkOverlay userName={userName} currentTime={currentTime} />
+    </div>
+  );
+
+  // Mobile navigation controls
+  const renderMobileControls = () => (
+    <div className="flex items-center justify-between gap-2 p-3 border-t bg-background/95 backdrop-blur-sm">
+      {/* Zoom controls */}
+      <div className="flex items-center gap-1">
+        <Button
+          size="icon"
+          variant="outline"
+          onClick={zoomOut}
+          disabled={scale <= 0.5}
+          className="h-9 w-9 touch-target"
+        >
+          <ZoomOut className="h-4 w-4" />
+        </Button>
+        <span className="text-xs w-12 text-center">{Math.round(scale * 100)}%</span>
+        <Button
+          size="icon"
+          variant="outline"
+          onClick={zoomIn}
+          disabled={scale >= 2}
+          className="h-9 w-9 touch-target"
+        >
+          <ZoomIn className="h-4 w-4" />
+        </Button>
+      </div>
+
+      {/* Page navigation */}
+      <div className="flex items-center gap-2">
+        <Button
+          size="icon"
+          variant="outline"
+          onClick={goToPrevPage}
+          disabled={currentPage <= 1}
+          className="h-10 w-10 touch-target"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+        <span className="text-sm font-medium min-w-[60px] text-center">
+          {currentPage} / {numPages || '...'}
+        </span>
+        <Button
+          size="icon"
+          variant="outline"
+          onClick={goToNextPage}
+          disabled={currentPage >= numPages}
+          className="h-10 w-10 touch-target"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </Button>
+      </div>
+    </div>
+  );
+
+  // Desktop: Render PDF with iframe
+  const renderDesktopPDFContent = (heightClass: string) => (
     <div
       className={cn(
         'relative flex-1 select-none transition-all duration-300 overflow-hidden',
@@ -155,7 +306,6 @@ export default function SecurePDFViewer({
       style={{ minHeight: 0 }}
       onContextMenu={handleContextMenu}
     >
-      {/* PDF iframe (rendered from blob URL to avoid forced downloads) */}
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-background">
           <div className="text-sm text-muted-foreground">
@@ -208,12 +358,12 @@ export default function SecurePDFViewer({
     )
   );
 
-  // Mobile: Use Drawer from bottom
+  // Mobile: Use Drawer from bottom with react-pdf
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
         <DrawerContent className="h-[95vh] max-h-[95vh] flex flex-col">
-          <DrawerHeader className="p-4 pb-2 border-b flex-shrink-0">
+          <DrawerHeader className="p-3 pb-2 border-b flex-shrink-0">
             <div className="flex items-center justify-between">
               <DrawerTitle className="flex items-center gap-2 text-sm">
                 <Shield className="h-4 w-4 text-purple-600 flex-shrink-0" />
@@ -238,16 +388,15 @@ export default function SecurePDFViewer({
             </p>
           </DrawerHeader>
 
-          <div className="flex-1 overflow-hidden relative">
-            {renderPDFContent("h-full")}
-            {renderBlurOverlay()}
-          </div>
+          {renderMobilePDFContent()}
+          {renderMobileControls()}
+          {renderBlurOverlay()}
         </DrawerContent>
       </Drawer>
     );
   }
 
-  // Desktop: Use Dialog
+  // Desktop: Use Dialog with iframe
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent
@@ -269,7 +418,7 @@ export default function SecurePDFViewer({
           </p>
         </DialogHeader>
 
-        {renderPDFContent("h-[calc(90vh-80px)]")}
+        {renderDesktopPDFContent("h-[calc(90vh-80px)]")}
         {renderBlurOverlay()}
       </DialogContent>
     </Dialog>

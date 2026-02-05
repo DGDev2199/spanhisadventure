@@ -39,6 +39,7 @@ import { AwardAchievementDialog } from '@/components/AwardAchievementDialog';
 import { useStudentAchievements } from '@/hooks/useGamification';
 import { useSwipeable } from 'react-swipeable';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { TutorialLauncher } from '@/components/tutorial';
 import { useNavigate } from 'react-router-dom';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -393,8 +394,9 @@ const AdminDashboard = () => {
                 <span className="hidden sm:inline">{t('navigation.community')}</span>
               </Button>
             )}
+            <TutorialLauncher />
             <LanguageSwitcher />
-            <NotificationBell />
+            <NotificationBell data-tutorial="notifications" />
             <Button
               onClick={() => setEditProfileOpen(true)}
               variant="outline"
@@ -442,6 +444,7 @@ const AdminDashboard = () => {
               onClick={() => setPlacementTestDialogOpen(true)} 
               variant="outline"
               className="flex flex-col items-center justify-center h-20 sm:h-24 gap-1.5 sm:gap-2 bg-secondary/30 hover:bg-secondary/50 border-secondary/40 hover:border-secondary/60 transition-all hover:shadow-lg hover:-translate-y-0.5 group"
+              data-tutorial="placement-test-btn"
             >
               <FileCheck className="h-6 w-6 sm:h-7 sm:w-7 text-secondary-foreground group-hover:scale-110 transition-transform" />
               <span className="text-[10px] sm:text-xs font-medium text-center leading-tight text-secondary-foreground">
@@ -453,6 +456,7 @@ const AdminDashboard = () => {
               onClick={() => setRoomsDialogOpen(true)} 
               variant="outline"
               className="flex flex-col items-center justify-center h-20 sm:h-24 gap-1.5 sm:gap-2 bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 hover:border-amber-500/50 transition-all hover:shadow-lg hover:-translate-y-0.5 group"
+              data-tutorial="manage-rooms-btn"
             >
               <Home className="h-6 w-6 sm:h-7 sm:w-7 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform" />
               <span className="text-[10px] sm:text-xs font-medium text-center leading-tight text-amber-700 dark:text-amber-300">
@@ -464,6 +468,7 @@ const AdminDashboard = () => {
               onClick={() => setStaffHoursDialogOpen(true)} 
               variant="outline"
               className="flex flex-col items-center justify-center h-20 sm:h-24 gap-1.5 sm:gap-2 bg-orange-500/10 hover:bg-orange-500/20 border-orange-500/30 hover:border-orange-500/50 transition-all hover:shadow-lg hover:-translate-y-0.5 group"
+              data-tutorial="staff-hours-btn"
             >
               <Clock className="h-6 w-6 sm:h-7 sm:w-7 text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform" />
               <span className="text-[10px] sm:text-xs font-medium text-center leading-tight text-orange-700 dark:text-orange-300">
@@ -475,6 +480,7 @@ const AdminDashboard = () => {
               onClick={() => setCurriculumDialogOpen(true)} 
               variant="outline"
               className="flex flex-col items-center justify-center h-20 sm:h-24 gap-1.5 sm:gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 hover:border-emerald-500/50 transition-all hover:shadow-lg hover:-translate-y-0.5 group"
+              data-tutorial="curriculum-btn"
             >
               <BookOpen className="h-6 w-6 sm:h-7 sm:w-7 text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform" />
               <span className="text-[10px] sm:text-xs font-medium text-center leading-tight text-emerald-700 dark:text-emerald-300">
@@ -497,6 +503,7 @@ const AdminDashboard = () => {
               onClick={() => setCreateEventDialogOpen(true)} 
               variant="outline"
               className="flex flex-col items-center justify-center h-20 sm:h-24 gap-1.5 sm:gap-2 bg-primary/5 hover:bg-primary/10 border-primary/20 hover:border-primary/40 transition-all hover:shadow-lg hover:-translate-y-0.5 group"
+              data-tutorial="create-event-btn"
             >
               <Calendar className="h-6 w-6 sm:h-7 sm:w-7 text-primary group-hover:scale-110 transition-transform" />
               <span className="text-[10px] sm:text-xs font-medium text-center leading-tight text-primary">
@@ -583,7 +590,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Approval Panel */}
-        <div className="mb-8">
+        <div className="mb-8" data-tutorial="approval-panel">
           <AdminApprovalPanel />
         </div>
 
@@ -621,7 +628,7 @@ const AdminDashboard = () => {
         )}
 
         {/* Students Table */}
-        <Card className="shadow-md mb-6">
+        <Card className="shadow-md mb-6" data-tutorial="students-table">
           <CardHeader>
             <CardTitle className="text-lg sm:text-xl">Students</CardTitle>
             <CardDescription className="text-sm">Manage student profiles and assignments</CardDescription>
@@ -966,7 +973,7 @@ const AdminDashboard = () => {
         </Card>
 
         {/* Weekly Calendar */}
-        <div className="mt-6">
+        <div className="mt-6" data-tutorial="weekly-calendar">
           <WeeklyCalendar canEdit={true} />
         </div>
       </main>

@@ -88,6 +88,9 @@ export const TutorialProvider = ({ children }: { children: React.ReactNode }) =>
       setStepIndex(index + 1);
     } else if (type === EVENTS.STEP_AFTER && action === ACTIONS.PREV) {
       setStepIndex(index - 1);
+    } else if (type === EVENTS.TARGET_NOT_FOUND) {
+      // Si el elemento no existe en el DOM, saltar al siguiente paso
+      setStepIndex(index + 1);
     }
   }, [storageKey]);
 

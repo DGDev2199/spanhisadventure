@@ -434,7 +434,7 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
   // Render content shared by both Dialog and Sheet
   const renderContent = () => (
     <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'weeks' | 'materials')} className="w-full flex-1 flex flex-col overflow-hidden">
-      <TabsList className={cn(
+      <TabsList data-tutorial="curriculum-tabs" className={cn(
         "grid w-full grid-cols-2 flex-shrink-0",
         isMobile && "h-12"
       )}>
@@ -749,7 +749,7 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
               <h3 className="font-medium mb-3 flex-shrink-0">
                 {t('curriculum.programWeeks', 'Semanas del Programa')}
               </h3>
-              <ScrollArea className="h-[calc(85vh-220px)] border rounded-lg p-2">
+              <ScrollArea className="h-[calc(85vh-220px)] border rounded-lg p-2" data-tutorial="curriculum-weeks-list">
                 <div className="space-y-2">
                   {weeks.map((week) => (
                     <div
@@ -825,6 +825,7 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
                                 size="icon"
                                 variant="ghost"
                                 className="h-6 w-6"
+                                data-tutorial="curriculum-edit-week-btn"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleEditWeek(week);
@@ -1002,7 +1003,7 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
                     <Separator />
 
                     {/* Add new topic - inside ScrollArea */}
-                    <div className="space-y-3 pb-2">
+                    <div className="space-y-3 pb-2" data-tutorial="curriculum-add-topic-form">
                       <h4 className="text-sm font-medium">{t('curriculum.addTopic', 'Agregar Tema')}</h4>
                       <Input
                         placeholder={t('curriculum.topicNamePlaceholder', 'Nombre del tema (ej: Verbos reflexivos)')}
@@ -1074,11 +1075,11 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
                 )}
               </h4>
               
-              <div className="flex items-center space-x-3 p-2 rounded-lg bg-muted">
+              <div className="flex items-center space-x-3 p-2 rounded-lg bg-muted" data-tutorial="curriculum-teacher-guide-switch">
                 <Switch 
                   id="teacher-guide"
                   checked={isTeacherGuide} 
-                  onCheckedChange={setIsTeacherGuide} 
+                  onCheckedChange={setIsTeacherGuide}
                 />
                 <Label htmlFor="teacher-guide" className="text-sm cursor-pointer">
                   {isTeacherGuide 
@@ -1129,6 +1130,7 @@ export const ManageCurriculumDialog = ({ open, onOpenChange }: ManageCurriculumD
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading}
                     className={cn(isMobile && "min-h-[44px] min-w-[44px]")}
+                    data-tutorial="curriculum-upload-btn"
                   >
                     {isUploading ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
